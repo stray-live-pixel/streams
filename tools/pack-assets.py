@@ -8,12 +8,14 @@ ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT/'assets/kenney-fantasy-town/Models/OBJ format'
 NAMES = ['wall-block','wall-wood-window-glass','wall-wood-door',
          'roof-gable','roof-high-point','windmill','stall-red','stall-green',
-         'tree','tree-high','cart','fence','banner-red','chimney','road']
+         'tree','tree-high','cart','fence','banner-red','chimney','planks','lantern','ship-small']
 image = Image.open(SOURCE/'Textures/colormap.png').convert('RGB')
 packed = {}
 for name in NAMES:
+    current = ROOT/'assets/kenney-pirate/Models/OBJ format' if name=='ship-small' else SOURCE
+    image = Image.open(current/'Textures/colormap.png').convert('RGB')
     vertices, uvs, faces, palette = [], [], [], []
-    for line in (SOURCE/(name+'.obj')).read_text().splitlines():
+    for line in (current/(name+'.obj')).read_text().splitlines():
         a=line.split()
         if not a: continue
         if a[0]=='v': vertices.append([round(float(v),6) for v in a[1:4]])
@@ -23,7 +25,7 @@ for name in NAMES:
             for i in range(1,len(refs)-1):
                 tri=[refs[0],refs[i],refs[i+1]]
                 uv=[sum(uvs[r[1]-1][k] for r in tri)/3 for k in range(2)]
-                color=list(image.getpixel((min(511,max(0,int(uv[0]*512))),min(511,max(0,int((1-uv[1])*512))))))
+                color=list(image.getpixel((min(image.width-1,max(0,int(uv[0]*image.width))),min(image.height-1,max(0,int((1-uv[1])*image.height))))))
                 if color not in palette: palette.append(color)
                 faces.append([*[r[0]-1 for r in tri],palette.index(color)])
     packed[name]={'p':vertices,'f':faces,'c':palette}

@@ -20,7 +20,8 @@
     "fence",
     "banner-red",
     "chimney",
-    "road"
+    "planks",
+    "lantern"
   ],
   "adaptations": "Original OBJ geometry assembled into game buildings, scaled and rotated. Palette colors sampled from original colormap.png. Geometry embedded in index.html for offline use. Island terrain remains procedural.",
   "previews": [
@@ -28,6 +29,18 @@
     "roof-gable",
     "windmill",
     "stall-red",
-    "road"
+    "planks"
+  ],
+  "additionalPacks": [
+    {
+      "author": "Kenney",
+      "pack": "Pirate Kit",
+      "source": "https://kenney.nl/assets/pirate-kit",
+      "license": "CC0-1.0",
+      "licenseFile": "kenney-pirate/License.txt",
+      "models": [
+        "ship-small"
+      ]
+    }
   ]
 }
