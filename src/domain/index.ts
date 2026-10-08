@@ -16,3 +16,5 @@ export type {
   CommandHandler,
 } from './types.js';
 export type { GameModel } from './game.js';
+
+export { storyProgress, BEACON_COST } from './story.js';

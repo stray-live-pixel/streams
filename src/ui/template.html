@@ -45,6 +45,14 @@
       <p id="coach-text"></p>
       <p class="instruction" id="instruction"></p>
       <button id="coach-action" class="primary"></button>
+      <section id="mission" class="mission" aria-label="Цель истории" hidden>
+        <div class="mission-heading">Открытие гавани <span id="mission-progress"></span></div>
+        <div id="goal-people" class="goal-row"></div>
+        <div id="goal-food" class="goal-row"></div>
+        <div id="goal-money" class="goal-row"></div>
+        <button id="light-beacon" class="primary">Зажечь маяк · 300 монет</button>
+        <button id="read-ending" class="help" hidden>Прочитать финальное письмо</button>
+      </section>
       <div class="steps" id="steps" aria-hidden="true">
         <span></span><span></span><span></span><span></span><span></span>
       </div>
@@ -89,8 +97,10 @@
         запасы не меняются.
       </p>
       <p>
-        Цель — 50 жителей и достаточно ферм, чтобы кормить всех каждый день. Карту можно
-        перетаскивать и поворачивать стрелками, масштаб — колесом мыши.
+        Финал истории — зажечь маяк. Для этого нужны 50 жителей, неотрицательный дневной баланс еды
+        и 300 монет. Нажмите «Зажечь маяк» в письме Марты: 300 монет будут потрачены на башню. После
+        финала можно продолжить свободную игру. Карту можно перетаскивать и поворачивать стрелками,
+        масштаб — колесом мыши.
       </p>
       <p class="credits">
         3D-модели:
@@ -116,6 +126,29 @@
         <button id="cancel-reset">Оставить город</button
         ><button class="primary" id="confirm-reset">Начать заново</button>
       </div>
+    </dialog>
+    <dialog id="ending-dialog" class="ending" aria-labelledby="ending-title">
+      <div class="eyebrow">История основания завершена</div>
+      <svg class="ending-emblem" viewBox="0 0 240 105" aria-hidden="true">
+        <path class="beacon-rays" d="M111 29 12 8v48Zm18 0 99-21v48Z" />
+        <path class="beacon-tower" d="m105 89 7-51h16l7 51ZM109 24h22v15h-22Z" />
+        <path class="beacon-roof" d="m105 24 15-15 15 15Zm-7 65h44v7H98Z" />
+        <path class="beacon-sea" d="M28 96q14-9 28 0t28 0m72 0q14-9 28 0t28 0" />
+      </svg>
+      <h2 id="ending-title">Свет, который ждёт.</h2>
+      <p class="ending-letter">
+        Помните пустой причал? Сегодня в окнах горит свет, на площади спорят о цене хлеба, а на
+        берегу встречают корабли. Вы построили не просто дома. Вы дали людям место, куда хочется
+        возвращаться.
+      </p>
+      <p>
+        Сегодня наш маяк впервые указал путь домой.<br />Теперь на морских картах есть
+        <b>Тихая Гавань</b>.
+      </p>
+      <div id="ending-stats" class="ending-stats"></div>
+      <p class="signature">Спасибо, что остались. Ваша Марта.</p>
+      <button id="continue-city" class="primary">Остаться в городе →</button>
+      <small>Цель достигнута. Дальше — свободная игра.</small>
     </dialog>
     <!-- APPLICATION -->
   </body>

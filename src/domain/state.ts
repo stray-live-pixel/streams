@@ -2,7 +2,7 @@ import { BUILDINGS } from './catalog.js';
 import { isLand, MAP_SIZE, shoreDirection } from './world.js';
 import { STEP } from './tutorial.js';
 import type { CityState, Building, BuildingType } from './types.js';
-export const SAVE_VERSION = 3;
+export const SAVE_VERSION = 4;
 export function initialState(): CityState {
   return {
     version: SAVE_VERSION,
@@ -12,6 +12,7 @@ export function initialState(): CityState {
     day: 1,
     step: STEP.WELCOME,
     won: false,
+    endingSeen: false,
     buildings: [{ x: 5, z: 5, t: 'hall' }],
   };
 }
@@ -30,7 +31,7 @@ function isBuilding(value: unknown): value is Building {
 }
 /** JSON не становится безопасным от наличия TypeScript: проверяем каждое внешнее поле. */
 export function restoreState(raw: unknown): CityState {
-  if (!isRecord(raw) || (raw.version !== 2 && raw.version !== 3))
+  if (!isRecord(raw) || (raw.version !== 2 && raw.version !== 3 && raw.version !== 4))
     throw new Error('Неизвестная версия сохранения');
   const { money, food, day, step, buildings } = raw;
   if (
@@ -75,8 +76,19 @@ export function restoreState(raw: unknown): CityState {
     day,
     step,
     won: raw.won === true,
+    endingSeen: raw.won === true && raw.endingSeen === true,
     buildings: buildings.map(({ x, z, t }) => ({ x, z, t: t as BuildingType })),
   };
+  // Победа старой версии остаётся победой: маяк достраивается без повторной оплаты.
+  if (state.won) {
+    state.completedDay =
+      typeof raw.completedDay === 'number' &&
+      Number.isInteger(raw.completedDay) &&
+      raw.completedDay >= 1 &&
+      raw.completedDay <= day
+        ? raw.completedDay
+        : day;
+  }
   if (typeof raw.resumeStep === 'number') state.resumeStep = raw.resumeStep;
   if (typeof raw.journal === 'string') state.journal = raw.journal.slice(0, 1000);
   if (!ports.length && step !== STEP.WELCOME && step !== STEP.PORT) {

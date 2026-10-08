@@ -4,7 +4,12 @@ import type { Arrival } from '../domain/index.js';
  * 0–2: подход; 2–5: высадка; 5–7: отход. Это только визуализация события домена.
  */
 export const VOYAGE_SECONDS = 7;
-export function voyageFrame(event: Arrival, elapsed: number, direction: [number, number]) {
+export function voyageFrame(
+  event: Arrival,
+  elapsed: number,
+  direction: [number, number],
+  landing = 2.7,
+) {
   const [dx, dz] = direction;
   const travel =
     elapsed < 2 ? 5 * (1 - elapsed / 2) : elapsed > 5 ? 5 * Math.min(1, (elapsed - 5) / 2) : 0;
@@ -13,20 +18,20 @@ export function voyageFrame(event: Arrival, elapsed: number, direction: [number,
     for (let i = 0; i < event.count; i++) {
       const progress = Math.max(0, Math.min(1, (elapsed - 2 - i * 0.16) / 1.3));
       if (progress <= 0 || progress >= 1) continue;
-      const distance = 1.8 - 2.1 * progress;
+      const distance = (landing - 0.5) * (1 - progress);
       passengers.push({
         id: i,
-        x: event.port.x + 0.5 + dx * distance,
-        z: event.port.z + 0.5 + dz * distance,
+        x: event.port.x + 0.5 + dx * distance + dz * 0.28,
+        z: event.port.z + 0.5 + dz * distance - dx * 0.28,
         progress,
       });
     }
   }
   return {
     done: elapsed >= VOYAGE_SECONDS,
-    x: event.port.x + 0.5 + dx * (1.8 + travel),
-    z: event.port.z + 0.5 + dz * (1.8 + travel),
-    rotation: -Math.atan2(dx, dz),
+    x: event.port.x + 0.5 + dx * (landing + travel),
+    z: event.port.z + 0.5 + dz * (landing + travel),
+    rotation: -Math.atan2(dx, dz) + Math.PI / 2,
     passengers,
   };
 }

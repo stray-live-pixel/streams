@@ -1,5 +1,5 @@
 import type { GameModel, CommandHandler } from '../domain/index.js';
-import { LETTERS } from './letters.js';
+import { LETTERS, CHAPTERS } from './letters.js';
 import art from '../../.generated/card-art.json';
 /**
  * DOM — только представление. Этот модуль сообщает о намерениях пользователя,
@@ -38,6 +38,21 @@ export function createUI(
   listen('rotate-left', () => onCamera('left'));
   listen('rotate-right', () => onCamera('right'));
   listen('home', () => onCamera('home'));
+  listen('light-beacon', () => onCommand({ type: 'light-beacon' }));
+  listen('read-ending', () => $<HTMLDialogElement>('ending-dialog').showModal());
+  const leaveEnding = () => {
+    $<HTMLDialogElement>('ending-dialog').close();
+    onCommand({ type: 'continue-city' });
+  };
+  listen('continue-city', leaveEnding);
+  $<HTMLDialogElement>('ending-dialog').addEventListener(
+    'cancel',
+    (event) => {
+      event.preventDefault();
+      leaveEnding();
+    },
+    { signal: controller.signal },
+  );
   function render(model: GameModel) {
     const { stats, step, busy, selected, required } = model;
     if (!initialized) {
@@ -90,20 +105,58 @@ export function createUI(
           : `Выберите «${model.choices.find((c) => c.type === required)!.name}» внизу экрана.`
         : instruction;
     } else {
-      $('coach-title').textContent = model.won
-        ? 'Теперь это наш дом.'
-        : `${stats.pop} соседей у моря`;
-      $('coach-text').textContent = model.won
-        ? 'Вы построили город и обеспечили его едой. Можно продолжать в своём темпе.'
-        : model.journal ||
-          'В гавани хватит места для пятидесяти соседей. Давайте строить так, чтобы каждому достались крыша и хлеб.';
-      $('instruction').textContent = !stats.fed
-        ? 'Еды не хватит на следующий день. Постройте ферму: без еды магазины не принесут доход.'
+      const [chapter, title, letter] = CHAPTERS[model.story.chapter];
+      $('step-label').textContent = chapter;
+      $('coach-title').textContent = title;
+      $('coach-text').textContent = letter;
+      $('instruction').textContent = model.won
+        ? 'Можно продолжать строить. Маяк останется гореть.'
         : stats.foodNet < 0
-          ? `Запас еды уменьшается на ${-stats.foodNet} в день. Добавьте ферму.`
-          : model.money < 100
-            ? 'Нажмите «Следующий день», чтобы накопить монеты.'
-            : 'Еды хватает. Можно построить ещё один дом.';
+          ? `Нужна ещё ферма: не хватает ${-stats.foodNet} еды в день.`
+          : !model.story.settled
+            ? stats.capacity > model.pop
+              ? 'В домах есть места. Следующий корабль придёт утром.'
+              : 'Постройте ещё дом. Новые соседи прибудут утром.'
+            : !model.story.funded
+              ? 'Город готов. Соберите доход следующих дней на маяк.'
+              : 'Всё готово. Зажгите маяк — это последний шаг нашей истории.';
+    }
+    document.querySelector('.coach')!.classList.toggle('freeplay', step === 6);
+    $('mission').hidden = step !== 6;
+    const goals = [model.story.settled, model.story.supplied, model.story.funded];
+    $('mission-progress').textContent = model.won
+      ? 'Завершено ✦'
+      : `${goals.filter(Boolean).length} / 3`;
+    const goal = (id: string, complete: boolean, label: string) => {
+      $(id).textContent = `${complete ? '✓' : '○'} ${label}`;
+      $(id).classList.toggle('complete', complete);
+    };
+    goal(
+      'goal-people',
+      model.story.settled,
+      `Жители: ${model.pop} / ${model.story.populationGoal}`,
+    );
+    goal(
+      'goal-food',
+      model.story.supplied,
+      `Еда: ${stats.foodNet >= 0 ? '+' : ''}${stats.foodNet} в день (нужно ≥ 0)`,
+    );
+    goal(
+      'goal-money',
+      model.story.funded || model.won,
+      model.won
+        ? 'Маяк построен'
+        : `На маяк: ${Math.min(model.money, model.story.beaconCost)} / ${model.story.beaconCost} монет`,
+    );
+    $('light-beacon').hidden = model.won;
+    $<HTMLButtonElement>('light-beacon').disabled = !model.story.canFinish || busy;
+    $('read-ending').hidden = !model.won;
+    const ending = $<HTMLDialogElement>('ending-dialog');
+    if (!model.won) ending.close();
+    if (model.won) {
+      $('ending-stats').textContent =
+        `Маяк зажжён на ${model.completedDay}-й день · Сейчас в городе: ${model.pop} жителей`;
+      if (!model.endingSeen && !busy && !ending.open) ending.showModal();
     }
     if (selected === 'road')
       $('instruction').textContent =

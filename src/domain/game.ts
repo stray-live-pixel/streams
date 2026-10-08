@@ -1,6 +1,7 @@
 import type { CityState, BuildingType, Command, GameEvent } from './types.js';
-import { BUILDINGS, BUILD_ORDER, ARRIVALS_PER_DAY, POPULATION_GOAL } from './catalog.js';
+import { BUILDINGS, BUILD_ORDER, ARRIVALS_PER_DAY } from './catalog.js';
 import { initialState, restoreState } from './state.js';
+import { storyProgress, BEACON_COST } from './story.js';
 import { calculate } from './economy.js';
 import { isLand, shoreDirection } from './world.js';
 import {
@@ -25,16 +26,20 @@ export function createGame(saved: CityState | null = null) {
     return {
       ...structuredClone(state),
       stats: calculate(state),
+      story: storyProgress(state),
       selected,
       busy,
       required: requiredBuilding(state.step),
       progress: tutorialProgress(state.step),
-      canNextDay: !busy && canAdvanceDay(state.step),
+      canNextDay: !busy && !(state.won && !state.endingSeen) && canAdvanceDay(state.step),
       choices: BUILD_ORDER.map((type) => ({
         type,
         ...BUILDINGS[type],
         visible: isChoiceVisible(type, state.step),
-        enabled: isChoiceAllowed(type, state, busy) && state.money >= BUILDINGS[type].cost,
+        enabled:
+          !(state.won && !state.endingSeen) &&
+          isChoiceAllowed(type, state, busy) &&
+          state.money >= BUILDINGS[type].cost,
       })),
     };
   }
@@ -49,6 +54,21 @@ export function createGame(saved: CityState | null = null) {
       changed = true;
       events.push({ type: 'reset-view' });
       say('Прогресс сброшен. Начнём новый город!');
+    } else if (command.type === 'continue-city' && state.won) {
+      state.endingSeen = true;
+      changed = true;
+    } else if (state.won && !state.endingSeen) {
+      // Пока игрок читает эпилог, горячие клавиши не меняют город за окном.
+      return { changed, events };
+    } else if (command.type === 'light-beacon') {
+      if (!busy && storyProgress(state).canFinish) {
+        state.money -= BEACON_COST;
+        state.won = true;
+        state.completedDay = state.day;
+        state.endingSeen = false;
+        selected = null;
+        changed = true;
+      } else say('Для маяка нужны 50 жителей, еда для всех каждый день и 300 монет.');
     } else if (command.type === 'arrival-finished') {
       busy = false;
     } else if (command.type === 'continue' && !busy) {
@@ -115,12 +135,6 @@ export function createGame(saved: CityState | null = null) {
           ? `Корабль прибывает! На борту ${count} новых жителей.`
           : `День ${state.day}: +${stats.income} монет.`,
       );
-    }
-    const stats = calculate(state);
-    if (!state.won && state.pop >= POPULATION_GOAL && stats.foodNet >= 0) {
-      state.won = true;
-      changed = true;
-      say('Город готов! 50 жителей и еда для каждого.');
     }
     return { changed, events };
   }

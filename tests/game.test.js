@@ -154,7 +154,7 @@ test('сброс отменяет рейс и возвращает началь�
   assert.deepEqual(g.serialize(), initialState());
   assert.equal(g.snapshot().busy, false);
 });
-test('цель достижима с 50 жителями и достаточным производством еды', () => {
+test('50 жителей открывают финал: маяк строится отдельной командой один раз', () => {
   const s = initialState();
   s.step = STEP.FREE;
   s.money = 10000;
@@ -168,5 +168,75 @@ test('цель достижима с 50 жителями и достаточны
     g.dispatch({ type: 'arrival-finished' });
   }
   assert.equal(g.snapshot().pop, 50);
+  assert.equal(g.snapshot().won, false);
+  assert.equal(g.snapshot().story.canFinish, true);
+  const before = g.snapshot().money;
+  g.dispatch({ type: 'light-beacon' });
   assert.equal(g.snapshot().won, true);
+  assert.equal(g.snapshot().money, before - 300);
+  assert.equal(g.snapshot().completedDay, g.snapshot().day);
+  assert.equal(g.snapshot().canNextDay, false);
+  g.dispatch({ type: 'light-beacon' });
+  assert.equal(g.snapshot().money, before - 300);
+  const restored = createGame(g.serialize());
+  assert.equal(restored.snapshot().endingSeen, false);
+  restored.dispatch({ type: 'continue-city' });
+  assert.equal(restored.snapshot().canNextDay, true);
+  assert.equal(createGame(restored.serialize()).snapshot().endingSeen, true);
+});
+
+test('маяк недоступен без ресурсов, питания или во время рейса', () => {
+  const g = readyCity();
+  g.dispatch({ type: 'light-beacon' });
+  assert.equal(g.snapshot().won, false);
+  g.dispatch({ type: 'next-day' });
+  assert.equal(g.dispatch({ type: 'light-beacon' }).changed, false);
+  const base = { ...g.serialize(), pop: 50, step: STEP.FREE, money: 299 };
+  base.buildings = [
+    { x: 5, z: 5, t: 'hall' },
+    { x: 6, z: 11, t: 'port' },
+  ];
+  for (let x = 2; x < 7; x++) base.buildings.push({ x, z: 6, t: 'house' });
+  for (let x = 2; x < 5; x++) base.buildings.push({ x, z: 7, t: 'farm' });
+  assert.equal(createGame(base).dispatch({ type: 'light-beacon' }).changed, false);
+  base.money = 1000;
+  base.buildings = base.buildings.filter((b) => b.t !== 'farm');
+  assert.equal(createGame(base).dispatch({ type: 'light-beacon' }).changed, false);
+});
+test('старую победу сохраняем без повторной платы, новый финал после сброса исчезает', () => {
+  const old = { ...initialState(), version: 3, won: true, day: 12, step: 6 };
+  old.buildings.push({ x: 6, z: 11, t: 'port' });
+  const g = createGame(old);
+  assert.equal(g.snapshot().won, true);
+  assert.equal(g.snapshot().completedDay, 12);
+  assert.equal(g.snapshot().money, 600);
+  g.dispatch({ type: 'continue-city' });
+  g.dispatch({ type: 'reset' });
+  assert.deepEqual(g.serialize(), initialState());
+});
+test('вся история проходима с исходными ресурсами без читов', () => {
+  const g = readyCity();
+  const morning = () => {
+    g.dispatch({ type: 'next-day' });
+    g.dispatch({ type: 'arrival-finished' });
+  };
+  morning();
+  g.dispatch({ type: 'continue' });
+  for (const [type, x, z] of [
+    ['farm', 3, 7],
+    ['farm', 2, 7],
+    ['house', 2, 6],
+    ['house', 3, 6],
+    ['house', 4, 6],
+    ['house', 5, 6],
+  ]) {
+    const cost = type === 'farm' ? 120 : 100;
+    while (g.snapshot().money < cost) morning();
+    chooseAndBuild(g, type, x, z);
+  }
+  while (!g.snapshot().story.canFinish && g.snapshot().day < 25) morning();
+  assert.equal(g.snapshot().story.canFinish, true);
+  g.dispatch({ type: 'light-beacon' });
+  assert.equal(g.snapshot().won, true);
+  assert(g.snapshot().day < 25);
 });

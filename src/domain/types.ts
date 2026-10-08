@@ -15,6 +15,8 @@ export interface CityState {
   day: number;
   step: number;
   won: boolean;
+  endingSeen: boolean;
+  completedDay?: number;
   buildings: Building[];
   resumeStep?: number;
   journal?: string;
@@ -23,7 +25,10 @@ export interface CityState {
 export type Command =
   | { type: 'select'; building: BuildingType | null }
   | { type: 'build'; x: number; z: number }
-  | { type: 'continue' | 'next-day' | 'reset' | 'arrival-finished' };
+  | {
+      type:
+        'continue' | 'next-day' | 'reset' | 'arrival-finished' | 'light-beacon' | 'continue-city';
+    };
 export interface Arrival {
   type: 'arrival';
   count: number;

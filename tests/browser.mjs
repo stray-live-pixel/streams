@@ -92,6 +92,69 @@ try {
     await page.reload();
     assert.equal(await page.evaluate(() => cityDebug.state.money), 600);
     assert.equal(await page.evaluate(() => cityDebug.state.step), 0);
+    // Отдельный сохранённый город у порога финала. Полный экономический путь покрыт domain-тестом.
+    await page.evaluate(() => {
+      const state = {
+        ...cityDebug.state,
+        day: 12,
+        pop: 50,
+        money: 350,
+        food: 120,
+        step: 6,
+        won: false,
+        endingSeen: false,
+        buildings: [
+          { t: 'hall', x: 5, z: 5 },
+          { t: 'port', x: 6, z: 11 },
+          ...[
+            [4, 5],
+            [6, 5],
+            [4, 7],
+            [6, 7],
+            [7, 5],
+          ].map(([x, z]) => ({ t: 'house', x, z })),
+          ...[
+            [3, 4],
+            [3, 6],
+            [3, 8],
+          ].map(([x, z]) => ({ t: 'farm', x, z })),
+          { t: 'shop', x: 7, z: 7 },
+          ...[
+            [5, 6],
+            [5, 7],
+            [5, 8],
+            [6, 8],
+            [6, 9],
+            [6, 10],
+            [4, 6],
+            [6, 6],
+            [7, 6],
+          ].map(([x, z]) => ({ t: 'road', x, z })),
+        ],
+      };
+      localStorage.setItem('ostrov-simple-v2', JSON.stringify(state));
+    });
+    await page.reload();
+    await page.waitForFunction(() => cityDebug.state.pop === 50);
+    await page.click('#light-beacon');
+    await page.waitForSelector('#ending-dialog[open]');
+    assert.equal(await page.evaluate(() => cityDebug.state.money), 50);
+    await page.screenshot({ path: path.join(screenshots, `ending-${width}.png`) });
+    await page.reload();
+    await page.waitForSelector('#ending-dialog[open]');
+    assert.equal(await page.evaluate(() => cityDebug.state.money), 50);
+    await page.click('#continue-city');
+    await page.reload();
+    await page.waitForFunction(() => cityDebug.state.endingSeen);
+    assert.equal(await page.locator('#ending-dialog').evaluate((d) => d.open), false);
+    await page.waitForTimeout(600);
+    await page.screenshot({ path: path.join(screenshots, `finished-city-${width}.png`) });
+    await page.click('#read-ending');
+    await page.waitForSelector('#ending-dialog[open]');
+    await page.keyboard.press('Escape');
+    assert.equal(await page.locator('#ending-dialog').evaluate((d) => d.open), false);
+    await page.click('#next-day');
+    assert.equal(await page.evaluate(() => cityDebug.state.day), 13);
     assert.deepEqual(errors, []);
     assert.deepEqual(network, []);
     console.log(`${width}px: offline release, tutorial, roads, arrivals, saves, reset PASS`);

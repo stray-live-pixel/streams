@@ -1,6 +1,7 @@
 import { VertexData } from '@babylonjs/core/Meshes/mesh.vertexData.js';
 import type { Building } from '../domain/index.js';
 import type { Board } from './types.js';
+import { harborLayout } from './harbor.js';
 import assets from '../../.generated/models.json';
 
 // Композиции состоят из исходных деталей Kenney. Параметры — координаты,
@@ -12,7 +13,7 @@ const hash = (x: number, z: number) => {
 };
 // Одна клетка — одна единица; X/Z лежат на земле, Y направлена вверх.
 // Геометрия неподвижного острова объединяется, чтобы сократить число вызовов отрисовки.
-function builder(board: Board) {
+function builder(board: Board, completed = false) {
   const sceneVertices: number[] = [];
   function rgb(hex: string) {
     return hex.match(/[0-9a-f]{2}/gi)!.map((v) => parseInt(v, 16));
@@ -32,7 +33,7 @@ function builder(board: Board) {
     triangle(a, c, d, color, false);
   }
   function terrain(x: number, z: number) {
-    let top = rgb(hash(x, z) > 0.5 ? '#98b48a' : '#9db98e');
+    let top = rgb(hash(x, z) > 0.5 ? '#9db58c' : '#a1b890');
     quad([x, 0, z], [x, 0, z + 1], [x + 1, 0, z + 1], [x + 1, 0, z], top);
     quad([x, -0.43, z], [x, -0.43, z + 1], [x, 0, z + 1], [x, 0, z], rgb('#bcb08d'));
     quad(
@@ -60,6 +61,7 @@ function builder(board: Board) {
     sy = sx,
     sz = sx,
     angle = 0,
+    tint?: number[],
   ) {
     let a = assets[name],
       co = Math.cos(angle),
@@ -69,7 +71,11 @@ function builder(board: Board) {
         y + p[1] * sy,
         z + p[0] * sx * si + p[2] * sz * co,
       ]);
-    for (let f of a.f) triangle(points[f[0]], points[f[1]], points[f[2]], a.c[f[3]]);
+    for (let f of a.f) {
+      const original = a.c[f[3]];
+      const color = tint ? tint.map((v) => v * (0.7 + Math.max(...original) / 850)) : original;
+      triangle(points[f[0]], points[f[1]], points[f[2]], color);
+    }
   }
   function shadow(x: number, z: number, rx: number, rz: number) {
     for (let i = 0; i < 20; i++) {
@@ -84,51 +90,124 @@ function builder(board: Board) {
       );
     }
   }
-  function cottage(x: number, z: number, s = 0.65, y = 0.025) {
-    model('wall-block', x, y, z, s, s * 0.78, s);
-    // Малый сдвиг не даёт совпадающим поверхностям стены и двери мерцать.
-    model('wall-wood-door', x, y, z + 0.003, s, s * 0.78, s, Math.PI / 2);
-    model('wall-wood-window-glass', x - 0.003, y, z, s, s * 0.78, s, Math.PI);
-    model('roof-gable', x, y + s * 0.78, z, s, s, s);
-    model('chimney', x, y + s * 0.64, z - 0.08, s * 0.8, s * 0.6, s * 0.8);
+  const roofs = [
+    [65, 142, 133],
+    [182, 93, 68],
+    [100, 115, 148],
+    [148, 111, 72],
+  ];
+  function cottage(x: number, z: number, size = 0.88, y = 0.035, variant = 0) {
+    const height = variant % 2 ? size * 1.18 : size * 0.86;
+    const tint = roofs[variant % roofs.length];
+    model(variant % 2 ? 'wall-wood-block' : 'wall-block', x, y, z, size, height, size);
+    // Отступ предотвращает мерцание совпадающих поверхностей двери и стены.
+    model('wall-wood-door', x, y, z + 0.005, size, height, size, Math.PI / 2);
+    model('wall-window-shutters', x - 0.005, y, z, size, height, size, Math.PI);
+    model('wall-window-glass', x + 0.005, y, z, size, height, size);
+    model(
+      variant % 3 === 2 ? 'roof-high-gable' : 'roof-gable',
+      x,
+      y + height,
+      z,
+      size,
+      size * 0.85,
+      size,
+      0,
+      tint,
+    );
+    model('chimney', x + size * 0.2, y + height + size * 0.15, z - size * 0.2, size * 0.6);
+    if (variant % 2)
+      model(
+        'balcony-wall-fence',
+        x,
+        y + height * 0.5,
+        z + 0.015,
+        size * 0.85,
+        size * 0.55,
+        size * 0.85,
+        Math.PI / 2,
+      );
+  }
+  function harbor(b: Building) {
+    const layout = harborLayout(b, board);
+    const place = (
+      name: keyof typeof assets,
+      side: number,
+      outward: number,
+      y: number,
+      sx: number,
+      sy = sx,
+      sz = sx,
+      turn = 0,
+    ) => {
+      const p = layout.point(side, outward);
+      model(name, p.x, y, p.z, sx, sy, sz, layout.angle + turn);
+    };
+    // Узкий мост от занимаемой клетки к Т-образной набережной: соседняя суша свободна.
+    for (let v = 0.25; v <= layout.distance; v += 0.6) place('planks', 0, v, 0.025, 0.92, 1, 0.75);
+    place('structure-platform', 0, layout.distance, -0.38, 1, 0.5, 0.58);
+    for (const side of [-1, 1])
+      place('structure-platform-dock', side, layout.distance + 0.15, -0.4, 0.35, 0.5, 0.65);
+    place('planks', 0.28, layout.distance + 0.9, 0.07, 0.35, 0.7, 0.65);
+    cottage(b.x + 0.5, b.z + 0.5, 0.94, 0.07, 1);
+    place('banner-green', -0.42, 0, 0.7, 0.6);
+    // Грузовой кран и складские детали делают функцию гавани читаемой с общего вида.
+    place('pillar-wood', 0.72, layout.distance, 0.08, 0.25, 1.2, 0.25);
+    place('planks-half', 0.55, layout.distance, 1.15, 0.9, 0.3, 0.16);
+    place('crate', 0.7, layout.distance + 0.2, 0.08, 0.34);
+    place('crate', 0.65, layout.distance - 0.22, 0.08, 0.28);
+    place('barrel', 0.95, layout.distance - 0.32, 0.08, 0.25);
+    place('lantern', 0.4, 0.7, 0.08, 0.7);
+    place('boat-row-small', 1.5, layout.distance + 0.2, -0.36, 0.25);
+    if (completed) {
+      place('tower-complete-small', -0.7, layout.distance, 0.08, 0.29);
+      place('flag', -0.7, layout.distance, 1.95, 0.28);
+    } else {
+      place('crate', -0.7, layout.distance, 0.08, 0.4);
+      place('barrel', -0.95, layout.distance + 0.2, 0.08, 0.24);
+    }
   }
   function building(b: Building) {
-    let x = b.x + 0.5,
+    const x = b.x + 0.5,
       z = b.z + 0.5;
+    const variant = (b.x * 3 + b.z) % 4;
     if (b.t === 'road') {
-      model('planks', x, 0.005, z, 1, 1, 1);
+      model('planks', x, 0.018, z, 0.96, 0.6, 0.96);
       return;
     }
     if (b.t === 'port') {
-      const [dx, dz] = board.shoreDirection(b.x, b.z) || [0, 1];
-      for (let i = 0; i < 3; i++)
-        model('planks', x + dx * i * 0.5, 0.03, z + dz * i * 0.5, 0.9, 1, 0.9);
-      cottage(x - dx * 0.12, z - dz * 0.12, 0.45);
-      model('lantern', x + 0.35, 0.2, z, 0.6, 0.6, 0.6);
+      harbor(b);
       return;
     }
-    shadow(x + 0.06, z + 0.07, 0.47, 0.37);
+    shadow(x + 0.03, z + 0.06, 0.52, 0.45);
     if (b.t === 'house') {
-      cottage(x, z, 0.72);
-      model('fence', x - 0.08, 0.025, z - 0.35, 0.65, 0.65, 0.65, Math.PI / 2);
+      cottage(x, z, 0.86, 0.035, variant);
+      model('hedge', x - 0.02, 0.025, z - 0.42, 0.83, 1, 0.8, Math.PI / 2);
+      if (variant % 2 === 0) model('barrel', x + 0.38, 0.035, z + 0.36, 0.14);
     }
     if (b.t === 'hall') {
-      cottage(x + 0.06, z, 0.84);
-      model('wall-block', x - 0.25, 0.025, z + 0.03, 0.38, 1.02, 0.38);
-      model('roof-high-point', x - 0.25, 1.045, z + 0.03, 0.48, 0.58, 0.48);
-      model('banner-red', x - 0.25, 0.36, z + 0.037, 0.44, 0.54, 0.44, Math.PI / 2);
+      cottage(x, z, 0.97, 0.03, 1);
+      model('wall-block', x - 0.29, 0.03, z + 0.08, 0.38, 1.65, 0.38);
+      model('roof-high-point', x - 0.29, 1.68, z + 0.08, 0.5, 0.65, 0.5, 0, roofs[1]);
+      model('banner-red', x - 0.29, 0.76, z + 0.09, 0.48, 0.7, 0.48, Math.PI / 2);
     }
     if (b.t === 'farm') {
-      cottage(x - 0.12, z - 0.1, 0.6);
-      model('windmill', x - 0.13, 0.86, z + 0.23, 0.3, 0.3, 0.3, Math.PI / 2);
-      model('cart', x + 0.26, 0.025, z - 0.05, 0.32, 0.32, 0.32);
-      model('fence', x - 0.04, 0.025, z - 0.13, 0.78, 0.75, 0.78, 0);
-      model('fence', x, 0.025, z - 0.05, 0.8, 0.75, 0.8, Math.PI / 2);
+      // Силуэт мельницы и ряды посевов отличают ферму от жилого дома.
+      cottage(x - 0.14, z - 0.1, 0.64, 0.03, 3);
+      model('wall-wood-block', x - 0.15, 0.45, z - 0.09, 0.35, 0.9, 0.35);
+      model('roof-high-point', x - 0.15, 1.35, z - 0.09, 0.45, 0.35, 0.45, 0, roofs[3]);
+      model('windmill', x - 0.15, 1.15, z + 0.29, 0.32, 0.32, 0.32, Math.PI / 2);
+      for (let i = 0; i < 4; i++) {
+        model('planks', x + 0.32, 0.024, z - 0.32 + i * 0.2, 0.25, 0.4, 0.12);
+        model('hedge', x + 0.25, 0.04, z - 0.32 + i * 0.2, 0.26, 0.6, 0.16);
+      }
+      model('fence', x, 0.025, z - 0.42, 0.9, 0.75, 0.85, Math.PI / 2);
     }
     if (b.t === 'shop') {
-      model('stall-red', x - 0.2, 0.025, z, 0.47, 0.6, 0.6);
-      model('stall-green', x + 0.25, 0.025, z - 0.07, 0.38, 0.48, 0.47);
-      model('cart', x + 0.16, 0.025, z + 0.33, 0.25, 0.25, 0.25, Math.PI / 2);
+      cottage(x, z - 0.14, 0.72, 0.03, 0);
+      model(variant % 2 ? 'stall-green' : 'stall-red', x, 0.03, z + 0.28, 0.72, 0.72, 0.45);
+      model('cart', x + 0.36, 0.035, z + 0.23, 0.2);
+      model('crate', x - 0.38, 0.035, z + 0.34, 0.2);
     }
   }
 
@@ -150,8 +229,8 @@ function builder(board: Board) {
   return { terrain, building, model, shadow, finish };
 }
 /** Полностью пересобирается только при изменении списка построек. */
-export function islandGeometry(buildings: Building[], board: Board) {
-  const b = builder(board),
+export function islandGeometry(buildings: Building[], board: Board, completed = false) {
+  const b = builder(board, completed),
     occupied = new Set(buildings.map((p) => p.x + ',' + p.z));
   for (let x = 0; x < board.size; x++)
     for (let z = 0; z < board.size; z++) {
@@ -173,6 +252,23 @@ export function islandGeometry(buildings: Building[], board: Board) {
       }
     }
   for (const building of buildings) b.building(building);
+  // Маленькая площадь возникает на перекрёстке: декор использует уже построенную улицу,
+  // не захватывает свободные клетки и не меняет правила движения/экономики.
+  const roads = new Set(buildings.filter((p) => p.t === 'road').map((p) => `${p.x},${p.z}`));
+  for (const road of buildings.filter((p) => p.t === 'road')) {
+    const neighbors = [
+      [0, 1],
+      [1, 0],
+      [-1, 0],
+      [0, -1],
+    ].filter(([dx, dz]) => roads.has(`${road.x + dx},${road.z + dz}`)).length;
+    if (neighbors >= 3) {
+      b.model('fountain-round', road.x + 0.5, 0.065, road.z + 0.5, 0.18);
+      b.model('fountain-center', road.x + 0.5, 0.065, road.z + 0.5, 0.18);
+    } else if ((road.x + road.z) % 3 === 0) {
+      b.model('lantern', road.x + 0.9, 0.07, road.z + 0.1, 0.38);
+    }
+  }
   return b.finish();
 }
 /** Корабль — отдельный объект; анимация не пересоздаёт геометрию острова. */

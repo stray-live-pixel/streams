@@ -11,6 +11,8 @@ import '@babylonjs/core/Culling/ray.js';
 import type { Arrival, GameModel, Tile } from '../domain/index.js';
 import type { SceneOptions, Passenger } from './types.js';
 import { islandGeometry, shipGeometry } from './geometry.js';
+import { createCityLife } from './life.js';
+import { harborLayout } from './harbor.js';
 import { voyageFrame } from './voyage.js';
 
 /**
@@ -31,6 +33,8 @@ export function createScene({ canvas, board, onArrivalFinished, onError }: Scene
   scene.useRightHandedSystem = true;
   scene.clearColor = new Color4(0, 0, 0, 0);
   scene.imageProcessingConfiguration.isEnabled = false;
+  const life = createCityLife(scene);
+  const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const camera = new FreeCamera('city-camera', Vector3.Zero(), scene);
   camera.mode = Camera.ORTHOGRAPHIC_CAMERA;
   camera.minZ = 0.1;
@@ -144,7 +148,7 @@ export function createScene({ canvas, board, onArrivalFinished, onError }: Scene
     context.lineWidth = 2;
     context.stroke();
   }
-  function overlays(passengers: Passenger[]) {
+  function overlays(seconds: number) {
     context.clearRect(0, 0, width, height);
     if (!model) return;
     if (model.selected === 'port')
@@ -160,23 +164,50 @@ export function createScene({ canvas, board, onArrivalFinished, onError }: Scene
       !model.buildings.some((b) => b.x === tile.x && b.z === tile.z && b.t !== 'road')
     )
       outline(tile.x, tile.z, '#ebf9c344');
-    for (const person of passengers) {
-      const p = project(person.x, 0.18, person.z);
-      context.fillStyle = ['#be644c', '#e3bc66', '#447e7c'][person.id % 3];
-      context.fillRect(p.x - 2.5, p.y - 7 + Math.sin(person.progress * 25), 5, 7);
-      context.fillStyle = '#f4d3ae';
+    // Тонкие блики остаются только на воде. Это декоративный слой, не клетки карты.
+    context.strokeStyle = '#e4f0dd66';
+    context.lineWidth = 1;
+    for (let i = 0; i < 30; i++) {
+      const x = ((i * 7) % 23) - 6,
+        z = ((i * 11) % 23) - 6;
+      if (board.isLand(Math.floor(x), Math.floor(z))) continue;
+      const drift = reducedMotion ? 0 : Math.sin(seconds * 0.35 + i) * 0.3;
+      const a = project(x + drift, -0.3, z),
+        b = project(x + 0.45 + drift, -0.3, z);
       context.beginPath();
-      context.arc(p.x, p.y - 10, 2.7, 0, Math.PI * 2);
-      context.fill();
+      context.moveTo(a.x, a.y);
+      context.lineTo(b.x, b.y);
+      context.stroke();
+    }
+    if (model.won) {
+      const port = model.buildings.find((b) => b.t === 'port');
+      if (port) {
+        const h = harborLayout(port, board),
+          p = h.point(-0.7, h.distance);
+        const light = project(p.x, 1.77, p.z);
+        const glow = context.createRadialGradient(light.x, light.y, 0, light.x, light.y, 28);
+        glow.addColorStop(0, '#fff6bbdd');
+        glow.addColorStop(1, '#ffe49b00');
+        context.fillStyle = glow;
+        context.fillRect(light.x - 28, light.y - 28, 56, 56);
+      }
     }
   }
+
+  let previousFrame = 0;
   function frame(now: number) {
+    if (now - previousFrame < 32 && !dirty) {
+      frameId = requestAnimationFrame(frame);
+      return;
+    }
+    previousFrame = now;
     let passengers: Passenger[] = [];
     if (arrival) {
       const result = voyageFrame(
         arrival.event,
         (now - arrival.started) / 1000,
         board.shoreDirection(arrival.event.port.x, arrival.event.port.z) ?? [0, 1],
+        harborLayout(arrival.event.port, board).distance + 1.45,
       );
       ship.position.set(result.x, -0.25, result.z);
       ship.rotation.y = result.rotation;
@@ -188,13 +219,14 @@ export function createScene({ canvas, board, onArrivalFinished, onError }: Scene
         onArrivalFinished();
       }
     }
-    if (dirty) {
+    life.update(now / 1000, passengers, reducedMotion);
+    if (dirty || (!!model?.pop && !reducedMotion)) {
       scene.render();
       // Babylon компилирует шейдеры асинхронно: первый render ещё может быть пустым.
       // Продолжаем кадры до готовности, затем экономим GPU на неподвижном острове.
       dirty = !scene.isReady();
     }
-    overlays(passengers);
+    overlays(now / 1000);
     frameId = requestAnimationFrame(frame);
   }
   frameId = requestAnimationFrame(frame);
@@ -207,13 +239,14 @@ export function createScene({ canvas, board, onArrivalFinished, onError }: Scene
   return {
     setModel(next: GameModel) {
       model = next;
-      const key = JSON.stringify(next.buildings);
+      life.setModel(next);
+      const key = JSON.stringify([next.buildings, next.won]);
       if (key !== signature) {
         if (island) {
           island.dispose();
         }
         island = new Mesh('island', scene);
-        islandGeometry(next.buildings, board).applyToMesh(island);
+        islandGeometry(next.buildings, board, next.won).applyToMesh(island);
         island.material = material;
         signature = key;
         dirty = true;

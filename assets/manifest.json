@@ -21,7 +21,18 @@
     "banner-red",
     "chimney",
     "planks",
-    "lantern"
+    "lantern",
+    "wall-wood-block",
+    "wall-window-shutters",
+    "wall-window-glass",
+    "roof-high-gable",
+    "balcony-wall-fence",
+    "fountain-round",
+    "fountain-center",
+    "hedge",
+    "banner-green",
+    "pillar-wood",
+    "planks-half"
   ],
   "adaptations": "Original OBJ geometry assembled into game buildings, scaled and rotated. Palette colors sampled from original colormap.png. Geometry embedded in index.html for offline use. Island terrain remains procedural.",
   "previews": [
@@ -39,7 +50,14 @@
       "license": "CC0-1.0",
       "licenseFile": "kenney-pirate/License.txt",
       "models": [
-        "ship-small"
+        "ship-small",
+        "structure-platform-dock",
+        "structure-platform",
+        "tower-complete-small",
+        "barrel",
+        "crate",
+        "boat-row-small",
+        "flag"
       ]
     }
   ]

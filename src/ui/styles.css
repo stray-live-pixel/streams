@@ -61,6 +61,7 @@ button:focus-visible {
 .build,
 .toast,
 dialog {
+  color: var(--color-ink);
   background: var(--surface-paper);
   border: var(--border-paper);
   border-radius: var(--radius-paper);
@@ -385,6 +386,9 @@ dialog {
   color: var(--color-border);
 }
 .next {
+  background: transparent;
+  box-shadow: none;
+  color: var(--color-ink);
   min-width: 164px;
   width: 164px;
   min-height: 145px;
@@ -409,6 +413,9 @@ dialog {
   color: var(--color-ink-muted);
   font: 41px var(--font-story);
   box-shadow: var(--shadow-paper);
+}
+.next:hover {
+  background: transparent;
 }
 .next:hover::before {
   background: color-mix(in srgb, var(--color-gold), var(--color-paper-light) 25%);
@@ -818,4 +825,122 @@ dialog a,
 
 dialog .credits {
   font-size: 11px;
+}
+
+/* Контракт истории: три условия и одно осмысленное финальное действие. */
+.mission {
+  border-top: 1px dashed var(--color-border);
+  padding-top: var(--space-md);
+  margin-top: var(--space-md);
+}
+.mission-heading {
+  display: flex;
+  justify-content: space-between;
+  font: 14px var(--font-story);
+  margin-bottom: var(--space-sm);
+}
+.mission-heading span {
+  color: var(--color-accent);
+  font: 11px var(--font-body);
+}
+.goal-row {
+  font-size: 11px;
+  line-height: 1.9;
+  color: var(--color-ink-muted);
+}
+.goal-row.complete {
+  color: var(--color-primary);
+}
+.coach .help {
+  box-shadow: none;
+  background: transparent;
+  color: var(--color-ink);
+  border: 0;
+}
+.ending {
+  width: min(540px, calc(100% - 28px));
+  text-align: center;
+  padding: 32px;
+}
+.ending-emblem {
+  display: block;
+  width: 200px;
+  height: 90px;
+  margin: 14px auto 6px;
+}
+.ending h2 {
+  margin-bottom: 18px;
+  font-size: 38px;
+}
+.ending .ending-letter {
+  font: 17px/1.65 var(--font-story);
+}
+.ending-stats {
+  border-block: 1px solid var(--color-border);
+  padding: 14px 0;
+  font-size: 12px;
+}
+.ending .signature {
+  font: italic 17px var(--font-story);
+}
+.ending small {
+  display: block;
+  margin-top: var(--space-md);
+  font-size: 10px;
+  color: var(--color-ink-muted);
+}
+@media (max-width: 760px) {
+  .coach.freeplay .correspondent,
+  .coach.freeplay .postmark {
+    display: none;
+  }
+  .coach.freeplay h1 {
+    font-size: 19px;
+  }
+  .coach.freeplay .instruction {
+    display: none;
+  }
+  .coach.freeplay .mission {
+    padding-top: 6px;
+    margin-top: 6px;
+  }
+  .goal-row {
+    font-size: 10px;
+    line-height: 1.6;
+  }
+  .mission-heading {
+    margin-bottom: 3px;
+    font-size: 12px;
+  }
+  .coach.freeplay button {
+    margin-top: 5px;
+    padding: 7px;
+  }
+  .ending {
+    padding: 20px;
+    max-height: calc(100dvh - 30px);
+    overflow: auto;
+  }
+  .ending h2 {
+    font-size: 30px;
+  }
+  .ending .ending-letter {
+    font-size: 15px;
+  }
+}
+
+.beacon-rays {
+  fill: var(--color-gold);
+  opacity: 0.35;
+}
+.beacon-tower {
+  fill: var(--color-primary);
+}
+.beacon-roof {
+  fill: var(--color-accent);
+}
+.beacon-sea {
+  fill: none;
+  stroke: var(--color-primary);
+  stroke-width: 2;
 }
