@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Тихая Гавань — история маленького острова</title>
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect rx='16' width='64' height='64' fill='%23152f32'/%3E%3Cpath d='M12 40 32 50 52 40 32 30Z' fill='%239ad6ac'/%3E%3Cpath d='M24 35V18H40V35L32 40Z' fill='%23fff3cd'/%3E%3C/svg%3E"
+    />
+    <style>
+      /* STYLES */
+    </style>
+  </head>
+  <body>
+    <canvas id="world" aria-label="Карта острова: выберите постройку и нажмите на участок"></canvas>
+    <header class="header">
+      <div class="brand">Тихая Гавань<small>Остров · маленькие начала</small></div>
+      <div class="resources">
+        <div class="stat">
+          <label>◈ Казна</label><strong id="money"></strong><small id="income"></small>
+        </div>
+        <div class="stat">
+          <label>⌂ Поселенцы</label><strong id="pop"></strong><small>/ 50</small>
+        </div>
+        <div class="stat">
+          <label>♧ Запасы еды</label><strong id="food"></strong><small id="foodflow"></small>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button id="help" class="help">Как играть</button
+        ><button id="reset-progress" class="help">Начать заново</button>
+      </div>
+    </header>
+    <div class="chart-mark" aria-hidden="true">✧<small>СЕВЕРНЫЕ ВОДЫ</small></div>
+    <div class="island-caption" aria-hidden="true">бухта тихих надежд</div>
+    <aside class="coach" aria-live="polite">
+      <div class="correspondent">
+        <span class="portrait" aria-hidden="true">М</span>
+        <div><b>Марта</b><small>смотрительница гавани</small></div>
+      </div>
+      <span class="postmark" aria-hidden="true">ОСТРОВНАЯ<br />ПОЧТА</span>
+      <div class="eyebrow" id="step-label"></div>
+      <h1 id="coach-title"></h1>
+      <p id="coach-text"></p>
+      <p class="instruction" id="instruction"></p>
+      <button id="coach-action" class="primary"></button>
+      <div class="steps" id="steps" aria-hidden="true">
+        <span></span><span></span><span></span><span></span><span></span>
+      </div>
+    </aside>
+    <div class="camera">
+      <button id="rotate-left" aria-label="Повернуть карту влево" title="Повернуть карту">↶</button
+      ><button id="rotate-right" aria-label="Повернуть карту вправо" title="Повернуть карту">
+        ↷</button
+      ><button id="home" aria-label="Вернуть карту в центр" title="Вернуть карту в центр">⌖</button>
+    </div>
+    <div class="dock">
+      <div class="dock-hint" id="hint"></div>
+      <div class="controls" id="build-controls" hidden>
+        <div class="buildings" id="buildings"></div>
+        <button class="next primary" id="next-day">
+          <b>Следующий день →</b><small id="day-label"></small>
+        </button>
+      </div>
+    </div>
+    <div class="save-note" id="save-note">✦ Летопись сохраняется сама</div>
+    <div class="toast" role="status" id="toast"></div>
+    <dialog id="help-dialog">
+      <h2>Гавань начинается с порта</h2>
+      <p>
+        <b>Порт</b> строится бесплатно на берегу первым. Утром корабль привозит до 10 новых жителей,
+        если в домах есть свободные места. Во время высадки следующий день недоступен.
+      </p>
+      <p><b>Дом</b> — 10 мест для жителей. Каждый заселившийся житель приносит 1 монету в день.</p>
+      <p><b>Ферма</b> — +20 еды в день. Каждый житель съедает 1 еду в день.</p>
+      <p>
+        <b>Магазин</b> — +40 монет в день, если еды хватило всем жителям. Ратуша всегда даёт +20
+        монет.
+      </p>
+      <p>
+        <b>Дорога</b> — бесплатное украшение города. Нажимайте на участки, чтобы соединять их
+        улицами. Повторный клик убирает дорогу. Здание можно поставить прямо на дороге; подключение
+        не требуется.
+      </p>
+      <p>
+        Даже в обучении выбирайте место сами. Выберите постройку, затем нажмите на свободный
+        участок. Нажмите <b>«Следующий день»</b>, когда захотите собрать доход. Без этой кнопки
+        запасы не меняются.
+      </p>
+      <p>
+        Цель — 50 жителей и достаточно ферм, чтобы кормить всех каждый день. Карту можно
+        перетаскивать и поворачивать стрелками, масштаб — колесом мыши.
+      </p>
+      <p style="font-size: 11px">
+        3D-модели:
+        <a
+          href="https://kenney.nl/assets/fantasy-town-kit"
+          target="_blank"
+          rel="noopener"
+          style="color: #c9edbd"
+          >Kenney · Fantasy Town Kit</a
+        >
+        и
+        <a href="https://kenney.nl/assets/pirate-kit" target="_blank" rel="noopener">Pirate Kit</a>,
+        CC0.
+      </p>
+      <div class="actions">
+        <button class="primary" id="close-help">Понятно</button
+        ><button id="restart">Новое обучение</button>
+      </div>
+    </dialog>
+    <dialog id="reset-dialog">
+      <h2>Сбросить прогресс?</h2>
+      <p>
+        Все постройки и накопленные ресурсы будут сброшены. Вы начнёте с первого дня, 600 монет и
+        обучения.
+      </p>
+      <div class="actions">
+        <button id="cancel-reset">Оставить город</button
+        ><button class="primary" id="confirm-reset">Начать заново</button>
+      </div>
+    </dialog>
+    <!-- APPLICATION -->
+  </body>
+</html>

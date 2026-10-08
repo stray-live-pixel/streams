@@ -1,0 +1,28 @@
+{
+  "name": "quiet-harbor",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Автономная учебная градостроительная игра «Тихая Гавань»",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "dev": "node scripts/dev.mjs",
+    "test": "node --test tests/*.test.js",
+    "test:e2e": "node tests/browser.mjs",
+    "format": "prettier --write 'src/**/*.{js,css,html}' 'scripts/*.mjs' 'tests/*.{js,mjs}'",
+    "format:check": "prettier --check 'src/**/*.{js,css,html}' 'scripts/*.mjs' 'tests/*.{js,mjs}'",
+    "check": "npm run test && npm run build && npm run format:check"
+  },
+  "dependencies": {
+    "three": "0.186.1"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2",
+    "playwright": "1.64.0",
+    "pngjs": "7.0.0",
+    "prettier": "3.9.9"
+  }
+}
