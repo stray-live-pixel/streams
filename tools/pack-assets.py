@@ -6,7 +6,7 @@ from PIL import Image
 import json
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT/'assets/kenney-fantasy-town/Models/OBJ format'
-NAMES = ['wall-wood-block','wall-block','wall-wood-window-glass','wall-wood-door',
+NAMES = ['wall-block','wall-wood-window-glass','wall-wood-door',
          'roof-gable','roof-high-point','windmill','stall-red','stall-green',
          'tree','tree-high','cart','fence','banner-red','chimney']
 image = Image.open(SOURCE/'Textures/colormap.png').convert('RGB')
@@ -29,7 +29,6 @@ for name in NAMES:
     packed[name]={'p':vertices,'f':faces,'c':palette}
     print(name,len(vertices),'vertices',len(faces),'triangles')
 payload=json.dumps(packed,separators=(',',':'))
-(ROOT/'assets/models.json').write_text(payload)
 html=(ROOT/'index.html').read_text()
 start='<!-- KENNEY-ASSETS-BEGIN -->'
 end='<!-- KENNEY-ASSETS-END -->'
