@@ -8,7 +8,7 @@ ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT/'assets/kenney-fantasy-town/Models/OBJ format'
 NAMES = ['wall-block','wall-wood-window-glass','wall-wood-door',
          'roof-gable','roof-high-point','windmill','stall-red','stall-green',
-         'tree','tree-high','cart','fence','banner-red','chimney']
+         'tree','tree-high','cart','fence','banner-red','chimney','road']
 image = Image.open(SOURCE/'Textures/colormap.png').convert('RGB')
 packed = {}
 for name in NAMES:
