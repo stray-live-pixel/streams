@@ -1,23 +1,23 @@
-import { BufferGeometry, Float32BufferAttribute } from 'three';
+import { VertexData } from '@babylonjs/core/Meshes/mesh.vertexData.js';
+import type { Building } from '../domain/index.js';
+import type { Board } from './types.js';
 import assets from '../../.generated/models.json';
 
 // Композиции состоят из исходных деталей Kenney. Параметры — координаты,
 // масштаб и поворот; стоимость и правила зданий этому модулю неизвестны.
-// PNG хранит цвета в sRGB, а Three.js считает цвет вершин линейным.
-// Преобразование сохраняет исходные оттенки палитры после вывода на экран.
-const toLinear = (c) => (c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4));
-const hash = (x, z) => {
+// Материал без освещения выводит цвета палитры напрямую; повторная гамма-коррекция не нужна.
+const hash = (x: number, z: number) => {
   const n = Math.sin(x * 127.1 + z * 311.7) * 43758.5453;
   return n - Math.floor(n);
 };
 // Одна клетка — одна единица; X/Z лежат на земле, Y направлена вверх.
 // Геометрия неподвижного острова объединяется, чтобы сократить число вызовов отрисовки.
-function builder(board) {
-  let sceneVertices = [];
-  function rgb(hex) {
-    return hex.match(/[0-9a-f]{2}/gi).map((v) => parseInt(v, 16));
+function builder(board: Board) {
+  const sceneVertices: number[] = [];
+  function rgb(hex: string) {
+    return hex.match(/[0-9a-f]{2}/gi)!.map((v) => parseInt(v, 16));
   }
-  function triangle(a, b, c, color, lit = true) {
+  function triangle(a: number[], b: number[], c: number[], color: number[], lit = true) {
     let u = b.map((v, i) => v - a[i]),
       v = c.map((x, i) => x - a[i]),
       n = [u[1] * v[2] - u[2] * v[1], u[2] * v[0] - u[0] * v[2], u[0] * v[1] - u[1] * v[0]],
@@ -25,14 +25,13 @@ function builder(board) {
     let light = lit
       ? 0.67 + 0.33 * Math.max(0, (-n[0] * 0.45 + n[1] * 0.82 + n[2] * 0.35) / len)
       : 1;
-    for (let p of [a, b, c])
-      sceneVertices.push(...p, ...color.map((v) => toLinear((v / 255) * light)));
+    for (let p of [a, b, c]) sceneVertices.push(...p, ...color.map((v) => (v / 255) * light));
   }
-  function quad(a, b, c, d, color) {
+  function quad(a: number[], b: number[], c: number[], d: number[], color: number[]) {
     triangle(a, b, c, color, false);
     triangle(a, c, d, color, false);
   }
-  function terrain(x, z) {
+  function terrain(x: number, z: number) {
     let top = rgb(hash(x, z) > 0.5 ? '#98b48a' : '#9db98e');
     quad([x, 0, z], [x, 0, z + 1], [x + 1, 0, z + 1], [x + 1, 0, z], top);
     quad([x, -0.43, z], [x, -0.43, z + 1], [x, 0, z + 1], [x, 0, z], rgb('#bcb08d'));
@@ -52,7 +51,16 @@ function builder(board) {
     );
     quad([x + 1, -0.43, z], [x, -0.43, z], [x, 0, z], [x + 1, 0, z], rgb('#b2a583'));
   }
-  function model(name, x, y, z, sx = 1, sy = sx, sz = sx, angle = 0) {
+  function model(
+    name: keyof typeof assets,
+    x: number,
+    y: number,
+    z: number,
+    sx = 1,
+    sy = sx,
+    sz = sx,
+    angle = 0,
+  ) {
     let a = assets[name],
       co = Math.cos(angle),
       si = Math.sin(angle),
@@ -63,7 +71,7 @@ function builder(board) {
       ]);
     for (let f of a.f) triangle(points[f[0]], points[f[1]], points[f[2]], a.c[f[3]]);
   }
-  function shadow(x, z, rx, rz) {
+  function shadow(x: number, z: number, rx: number, rz: number) {
     for (let i = 0; i < 20; i++) {
       let a = (i * Math.PI) / 10,
         b = ((i + 1) * Math.PI) / 10;
@@ -76,7 +84,7 @@ function builder(board) {
       );
     }
   }
-  function cottage(x, z, s = 0.65, y = 0.025) {
+  function cottage(x: number, z: number, s = 0.65, y = 0.025) {
     model('wall-block', x, y, z, s, s * 0.78, s);
     // Малый сдвиг не даёт совпадающим поверхностям стены и двери мерцать.
     model('wall-wood-door', x, y, z + 0.003, s, s * 0.78, s, Math.PI / 2);
@@ -84,7 +92,7 @@ function builder(board) {
     model('roof-gable', x, y + s * 0.78, z, s, s, s);
     model('chimney', x, y + s * 0.64, z - 0.08, s * 0.8, s * 0.6, s * 0.8);
   }
-  function building(b) {
+  function building(b: Building) {
     let x = b.x + 0.5,
       z = b.z + 0.5;
     if (b.t === 'road') {
@@ -125,22 +133,24 @@ function builder(board) {
   }
 
   function finish() {
-    const p = [],
-      c = [];
+    const p: number[] = [],
+      c: number[] = [];
     for (let i = 0; i < sceneVertices.length; i += 6) {
       p.push(...sceneVertices.slice(i, i + 3));
-      c.push(...sceneVertices.slice(i + 3, i + 6));
+      c.push(...sceneVertices.slice(i + 3, i + 6), 1);
     }
-    const geometry = new BufferGeometry();
-    geometry.setAttribute('position', new Float32BufferAttribute(p, 3));
-    geometry.setAttribute('color', new Float32BufferAttribute(c, 3));
-    geometry.computeBoundingSphere();
+    const geometry = new VertexData();
+    geometry.positions = p;
+    geometry.colors = c;
+    geometry.indices = Array.from({ length: p.length / 3 }, (_, i) => i);
+    geometry.normals = [];
+    VertexData.ComputeNormals(p, geometry.indices, geometry.normals);
     return geometry;
   }
   return { terrain, building, model, shadow, finish };
 }
 /** Полностью пересобирается только при изменении списка построек. */
-export function islandGeometry(buildings, board) {
+export function islandGeometry(buildings: Building[], board: Board) {
   const b = builder(board),
     occupied = new Set(buildings.map((p) => p.x + ',' + p.z));
   for (let x = 0; x < board.size; x++)
@@ -167,7 +177,7 @@ export function islandGeometry(buildings, board) {
 }
 /** Корабль — отдельный объект; анимация не пересоздаёт геометрию острова. */
 export function shipGeometry() {
-  const b = builder({});
+  const b = builder({ size: 0, isLand: () => false, shoreDirection: () => null });
   b.model('ship-small', 0, 0, 0, 0.19, 0.19, 0.19);
   return b.finish();
 }

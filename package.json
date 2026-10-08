@@ -10,19 +10,22 @@
   "scripts": {
     "build": "node scripts/build.mjs",
     "dev": "node scripts/dev.mjs",
-    "test": "node --test tests/*.test.js",
+    "test": "tsx --test tests/*.test.js",
     "test:e2e": "node tests/browser.mjs",
-    "format": "prettier --write 'src/**/*.{js,css,html}' 'scripts/*.mjs' 'tests/*.{js,mjs}'",
-    "format:check": "prettier --check 'src/**/*.{js,css,html}' 'scripts/*.mjs' 'tests/*.{js,mjs}'",
-    "check": "npm run test && npm run build && npm run format:check"
+    "format": "prettier --write 'src/**/*.{ts,css,html}' 'scripts/*.mjs' 'tests/*.{js,mjs}'",
+    "format:check": "prettier --check 'src/**/*.{ts,css,html}' 'scripts/*.mjs' 'tests/*.{js,mjs}'",
+    "check": "npm run test && npm run build && npm run format:check",
+    "typecheck": "node scripts/typecheck.mjs"
   },
   "dependencies": {
-    "three": "0.186.1"
+    "@babylonjs/core": "9.30.0"
   },
   "devDependencies": {
     "esbuild": "0.28.2",
     "playwright": "1.64.0",
     "pngjs": "7.0.0",
-    "prettier": "3.9.9"
+    "prettier": "3.9.9",
+    "tsx": "4.23.15",
+    "typescript": "7.0.2"
   }
 }

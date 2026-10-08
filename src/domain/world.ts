@@ -1,9 +1,9 @@
 /**
- * География острова — чистые функции: здесь нет ни браузера, ни Three.js.
+ * География острова — чистые функции: здесь нет ни браузера, ни Babylon.js.
  * Один участок имеет размер 1 × 1. Здания занимают ровно один участок.
  */
 export const MAP_SIZE = 12;
-export function isLand(x, z) {
+export function isLand(x: number, z: number) {
   return (
     Number.isInteger(x) &&
     Number.isInteger(z) &&
@@ -18,14 +18,16 @@ export function isLand(x, z) {
   );
 }
 /** Направление от причала к открытому морю или null для внутренней клетки. */
-export function shoreDirection(x, z) {
+export function shoreDirection(x: number, z: number): [number, number] | null {
   if (!isLand(x, z)) return null;
   return (
-    [
-      [0, 1],
-      [1, 0],
-      [-1, 0],
-      [0, -1],
-    ].find(([dx, dz]) => !isLand(x + dx, z + dz) && !isLand(x + dx * 2, z + dz * 2)) ?? null
+    (
+      [
+        [0, 1],
+        [1, 0],
+        [-1, 0],
+        [0, -1],
+      ] as [number, number][]
+    ).find(([dx, dz]) => !isLand(x + dx, z + dz) && !isLand(x + dx * 2, z + dz * 2)) ?? null
   );
 }

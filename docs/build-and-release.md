@@ -6,8 +6,8 @@
 assets/* + assets/manifest.json
            ↓ scripts/pack-assets.mjs
 .generated/models.json + .generated/card-art.json
-           ↓ вместе с src/main.js → esbuild
-встроенный JavaScript + src/ui/styles.css + src/ui/template.html
+           ↓ проверка TypeScript → src/main.ts → esbuild
+встроенный JavaScript + src/ui/theme.css + src/ui/styles.css + src/ui/template.html
            ↓ scripts/build.mjs
  dist/index.html и index.html (одинаковое содержимое)
 ```
@@ -21,11 +21,12 @@ assets/* + assets/manifest.json
 | Команда | Назначение |
 | --- | --- |
 | `npm ci` | Установить точные зависимости из lock-файла |
-| `npm run build` | Упаковать ассеты и собрать готовый HTML |
+| `npm run build` | Упаковать ассеты, проверить типы и собрать готовый HTML |
+| `npm run typecheck` | Подготовить JSON ассетов и проверить строгие типы без выпуска HTML |
 | `npm run dev` | Локальный сервер с пересборкой при изменениях; порт 4173, или `PORT` |
 | `npm test` | Правила, миграция, Storage, жизненный цикл рейса, границы слоёв |
 | `npm run format` | Привести исходники к единому читаемому оформлению |
-| `npm run check` | Тесты, сборка и проверка оформления |
+| `npm run check` | Тесты, проверка типов, сборка и проверка оформления |
 | `npm run test:e2e` | Запустить именно готовую сборку в Chromium через `file://`, без сети |
 
 ## Чистая проверка перед выпуском

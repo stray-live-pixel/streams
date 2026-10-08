@@ -1,9 +1,10 @@
+import type { Arrival } from '../domain/index.js';
 /**
  * Хореография рейса в секундах. Функция не меняет население и не зависит от FPS.
  * 0–2: подход; 2–5: высадка; 5–7: отход. Это только визуализация события домена.
  */
 export const VOYAGE_SECONDS = 7;
-export function voyageFrame(event, elapsed, direction) {
+export function voyageFrame(event: Arrival, elapsed: number, direction: [number, number]) {
   const [dx, dz] = direction;
   const travel =
     elapsed < 2 ? 5 * (1 - elapsed / 2) : elapsed > 5 ? 5 * Math.min(1, (elapsed - 5) / 2) : 0;

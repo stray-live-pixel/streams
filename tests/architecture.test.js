@@ -7,7 +7,7 @@ import path from 'node:path';
 test('слои не импортируют внутренности соседей; домен независим от платформы', async () => {
   for (const layer of ['domain', 'ui', 'scene', 'input', 'persistence']) {
     for (const file of await readdir(`src/${layer}`)) {
-      if (!file.endsWith('.js')) continue;
+      if (!file.endsWith('.ts')) continue;
       const source = await readFile(`src/${layer}/${file}`, 'utf8');
       const imports = [...source.matchAll(/from\s+['"]([^'"]+)['"]/g)].map((m) => m[1]);
       for (const name of imports) {

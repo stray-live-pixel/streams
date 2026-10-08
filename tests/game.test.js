@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createGame, initialState, restoreState, STEP } from '../src/domain/index.js';
-import { createStorage, SAVE_KEY } from '../src/persistence/index.js';
-import { voyageFrame } from '../src/scene/voyage.js';
+import { createGame, initialState, restoreState, STEP } from '../src/domain/index.ts';
+import { createStorage, SAVE_KEY } from '../src/persistence/index.ts';
+import { voyageFrame } from '../src/scene/voyage.ts';
 
 function chooseAndBuild(game, type, x, z) {
   game.dispatch({ type: 'select', building: type });

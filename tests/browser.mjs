@@ -15,6 +15,7 @@ try {
     const context = await browser.newContext({
       viewport: { width, height: width === 390 ? 844 : 1000 },
       offline: true,
+      deviceScaleFactor: width === 390 ? 2 : 1,
     });
     const page = await context.newPage();
     const errors = [],
@@ -25,7 +26,19 @@ try {
     });
     await page.goto(pathToFileURL(path.resolve('dist/index.html')).href);
     await page.waitForFunction(() => window.cityDebug);
-    assert.equal(await page.evaluate(() => cityDebug.renderer), 'Three.js');
+    assert.equal(await page.evaluate(() => cityDebug.renderer), 'Babylon.js');
+    // Логика может работать даже при пустом WebGL-кадре. Проверяем сам рисунок острова.
+    await page.waitForFunction(() => {
+      const source = document.querySelector('#scene');
+      const sample = document.createElement('canvas');
+      sample.width = sample.height = 32;
+      const ctx = sample.getContext('2d');
+      ctx.drawImage(source, 0, 0, 32, 32);
+      const pixels = ctx.getImageData(0, 0, 32, 32).data;
+      let visible = 0;
+      for (let i = 3; i < pixels.length; i += 4) if (pixels[i] > 100) visible++;
+      return visible > 50;
+    });
     const tile = async (x, z) => {
       const point = await page.evaluate(([x, z]) => cityDebug.projectTile(x, z), [x, z]);
       assert.equal(

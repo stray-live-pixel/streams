@@ -1,8 +1,10 @@
+import type { CommandHandler, BuildingType } from '../domain/index.js';
+import type { CityScene } from '../scene/index.js';
 /** Преобразует физические жесты в команды. Здесь нет правил строительства. */
-export function bindInput(canvas, scene, onCommand) {
+export function bindInput(canvas: HTMLCanvasElement, scene: CityScene, onCommand: CommandHandler) {
   const events = new AbortController();
   const options = { signal: events.signal };
-  let pointer = null;
+  let pointer: { id: number; x: number; y: number; moved: boolean } | null = null;
   canvas.addEventListener(
     'pointerdown',
     (event) => {
@@ -70,7 +72,7 @@ export function bindInput(canvas, scene, onCommand) {
     (e) => {
       if (
         document.querySelector('dialog[open]') ||
-        e.target.matches('button,input,select,textarea') ||
+        (e.target instanceof Element && e.target.matches('button,input,select,textarea')) ||
         e.repeat
       )
         return;
@@ -79,7 +81,13 @@ export function bindInput(canvas, scene, onCommand) {
         onCommand({ type: 'next-day' });
       }
       if (e.key === 'Escape') onCommand({ type: 'select', building: null });
-      const type = { 1: 'house', 2: 'farm', 3: 'shop', 4: 'road' }[e.key];
+      const shortcuts: Record<string, BuildingType> = {
+        1: 'house',
+        2: 'farm',
+        3: 'shop',
+        4: 'road',
+      };
+      const type = shortcuts[e.key];
       if (type) onCommand({ type: 'select', building: type });
     },
     options,

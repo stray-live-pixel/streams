@@ -1,3 +1,4 @@
+import type { CityState, BuildingType } from './types.js';
 /**
  * Числа сохранены ради совместимости с ранними версиями игры.
  * Новый код использует имена, поэтому порядок шагов читается явно.
@@ -12,36 +13,36 @@ export const STEP = Object.freeze({
   FREE: 6,
   PORT: 7,
 });
-const sequence = [STEP.PORT, STEP.HOUSE, STEP.FARM, STEP.SHOP, STEP.DAY];
-const expected = {
+const sequence: number[] = [STEP.PORT, STEP.HOUSE, STEP.FARM, STEP.SHOP, STEP.DAY];
+const expected: Partial<Record<number, BuildingType>> = {
   [STEP.PORT]: 'port',
   [STEP.HOUSE]: 'house',
   [STEP.FARM]: 'farm',
   [STEP.SHOP]: 'shop',
 };
-export function requiredBuilding(step) {
+export function requiredBuilding(step: number) {
   return expected[step] ?? null;
 }
-export function tutorialProgress(step) {
+export function tutorialProgress(step: number) {
   return sequence.indexOf(step) + 1;
 }
-export function canAdvanceDay(step) {
+export function canAdvanceDay(step: number) {
   return step === STEP.DAY || step === STEP.FREE;
 }
-export function isChoiceVisible(type, step) {
+export function isChoiceVisible(type: BuildingType, step: number) {
   if (type === 'port') return step === STEP.PORT;
   if (step === STEP.WELCOME || step === STEP.PORT) return false;
   if (type === 'road' || step === STEP.FREE) return true;
   return ['house', 'farm', 'shop'].indexOf(type) < step;
 }
-export function isChoiceAllowed(type, state, busy) {
+export function isChoiceAllowed(type: BuildingType, state: CityState, busy: boolean) {
   if (busy || type === 'hall') return false;
   if (type === 'port')
     return state.step === STEP.PORT && !state.buildings.some((b) => b.t === 'port');
   if (state.step === STEP.PORT || state.step === STEP.WELCOME) return false;
   return type === 'road' || state.step === STEP.FREE || type === requiredBuilding(state.step);
 }
-export function afterConstruction(state, type) {
+export function afterConstruction(state: CityState, type: BuildingType) {
   if (type === 'port') {
     state.step = state.resumeStep ?? STEP.HOUSE;
     delete state.resumeStep;

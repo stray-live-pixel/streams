@@ -1,3 +1,4 @@
+import type { CityState, BuildingType, Command, GameEvent } from './types.js';
 import { BUILDINGS, BUILD_ORDER, ARRIVALS_PER_DAY, POPULATION_GOAL } from './catalog.js';
 import { initialState, restoreState } from './state.js';
 import { calculate } from './economy.js';
@@ -16,9 +17,9 @@ import {
  * Команды — обычные объекты. Событие arrival просит сцену показать рейс,
  * но сама экономика ничего не знает о кадрах, DOM и графической библиотеке.
  */
-export function createGame(saved = null) {
+export function createGame(saved: CityState | null = null) {
   let state = saved ? restoreState(saved) : initialState();
-  let selected = null;
+  let selected: BuildingType | null = null;
   let busy = false;
   function snapshot() {
     return {
@@ -37,10 +38,10 @@ export function createGame(saved = null) {
       })),
     };
   }
-  function dispatch(command) {
-    const events = [];
+  function dispatch(command: Command) {
+    const events: GameEvent[] = [];
     let changed = false;
-    const say = (text) => events.push({ type: 'notice', text });
+    const say = (text: string) => events.push({ type: 'notice', text });
     if (command.type === 'reset') {
       state = initialState();
       selected = null;
@@ -105,7 +106,7 @@ export function createGame(saved = null) {
       state.journal = `Утро ${state.day}. ${count ? `Корабль привёз ${count} новых соседей. ` : 'Свободных мест для новых соседей нет. '}Доход: ${stats.income} монет.`;
       if (state.step === STEP.DAY) state.step = STEP.DONE;
       changed = true;
-      if (count) {
+      if (count && port) {
         busy = true;
         events.push({ type: 'arrival', count, port: { ...port } });
       }
@@ -126,3 +127,5 @@ export function createGame(saved = null) {
   // Возвращается копия. Даже ошибочный код интерфейса не может менять город напрямую.
   return Object.freeze({ dispatch, snapshot, serialize: () => structuredClone(state) });
 }
+
+export type GameModel = ReturnType<ReturnType<typeof createGame>['snapshot']>;

@@ -1,3 +1,4 @@
+import type { BuildingType } from './types.js';
 /** Единственное место для настройки стоимости и производительности зданий. */
 export const BUILDINGS = Object.freeze({
   house: Object.freeze({
@@ -35,6 +36,6 @@ export const BUILDINGS = Object.freeze({
   }),
   hall: Object.freeze({ name: 'Ратуша', cost: 0, income: 20 }),
 });
-export const BUILD_ORDER = Object.freeze(['port', 'house', 'farm', 'shop', 'road']);
+export const BUILD_ORDER = Object.freeze(['port', 'house', 'farm', 'shop', 'road'] as const);
 export const ARRIVALS_PER_DAY = 10;
 export const POPULATION_GOAL = 50;
