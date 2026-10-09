@@ -1,8 +1,24 @@
+# Локальные файлы и окружения
 .DS_Store
 __pycache__/
 *.pyc
-node_modules/
 .venv/
-.generated/
-dist/
-test-results/
+.env
+.env.*
+!.env.example
+!.env.sample
+
+# Установленные зависимости и результаты сборки
+node_modules/
+/.generated/
+/dist/
+/index.html
+*.tsbuildinfo
+
+# Проверки, покрытие и логи
+/test-results/
+/playwright-report/
+/coverage/
+*.log
+
+# assets/ — исходные материалы; храним их в Git.
