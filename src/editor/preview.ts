@@ -18,8 +18,9 @@ import {
   shipGeometry,
   streetGeometry,
   terrainGeometry,
-} from './geometry.js';
-import { createPerson, createSmoke, lifeColors } from './life.js';
+  registerObjectAssets,
+} from '../scene/index.js';
+import { createPerson, createSmoke, lifeColors } from '../scene/index.js';
 import library from '../../.generated/library-models.json';
 
 export interface PreviewObject {
@@ -31,6 +32,7 @@ export interface PreviewObject {
 interface Entry extends PreviewObject {
   create(scene: Scene, material: StandardMaterial): void;
 }
+registerObjectAssets(library);
 const entries: Entry[] = [];
 const geometryEntry = (
   id: string,
@@ -259,13 +261,19 @@ export function createObjectPreview(canvas: HTMLCanvasElement) {
     }
     const size = max.subtract(min);
     if (fit) {
-      target = min.add(max).scale(0.5);
-      extent = Math.max(size.length() / 2, minExtent);
+      const frameMin = grid ? Vector3.Minimize(min, new Vector3(-0.6, 0, -0.6)) : min;
+      const frameMax = grid ? Vector3.Maximize(max, new Vector3(0.6, 0.1, 0.6)) : max;
+      target = frameMin.add(frameMax).scale(0.5);
+      extent = Math.max(frameMax.subtract(frameMin).length() / 2, minExtent);
       engine.resize();
       fitRadius();
       resetCamera();
     }
-    return { triangles, size: [size.x, size.y, size.z] };
+    return {
+      triangles,
+      size: [size.x, size.y, size.z],
+      outside: min.x < -0.501 || max.x > 0.501 || min.z < -0.501 || max.z > 0.501,
+    };
   }
   function setParts(next: ObjectPart[], id: string | null, fit = false) {
     clear();
@@ -281,41 +289,36 @@ export function createObjectPreview(canvas: HTMLCanvasElement) {
       meshes.set(part.id, mesh);
     }
     const lines: Vector3[][] = [];
-    for (let n = -2; n <= 2.001; n += 0.25) {
-      lines.push([new Vector3(n, -0.025, -2), new Vector3(n, -0.025, 2)]);
-      lines.push([new Vector3(-2, -0.025, n), new Vector3(2, -0.025, n)]);
+    for (let i = 0; i <= 10; i++) {
+      const n = -0.5 + i / 10;
+      lines.push([new Vector3(n, 0.002, -0.5), new Vector3(n, 0.002, 0.5)]);
+      lines.push([new Vector3(-0.5, 0.002, n), new Vector3(0.5, 0.002, n)]);
     }
-    // Светлая рамка показывает границу одной игровой клетки; сетка — четверти клетки.
-    lines.push(
-      [
-        [-0.5, -0.015, -0.5],
-        [0.5, -0.015, -0.5],
-        [0.5, -0.015, 0.5],
-        [-0.5, -0.015, 0.5],
-        [-0.5, -0.015, -0.5],
-      ].map((p) => Vector3.FromArray(p)),
-    );
-    grid = CreateLineSystem('building-area', { lines }, scene);
-    grid.color = Color3.FromHexString('#b4c9bf');
-    grid.alpha = 0.2;
+    grid = CreateLineSystem('building-cell-grid', { lines }, scene);
+    grid.color = Color3.FromHexString('#c7b37f');
+    grid.alpha = 0.4;
     grid.isPickable = false;
     grid.metadata = { editorHelper: true };
     const cell = CreateGround('building-cell', { width: 1, height: 1 }, scene);
-    cell.position.y = -0.018;
+    cell.position.y = -0.004;
     cell.isPickable = false;
     cell.metadata = { editorHelper: true };
     const floor = new StandardMaterial('building-cell-material', scene);
     floor.disableLighting = true;
-    floor.emissiveColor = Color3.FromHexString('#e8bf70');
-    floor.alpha = 0.12;
+    floor.emissiveColor = Color3.FromHexString('#a6b08b');
+    floor.alpha = 0.8;
     floor.backFaceCulling = false;
     cell.material = floor;
-    const border = CreateLineSystem(
-      'building-cell-border',
-      { lines: [lines[lines.length - 1]] },
-      scene,
-    );
-    border.color = Color3.FromHexString('#e8bf70');
+    // Контур имеет физическую ширину 0,012 игровой единицы и остаётся видимым на фоне.
+    const edgeLines = [-0.006, 0, 0.006].map((offset) => [
+      new Vector3(-0.5 + offset, 0.004, -0.5 + offset),
+      new Vector3(0.5 - offset, 0.004, -0.5 + offset),
+      new Vector3(0.5 - offset, 0.004, 0.5 - offset),
+      new Vector3(-0.5 + offset, 0.004, 0.5 - offset),
+      new Vector3(-0.5 + offset, 0.004, -0.5 + offset),
+    ]);
+    const border = CreateLineSystem('building-cell-border', { lines: edgeLines }, scene);
+    border.color = Color3.FromHexString('#ffe2a5');
     border.metadata = { editorHelper: true };
     border.isPickable = false;
     const stats = measure(fit, 0.7);

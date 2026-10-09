@@ -65,6 +65,19 @@ export async function packAssets(root) {
       }
     }
   }
+  const templates = JSON.parse(
+    await readFile(path.join(root, 'src/objects/templates.json'), 'utf8'),
+  );
+  const usedAssets = new Set(
+    Object.values(templates.objects)
+      .flat()
+      .map((part) => part.asset),
+  );
+  const templateModels = {};
+  for (const id of usedAssets) {
+    if (!library[id]) throw new Error(`Unknown asset in templates: ${id}`);
+    templateModels[id] = library[id];
+  }
   const imageTag = async (directory, name) => {
     const buffer = await readFile(path.join(root, 'assets', directory, 'Previews', name + '.png'));
     return `<img alt="" src="data:image/png;base64,${buffer.toString('base64')}">`;
@@ -79,6 +92,10 @@ export async function packAssets(root) {
   };
   await mkdir(path.join(root, '.generated'), { recursive: true });
   await writeFile(path.join(root, '.generated/models.json'), JSON.stringify(models));
+  await writeFile(
+    path.join(root, '.generated/template-models.json'),
+    JSON.stringify(templateModels),
+  );
   await writeFile(path.join(root, '.generated/model-ids.json'), JSON.stringify(modelIds));
   await writeFile(path.join(root, '.generated/library-models.json'), JSON.stringify(library));
   await writeFile(path.join(root, '.generated/card-art.json'), JSON.stringify(art));

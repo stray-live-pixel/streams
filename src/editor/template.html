@@ -1,0 +1,322 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="editor-token" content="__EDITOR_TOKEN__" />
+    <title>Мастерская · Тихая Гавань</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main id="objects-dialog" class="objects-dialog" aria-labelledby="objects-title">
+      <header class="objects-header">
+        <div class="workshop-brand">
+          <span data-icon="box" aria-hidden="true"></span>
+          <div>
+            <h1 id="objects-title">Мастерская объектов</h1>
+            <p>Собирайте мир по деталям</p>
+          </div>
+        </div>
+        <div class="workshop-actions">
+          <span class="branch-badge">main · локально</span>
+
+          <button id="object-save" type="button" class="workshop-primary">
+            <span data-icon="save" aria-hidden="true"></span><span>Сохранить</span>
+          </button>
+        </div>
+      </header>
+      <div class="objects-layout">
+        <aside class="objects-catalog" aria-label="Каталог 3D-объектов">
+          <div class="panel-caption"><strong>Библиотека</strong><span>KENNEY</span></div>
+          <label class="visually-hidden" for="objects-search">Найти объект</label>
+          <div class="workshop-search">
+            <span data-icon="search" aria-hidden="true"></span
+            ><input id="objects-search" type="search" placeholder="Найти деталь…" />
+          </div>
+          <label class="visually-hidden" for="objects-group">Набор</label>
+          <select id="objects-group">
+            <option value="">Все объекты</option>
+          </select>
+          <p id="objects-count" role="status"></p>
+          <nav id="objects-list" aria-label="Выбрать объект"></nav>
+          <p id="objects-empty" hidden>Ничего не найдено. Измените поиск или набор.</p>
+          <p class="catalog-help">Выберите деталь, затем нажмите «Добавить в постройку».</p>
+        </aside>
+        <section class="object-preview" aria-labelledby="object-title">
+          <div class="workshop-toolbar">
+            <div class="transform-tools" aria-label="Инструмент">
+              <button
+                id="object-mode-position"
+                type="button"
+                data-mode="position"
+                aria-pressed="true"
+                title="Перемещение"
+                aria-label="Перемещение"
+              >
+                <span data-icon="move" aria-hidden="true"></span><span>Двигать</span>
+              </button>
+              <button
+                id="object-mode-rotation"
+                type="button"
+                data-mode="rotation"
+                aria-pressed="false"
+                title="Поворот"
+                aria-label="Поворот"
+              >
+                <span data-icon="rotate" aria-hidden="true"></span><span>Вращать</span>
+              </button>
+              <button
+                id="object-mode-scale"
+                type="button"
+                data-mode="scale"
+                aria-pressed="false"
+                title="Масштаб"
+                aria-label="Масштаб"
+              >
+                <span data-icon="scale" aria-hidden="true"></span><span>Масштаб</span>
+              </button>
+            </div>
+            <label class="snap-toggle"
+              ><input id="object-snap" type="checkbox" checked />Привязка</label
+            >
+            <div class="history-tools">
+              <button
+                id="object-undo"
+                type="button"
+                title="Отменить · Ctrl/⌘ Z"
+                aria-label="Отменить · Ctrl/⌘ Z"
+              >
+                <span data-icon="undo" aria-hidden="true"></span></button
+              ><button
+                id="object-redo"
+                type="button"
+                title="Повторить · Ctrl/⌘ Shift Z"
+                aria-label="Повторить · Ctrl/⌘ Shift Z"
+              >
+                <span data-icon="redo" aria-hidden="true"></span>
+              </button>
+            </div>
+          </div>
+          <div class="object-stage">
+            <div class="stage-caption">
+              <h2 id="object-title"></h2>
+              <p id="object-stats"></p>
+            </div>
+            <canvas
+              id="object-canvas"
+              tabindex="0"
+              aria-label="3D-превью: выберите деталь и двигайте оси; перетаскивайте фон для вращения камеры"
+            ></canvas>
+            <div id="object-bounds" class="bounds-status" role="status"></div>
+            <div class="stage-label">ПЕРСПЕКТИВА <span>·</span> КЛЕТКА 1 × 1 · ЦЕНТР (0, 0)</div>
+            <div class="object-controls" aria-label="Камера">
+              <button
+                id="object-left"
+                type="button"
+                title="Повернуть влево"
+                aria-label="Повернуть влево"
+              >
+                <span data-icon="reset" aria-hidden="true"></span></button
+              ><button
+                id="object-right"
+                type="button"
+                title="Повернуть вправо"
+                aria-label="Повернуть вправо"
+              >
+                <span data-icon="right" aria-hidden="true"></span>
+              </button>
+              <button id="object-zoom-out" type="button" title="Отдалить" aria-label="Отдалить">
+                <span data-icon="zoomOut" aria-hidden="true"></span></button
+              ><button id="object-zoom-in" type="button" title="Приблизить" aria-label="Приблизить">
+                <span data-icon="zoomIn" aria-hidden="true"></span></button
+              ><button
+                id="object-reset"
+                type="button"
+                title="Вписать объект"
+                aria-label="Вписать объект"
+              >
+                <span data-icon="fit" aria-hidden="true"></span>
+              </button>
+            </div>
+            <p id="object-error" role="alert"></p>
+          </div>
+          <div class="object-preview-footer">
+            <span>Мышь — орбита · Колесо — приближение</span>
+            <div class="object-pagination">
+              <button
+                id="object-previous"
+                type="button"
+                title="Предыдущий объект"
+                aria-label="Предыдущий объект"
+              >
+                <span data-icon="back" aria-hidden="true"></span></button
+              ><button
+                id="object-next"
+                type="button"
+                title="Следующий объект"
+                aria-label="Следующий объект"
+              >
+                <span data-icon="next" aria-hidden="true"></span>
+              </button>
+            </div>
+          </div>
+        </section>
+        <aside class="object-properties" aria-label="Свойства объекта">
+          <div id="object-inspector">
+            <div class="panel-caption">
+              <strong>Состав постройки</strong><span id="object-parts-count"></span>
+            </div>
+            <button id="object-library" type="button" class="add-part-button">
+              <span data-icon="plus" aria-hidden="true"></span><span>Добавить деталь</span>
+            </button>
+            <nav id="object-parts" aria-label="Детали постройки"></nav>
+            <div class="property-heading">
+              <strong>Трансформация</strong>
+              <div>
+                <button
+                  id="object-duplicate"
+                  type="button"
+                  title="Дублировать деталь"
+                  aria-label="Дублировать деталь"
+                >
+                  <span data-icon="copy" aria-hidden="true"></span></button
+                ><button
+                  id="object-delete"
+                  type="button"
+                  title="Удалить деталь"
+                  aria-label="Удалить деталь"
+                >
+                  <span data-icon="delete" aria-hidden="true"></span>
+                </button>
+              </div>
+            </div>
+            <p id="object-transform-empty">Выберите деталь в списке или на сцене.</p>
+            <fieldset id="object-transform">
+              <div class="transform-group">
+                <legend>Положение<span>ед.</span></legend>
+                <div class="transform-inputs">
+                  <label
+                    ><span>X</span
+                    ><input
+                      id="part-position-0"
+                      type="number"
+                      step="0.001"
+                      min="-100"
+                      max="100"
+                      aria-label="Положение X" /></label
+                  ><label
+                    ><span>Y</span
+                    ><input
+                      id="part-position-1"
+                      type="number"
+                      step="0.001"
+                      min="-100"
+                      max="100"
+                      aria-label="Положение Y" /></label
+                  ><label
+                    ><span>Z</span
+                    ><input
+                      id="part-position-2"
+                      type="number"
+                      step="0.001"
+                      min="-100"
+                      max="100"
+                      aria-label="Положение Z"
+                  /></label>
+                </div>
+              </div>
+              <div class="transform-group">
+                <legend>Поворот<span>°</span></legend>
+                <div class="transform-inputs">
+                  <label
+                    ><span>X</span
+                    ><input
+                      id="part-rotation-0"
+                      type="number"
+                      step="0.1"
+                      min="-3600"
+                      max="3600"
+                      aria-label="Поворот X" /></label
+                  ><label
+                    ><span>Y</span
+                    ><input
+                      id="part-rotation-1"
+                      type="number"
+                      step="0.1"
+                      min="-3600"
+                      max="3600"
+                      aria-label="Поворот Y" /></label
+                  ><label
+                    ><span>Z</span
+                    ><input
+                      id="part-rotation-2"
+                      type="number"
+                      step="0.1"
+                      min="-3600"
+                      max="3600"
+                      aria-label="Поворот Z"
+                  /></label>
+                </div>
+              </div>
+              <div class="transform-group">
+                <legend>Масштаб<span>×</span></legend>
+                <div class="transform-inputs">
+                  <label
+                    ><span>X</span
+                    ><input
+                      id="part-scale-0"
+                      type="number"
+                      step="0.001"
+                      min=".01"
+                      max="100"
+                      aria-label="Масштаб X" /></label
+                  ><label
+                    ><span>Y</span
+                    ><input
+                      id="part-scale-1"
+                      type="number"
+                      step="0.001"
+                      min=".01"
+                      max="100"
+                      aria-label="Масштаб Y" /></label
+                  ><label
+                    ><span>Z</span
+                    ><input
+                      id="part-scale-2"
+                      type="number"
+                      step="0.001"
+                      min=".01"
+                      max="100"
+                      aria-label="Масштаб Z"
+                  /></label>
+                </div>
+              </div>
+            </fieldset>
+            <button id="object-original" type="button" class="original-button">
+              <span data-icon="reset" aria-hidden="true"></span><span>Вернуть исходную сборку</span>
+            </button>
+          </div>
+          <div id="object-asset-actions" hidden>
+            <div class="panel-caption"><strong>Деталь из набора</strong></div>
+            <p>Рассмотрите деталь со всех сторон и добавьте её в выбранную постройку.</p>
+            <button id="object-add" type="button" class="workshop-primary">
+              <span data-icon="plus" aria-hidden="true"></span
+              ><span>Добавить в постройку</span></button
+            ><button id="object-return" type="button">
+              <span data-icon="back" aria-hidden="true"></span><span>К постройке</span>
+            </button>
+          </div>
+          <details class="object-source-details">
+            <summary>Источник модели</summary>
+            <code id="object-source"></code>
+          </details>
+        </aside>
+      </div>
+      <footer class="workshop-status">
+        <span id="object-save-status" role="status" aria-live="polite"></span
+        ><span>Ctrl/⌘ S — записать в проект и создать коммит в main</span>
+      </footer>
+    </main>
+    <script src="/app.js" defer></script>
+  </body>
+</html>

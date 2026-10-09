@@ -15,8 +15,17 @@ import { islandGeometry, shipGeometry } from './geometry.js';
 import { createCityLife } from './life.js';
 import { harborLayout } from './harbor.js';
 import { voyageFrame } from './voyage.js';
-export { defaultObjectParts } from './geometry.js';
-export { createObjectPreview, previewObjects } from './preview.js';
+export {
+  defaultObjectParts,
+  buildingGeometry,
+  objectPartGeometry,
+  modelGeometry,
+  shipGeometry,
+  streetGeometry,
+  terrainGeometry,
+  registerObjectAssets,
+} from './geometry.js';
+export { createPerson, createSmoke, lifeColors } from './life.js';
 
 /**
  * Публичный адаптер 3D. Получает снимки и события, никогда не изменяет город.

@@ -4,10 +4,13 @@ import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { packAssets } from './pack-assets.mjs';
 import { packIntro } from './pack-intro.mjs';
+import { packWorkshop } from './pack-workshop.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 /** esbuild удаляет типы, но не проверяет их. Поэтому tsc обязателен до выпуска HTML. */
 export async function checkTypes() {
+  // Типы проверяются и у отдельного редактора; его SVG не попадают в игровую сборку.
+  await packWorkshop(root);
   try {
     await promisify(execFile)(
       process.execPath,

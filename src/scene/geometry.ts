@@ -1,12 +1,35 @@
 import { Matrix, Quaternion, Vector3 } from '@babylonjs/core/Maths/math.vector.js';
-import { objectTemplate, type ObjectPart } from '../objects/index.js';
-import library from '../../.generated/library-models.json';
+import {
+  objectTemplate,
+  type ObjectPart,
+  setObjectTemplates,
+  parseObjectTemplates,
+  builtInObjectTemplates,
+} from '../objects/index.js';
+import templateModels from '../../.generated/template-models.json';
 import modelIds from '../../.generated/model-ids.json';
 import { VertexData } from '@babylonjs/core/Meshes/mesh.vertexData.js';
 import type { Building } from '../domain/index.js';
 import type { Board } from './types.js';
 import { harborLayout } from './harbor.js';
 import assets from '../../.generated/models.json';
+
+// В игре только используемые ассеты; полную библиотеку подключает редактор.
+let objectAssets: Record<string, ModelData> = {
+  ...Object.fromEntries(
+    Object.entries(assets).map(([name, data]) => [
+      (modelIds as Record<string, string>)[name],
+      data,
+    ]),
+  ),
+  ...templateModels,
+};
+setObjectTemplates(
+  parseObjectTemplates(builtInObjectTemplates, new Set(Object.keys(objectAssets))),
+);
+export function registerObjectAssets(models: Record<string, ModelData>) {
+  objectAssets = models;
+}
 
 // Композиции состоят из исходных деталей Kenney. Параметры — координаты,
 // масштаб и поворот; стоимость и правила зданий этому модулю неизвестны.
@@ -103,7 +126,7 @@ function builder(
   }
   function parts(items: ObjectPart[], x = 0, z = 0) {
     for (const part of items) {
-      const data = (library as Record<string, ModelData>)[part.asset];
+      const data = objectAssets[part.asset];
       const matrix = Matrix.Compose(
         Vector3.FromArray(part.scale),
         Quaternion.FromEulerAngles(...part.rotation),

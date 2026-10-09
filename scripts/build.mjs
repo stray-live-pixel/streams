@@ -4,7 +4,6 @@ import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { checkTypes } from './typecheck.mjs';
 import { packAssets } from './pack-assets.mjs';
-import { packWorkshop } from './pack-workshop.mjs';
 import { packIntro } from './pack-intro.mjs';
 export const root = fileURLToPath(new URL('../', import.meta.url));
 
@@ -12,7 +11,6 @@ export const root = fileURLToPath(new URL('../', import.meta.url));
 export async function build() {
   const models = await packAssets(root);
   await packIntro(root);
-  await packWorkshop(root);
   await checkTypes();
   const result = await bundle({
     absWorkingDir: root,
@@ -28,7 +26,15 @@ export async function build() {
     legalComments: 'inline',
     charset: 'utf8',
     logLevel: 'warning',
+    metafile: true,
   });
+  const editorInputs = Object.keys(result.metafile.inputs).filter(
+    (name) =>
+      name.startsWith('src/editor/') ||
+      name.includes('library-models.json') ||
+      name.includes('Gizmos/'),
+  );
+  if (editorInputs.length) throw new Error(`Редактор попал в игру: ${editorInputs.join(', ')}`);
   const template = await readFile(path.join(root, 'src/ui/template.html'), 'utf8');
   // Иллюстрация путешествует вместе с HTML: меню также работает офлайн и через file://.
   const menuArt = await readFile(path.join(root, 'assets/art/main-menu.webp'));

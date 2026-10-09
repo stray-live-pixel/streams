@@ -26,7 +26,7 @@ export const editableObjectIds = [
   'game/fountain',
   'game/lantern',
 ];
-export const objectStorageKey = 'ostrov-object-templates-v1';
+export const builtInObjectTemplates: unknown = builtIn;
 let templates: ObjectTemplates = { version: 1, objects: {} };
 let revision = 0;
 export const objectTemplateRevision = () => revision;
@@ -102,40 +102,8 @@ export function parseObjectTemplates(value: unknown, assets: ReadonlySet<string>
   }
   return result;
 }
-export function createObjectStore(storage: () => Storage, assets: ReadonlySet<string>) {
-  let warning = '';
-  templates = parseObjectTemplates(builtIn, assets);
-  try {
-    const saved = storage().getItem(objectStorageKey);
-    if (saved)
-      templates.objects = {
-        ...templates.objects,
-        ...parseObjectTemplates(JSON.parse(saved), assets).objects,
-      };
-  } catch {
-    warning = 'Не удалось прочитать локальные объекты. Доступны исходные композиции.';
-  }
+/** Только память сцены. Источник сохранения — файл проекта, а не браузер. */
+export function setObjectTemplates(next: ObjectTemplates) {
+  templates = structuredClone(next);
   revision++;
-  function commit(next: ObjectTemplates) {
-    const checked = parseObjectTemplates(next, assets);
-    // При переполнении хранилища рабочая композиция остаётся несохранённым черновиком.
-    storage().setItem(objectStorageKey, JSON.stringify(checked));
-    templates = checked;
-    revision++;
-  }
-  return {
-    warning,
-    save(id: string, parts: ObjectPart[]) {
-      commit({ version: 1, objects: { ...templates.objects, [id]: parts } });
-    },
-    import(text: string) {
-      const incoming = parseObjectTemplates(JSON.parse(text), assets);
-      commit({ version: 1, objects: { ...templates.objects, ...incoming.objects } });
-      return Object.keys(incoming.objects);
-    },
-    export() {
-      return JSON.stringify(templates, null, 2);
-    },
-  };
 }
-export type ObjectStore = ReturnType<typeof createObjectStore>;

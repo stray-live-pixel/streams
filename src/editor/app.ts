@@ -2,22 +2,26 @@ import {
   copyParts,
   editableObjectIds,
   type ObjectPart,
-  type ObjectStore,
+  setObjectTemplates,
 } from '../objects/index.js';
 import icons from '../../.generated/workshop-icons.json';
+import { createObjectPreview, previewObjects } from './preview.js';
+import { defaultObjectParts } from '../scene/index.js';
+import type { ProjectSnapshot, SaveResult } from './protocol.js';
 
-export interface ObjectBrowserOptions {
+export interface ObjectEditorOptions {
   objects: readonly { id: string; name: string; group: string; source: string }[];
-  store: ObjectStore;
+  load(): Promise<ProjectSnapshot>;
+  save(id: string, parts: ObjectPart[], revision: string): Promise<SaveResult>;
   createDefaultParts(id: string): ObjectPart[];
   create(canvas: HTMLCanvasElement): {
-    select(id: string): { triangles: number; size: number[] };
+    select(id: string): { triangles: number; size: number[]; outside: boolean };
     getParts(id: string): ObjectPart[];
     setParts(
       parts: ObjectPart[],
       id: string | null,
       fit?: boolean,
-    ): { triangles: number; size: number[] };
+    ): { triangles: number; size: number[]; outside: boolean };
     bindEditor(select: (id: string | null) => void, change: (parts: ObjectPart[]) => void): void;
     setMode(mode: 'position' | 'rotation' | 'scale'): void;
     setSnap(value: boolean): void;
@@ -36,19 +40,16 @@ interface Draft {
 }
 
 /** UI хранит черновики; сцена — меши, хранилище — только проверенные композиции. */
-export function createObjectBrowser(
-  document: Document,
-  options: ObjectBrowserOptions,
-  onToggle: (open: boolean) => void,
-) {
+export async function createObjectEditor(document: Document, options: ObjectEditorOptions) {
   const get = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
-  const dialog = get<HTMLDialogElement>('objects-dialog');
+  const dialog = get('objects-dialog');
   const search = get<HTMLInputElement>('objects-search');
   const group = get<HTMLSelectElement>('objects-group');
   const list = get('objects-list');
   const signal = new AbortController();
-  let preview: ReturnType<ObjectBrowserOptions['create']> | undefined;
-  let isOpen = false;
+  let preview: ReturnType<ObjectEditorOptions['create']> | undefined;
+  let revision = '';
+  let saving = false;
   let selected = options.objects[0]?.id;
   let target = selected;
   let selectedPart: string | null = null;
@@ -62,21 +63,20 @@ export function createObjectBrowser(
     option.value = option.textContent = name;
     group.append(option);
   }
-  const project = get<HTMLSelectElement>('object-project');
-  for (const object of options.objects.filter((o) => editableObjectIds.includes(o.id))) {
-    const option = document.createElement('option');
-    option.value = object.id;
-    option.textContent = object.name;
-    project.append(option);
-  }
   const draft = () => (selected ? drafts.get(selected) : undefined);
   const dirty = (item: Draft) => JSON.stringify(item.parts) !== item.saved;
   const status = (text: string) => {
     get('object-save-status').textContent = text;
   };
-  function stats(result: { triangles: number; size: number[] }) {
+  function stats(result: { triangles: number; size: number[]; outside: boolean }) {
+    const bounds = get('object-bounds');
+    bounds.hidden = !draft();
+    bounds.dataset.outside = String(result.outside);
+    bounds.textContent = result.outside
+      ? 'Часть объекта выходит за клетку'
+      : 'Объект внутри клетки 1 × 1';
     get('object-stats').textContent =
-      `${result.triangles.toLocaleString('ru-RU')} треугольников · ${result.size.map((n) => n.toFixed(2)).join(' × ')} м`;
+      `${result.triangles.toLocaleString('ru-RU')} треугольников · ${result.size.map((n) => n.toFixed(2)).join(' × ')} ед.`;
   }
   function renderInspector() {
     const item = draft();
@@ -85,7 +85,7 @@ export function createObjectBrowser(
     get('object-asset-actions').hidden = !!item;
     get<HTMLButtonElement>('object-add').disabled =
       !selected || selected.startsWith('game/') || !target;
-    get<HTMLButtonElement>('object-save').disabled = !item || !dirty(item);
+    get<HTMLButtonElement>('object-save').disabled = saving || !item || !dirty(item);
     get<HTMLButtonElement>('object-undo').disabled = !item?.past.length;
     get<HTMLButtonElement>('object-redo').disabled = !item?.future.length;
     get<HTMLButtonElement>('object-duplicate').disabled = !part;
@@ -140,6 +140,7 @@ export function createObjectBrowser(
   function select(id: string) {
     const object = options.objects.find((o) => o.id === id);
     if (!object || !preview) return;
+    const changedObject = selected !== id;
     selected = id;
     selectedPart = null;
     get('object-title').textContent = object.name;
@@ -148,12 +149,12 @@ export function createObjectBrowser(
     try {
       if (editableObjectIds.includes(id)) {
         target = id;
-        project.value = id;
         if (!drafts.has(id)) {
           const parts = preview.getParts(id);
           drafts.set(id, { parts, saved: JSON.stringify(parts), past: [], future: [] });
         }
         draw(true);
+        if (changedObject) get('object-parts').scrollTop = 0;
       } else {
         stats(preview.select(id));
         renderInspector();
@@ -196,16 +197,33 @@ export function createObjectBrowser(
   }
   const listen = (id: string, action: () => void) =>
     get(id).addEventListener('click', action, { signal: signal.signal });
-  function save() {
+  async function save() {
     const item = draft();
-    if (!item || !selected) return;
+    if (!item || !selected || saving || !dirty(item)) return;
+    saving = true;
+    const parts = copyParts(item.parts);
+    renderInspector();
+    status('Записываем конфигурацию и создаём коммит в main…');
     try {
-      options.store.save(selected, item.parts);
-      item.saved = JSON.stringify(item.parts);
+      const result = await options.save(selected, parts, revision);
+      revision = result.revision;
+      setObjectTemplates(result.config);
+      item.saved = JSON.stringify(parts);
+      saving = false;
       renderInspector();
-      status('Сохранено · постройка обновлена в игре');
-    } catch {
-      status('Не удалось сохранить в браузере. Экспортируйте JSON, чтобы сохранить работу в файл.');
+      status(
+        result.buildError
+          ? `Коммит ${result.commit.slice(0, 7)} сохранён. Сборка: ${result.buildError}`
+          : `${result.changed ? 'Сохранено' : 'Без изменений'} · main · ${result.commit.slice(0, 7)}`,
+      );
+    } catch (error) {
+      saving = false;
+      renderInspector();
+      status(
+        error instanceof Error
+          ? error.message
+          : 'Не удалось сохранить. Черновик остался в редакторе.',
+      );
     }
   }
   function history(redo: boolean) {
@@ -219,28 +237,6 @@ export function createObjectBrowser(
     selectedPart = next.some((p) => p.id === selectedPart) ? selectedPart : null;
     draw();
   }
-  function finishClose() {
-    if (!isOpen) return;
-    isOpen = false;
-    preview?.dispose();
-    preview = undefined;
-    onToggle(false);
-    get('menu-objects').focus();
-  }
-  function close() {
-    dialog.close();
-    finishClose();
-  }
-  dialog.addEventListener('close', finishClose, { signal: signal.signal });
-  dialog.addEventListener(
-    'cancel',
-    (event) => {
-      event.preventDefault();
-      close();
-    },
-    { signal: signal.signal },
-  );
-  listen('objects-close', close);
   listen('object-save', save);
   listen('object-undo', () => history(false));
   listen('object-redo', () => history(true));
@@ -300,39 +296,6 @@ export function createObjectBrowser(
     const item = draft();
     if (item) change(options.createDefaultParts(selected), null);
   });
-  listen('object-export', () => {
-    const config = JSON.parse(options.store.export()) as { objects: Record<string, ObjectPart[]> };
-    for (const [id, item] of drafts) if (dirty(item)) config.objects[id] = item.parts;
-    const url = URL.createObjectURL(
-      new Blob([JSON.stringify(config, null, 2)], { type: 'application/json' }),
-    );
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = 'templates.json';
-    link.click();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
-    status('Файл templates.json экспортирован, включая текущие изменения');
-  });
-  listen('object-import', () => get<HTMLInputElement>('object-import-file').click());
-  get<HTMLInputElement>('object-import-file').addEventListener(
-    'change',
-    async (event) => {
-      const input = event.target as HTMLInputElement;
-      const file = input.files?.[0];
-      if (!file) return;
-      try {
-        if (file.size > 2_000_000) throw new Error('Файл слишком большой (максимум 2 МБ).');
-        const imported = options.store.import(await file.text());
-        for (const id of imported) drafts.delete(id);
-        if (selected && preview) select(selected);
-        status('Конфигурация импортирована и сохранена');
-      } catch (error) {
-        status(error instanceof Error ? error.message : 'Не удалось импортировать файл.');
-      }
-      input.value = '';
-    },
-    { signal: signal.signal },
-  );
   for (const mode of ['position', 'rotation', 'scale'] as const)
     listen(`object-mode-${mode}`, () => {
       preview?.setMode(mode);
@@ -374,7 +337,6 @@ export function createObjectBrowser(
         { signal: signal.signal },
       );
     }
-  project.addEventListener('change', () => select(project.value), { signal: signal.signal });
   for (const [id, direction] of [
     ['object-previous', -1],
     ['object-next', 1],
@@ -414,33 +376,52 @@ export function createObjectBrowser(
     },
     { signal: signal.signal },
   );
-  return {
-    open() {
-      if (isOpen) return;
-      isOpen = true;
-      dialog.showModal();
-      onToggle(true);
-      try {
-        preview = options.create(get<HTMLCanvasElement>('object-canvas'));
-        preview.bindEditor(selectPart, (parts) => change(parts));
-        const activeMode = dialog.querySelector<HTMLElement>('[data-mode][aria-pressed="true"]')
-          ?.dataset.mode;
-        if (activeMode === 'position' || activeMode === 'rotation' || activeMode === 'scale')
-          preview.setMode(activeMode);
-        preview.setSnap(get<HTMLInputElement>('object-snap').checked);
-        const previous = selected;
-        filter();
-        if (previous) select(previous);
-        if (options.store.warning) status(options.store.warning);
-      } catch (error) {
-        get('object-error').textContent =
-          '3D недоступно. Включите аппаратное ускорение и WebGL в браузере.';
-        console.error(error);
+  try {
+    const snapshot = await options.load();
+    revision = snapshot.revision;
+    setObjectTemplates(snapshot.config);
+    preview = options.create(get<HTMLCanvasElement>('object-canvas'));
+    preview.bindEditor(selectPart, (parts) => change(parts));
+    filter();
+    if (snapshot.branch !== 'main')
+      status(`Открыта ветка ${snapshot.branch}. Для сохранения переключите репозиторий на main.`);
+  } catch (error) {
+    get('object-error').textContent =
+      error instanceof Error ? error.message : 'Не удалось открыть проект.';
+  }
+  window.addEventListener(
+    'beforeunload',
+    (event) => {
+      if ([...drafts.values()].some(dirty) || saving) {
+        event.preventDefault();
+        event.returnValue = '';
       }
     },
+    { signal: signal.signal },
+  );
+  return {
     dispose() {
       preview?.dispose();
       signal.abort();
     },
   };
 }
+
+const token = document.querySelector<HTMLMetaElement>('meta[name="editor-token"]')!.content;
+async function request<T>(url: string, data?: unknown): Promise<T> {
+  const response = await fetch(url, {
+    method: data ? 'POST' : 'GET',
+    headers: { 'X-Editor-Token': token, ...(data ? { 'Content-Type': 'application/json' } : {}) },
+    body: data ? JSON.stringify(data) : undefined,
+  });
+  const result = await response.json();
+  if (!response.ok) throw new Error(result.error ?? 'Локальный сервер недоступен.');
+  return result as T;
+}
+void createObjectEditor(document, {
+  objects: previewObjects,
+  create: createObjectPreview,
+  createDefaultParts: defaultObjectParts,
+  load: () => request<ProjectSnapshot>('/api/project'),
+  save: (id, parts, revision) => request<SaveResult>('/api/save', { id, parts, revision }),
+});
