@@ -264,7 +264,7 @@ try {
     muted: v.muted,
     loop: v.loop,
   }));
-  assert(Math.abs(media.duration - 30) < 0.1);
+  assert(Math.abs(media.duration - 150) < 0.1);
   assert.equal(media.muted, true);
   assert.equal(media.loop, true);
   await video.evaluate((v) => {
@@ -290,7 +290,7 @@ try {
     return background.paused && background.hidden;
   });
   await videoContext.close();
-  console.log('Menu video: decoding, 30s loop, mute, pause, settings and reduced motion PASS');
+  console.log('Menu video: decoding, 150s loop, mute, pause, settings and reduced motion PASS');
 } finally {
   await browser.close();
 }

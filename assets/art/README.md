@@ -25,9 +25,9 @@ Materials: matte faceted surfaces, simplified timber and stucco, enough believab
 
 - `main-menu-source.mp4` — исходный ответ Alibaba Wan 3.0 Prime через OpenRouter; хранится без перекодирования.
 - `main-menu-video.json` — точная модель, промпт, входной кадр, параметры и идентификатор генерации, без токенов доступа.
-- `main-menu-loop.mp4` — версия для игры: 1080 × 720, H.264, 30 секунд, 24 кадра/с (720 кадров), без аудиодорожки.
+- `main-menu-loop.mp4` — версия для игры: 1080 × 720, H.264, 150 секунд, 24 кадра/с (3600 кадров), без аудиодорожки.
 
-Для бесшовного повтора последняя секунда исходника плавно смешивается с первой. Цикл начинается на отметке 1 секунды исходника; полученные 14 секунд растягиваются до 30 — вдвое медленнее предыдущей игровой версии. Промежуточные кадры вычисляются по движению, чтобы получить плавные 24 кадра/с. Поэтому последний кадр совпадает по фазе с началом, без обратного воспроизведения воды и лодок.
+Для бесшовного повтора последняя секунда исходника плавно смешивается с первой. Цикл начинается на отметке 1 секунды исходника; полученные 14 секунд растягиваются до 150 — в пять раз медленнее предыдущей 30-секундной игровой версии. Промежуточные кадры вычисляются по движению, чтобы получить плавные 24 кадра/с. Поэтому последний кадр совпадает по фазе с началом, без обратного воспроизведения воды и лодок.
 
 Провайдер фактически вернул 1762 × 1174, 30 кадров/с и аудиодорожку, хотя запрос отключал звук. Исходник сохранён побайтово; игровая версия сохраняет пропорции изображения и полностью удаляет аудио.
 
@@ -37,8 +37,8 @@ Materials: matte faceted surfaces, simplified timber and stucco, enough believab
 
 ```sh
 ffmpeg -i assets/art/main-menu-source.mp4 -filter_complex_threads 1 \
-  -filter_complex '[0:v]fps=30,scale=-2:720:flags=lanczos,setsar=1,split=2[body][head];[body]trim=start=1:end=15,setpts=PTS-STARTPTS[b];[head]trim=start=0:end=1,setpts=PTS-STARTPTS[h];[b][h]xfade=transition=fade:duration=1:offset=13,fps=30,trim=end_frame=420,loop=loop=1:size=420:start=0,setpts=N/(14*TB),minterpolate=fps=24:mi_mode=mci:mc_mode=aobmc:me_mode=bidir:vsbmc=1,trim=duration=30,format=yuv420p[out]' \
-  -map '[out]' -an -c:v libx264 -preset slow -crf 21 -frames:v 720 \
+  -filter_complex '[0:v]fps=30,scale=-2:720:flags=lanczos,setsar=1,split=2[body][head];[body]trim=start=1:end=15,setpts=PTS-STARTPTS[b];[head]trim=start=0:end=1,setpts=PTS-STARTPTS[h];[b][h]xfade=transition=fade:duration=1:offset=13,fps=30,trim=end_frame=420,loop=loop=1:size=420:start=0,setpts=N/(2.8*TB),minterpolate=fps=24:mi_mode=mci:mc_mode=aobmc:me_mode=bidir:vsbmc=1,trim=duration=150,format=yuv420p[out]' \
+  -map '[out]' -an -c:v libx264 -preset slow -crf 21 -frames:v 3600 \
   -movflags +faststart assets/art/main-menu-loop.mp4
 ```
 
