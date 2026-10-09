@@ -44,7 +44,7 @@
   },
   "playback": {
     "file": "main-menu-loop.mp4",
-    "sha256": "298437359c7f6ece9b839dd78091dc8c3297fd0a4ece4bf4890a01194ff4b252",
+    "sha256": "5d1a0f6934aca5137eadea8247d2d22b172d895a0d3ea0e100a109c142b68ab4",
     "programs": [],
     "stream_groups": [],
     "streams": [
@@ -53,14 +53,14 @@
         "codec_type": "video",
         "width": 1080,
         "height": 720,
-        "r_frame_rate": "12/1",
-        "nb_frames": "180"
+        "r_frame_rate": "24/1",
+        "nb_frames": "720"
       }
     ],
     "format": {
-      "duration": "15.000000",
-      "size": "5141429"
+      "duration": "30.000000",
+      "size": "9350511"
     },
-    "loop_processing": "Last second crossfades into first; 14-second cycle retimed to 15 seconds. Original aspect ratio retained."
+    "loop_processing": "Last second crossfades into first; 14-second cycle retimed to 30 seconds (half the previous playback speed). Motion-compensated interpolation produces 24 fps. Original aspect ratio retained."
   }
 }
