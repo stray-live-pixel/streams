@@ -105,7 +105,10 @@ export function createMenuBackground(
       // ракурс в сторону мыши и останавливается у края, а не прыгает на другой вид.
       const progress = Math.max(
         0,
-        Math.min(1, drag.progress - (event.clientX - drag.x) / surface.clientWidth),
+        Math.min(
+          1,
+          drag.progress - (event.clientX - drag.x) / surface.getBoundingClientRect().width,
+        ),
       );
       if (event.clientX !== drag.lastX) drag.direction = event.clientX < drag.lastX ? 1 : -1;
       drag.lastX = event.clientX;

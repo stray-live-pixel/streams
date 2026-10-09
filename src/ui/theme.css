@@ -2,6 +2,9 @@
    Семантические имена описывают роль цвета, а не конкретный оттенок.
    Полупрозрачные эффекты выводятся из палитры через color-mix. */
 :root {
+  --game-width: 1440px;
+  --game-height: 810px;
+  --color-letterbox: #000;
   --color-sea: #8eb8b7;
   --color-ink: #344c40;
   --color-ink-muted: #74694e;

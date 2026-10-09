@@ -4,12 +4,20 @@ import type { CityScene } from '../scene/index.js';
 export function bindInput(canvas: HTMLCanvasElement, scene: CityScene, onCommand: CommandHandler) {
   const events = new AbortController();
   const options = { signal: events.signal };
+  // Указатель приходит в координатах окна, сцена ожидает координаты логического холста.
+  function point(event: PointerEvent) {
+    const bounds = canvas.getBoundingClientRect();
+    return {
+      x: ((event.clientX - bounds.left) / bounds.width) * canvas.clientWidth,
+      y: ((event.clientY - bounds.top) / bounds.height) * canvas.clientHeight,
+    };
+  }
   let pointer: { id: number; x: number; y: number; moved: boolean } | null = null;
   canvas.addEventListener(
     'pointerdown',
     (event) => {
       if (!event.isPrimary || event.button !== 0) return;
-      pointer = { id: event.pointerId, x: event.clientX, y: event.clientY, moved: false };
+      pointer = { id: event.pointerId, ...point(event), moved: false };
       canvas.setPointerCapture(event.pointerId);
     },
     options,
@@ -17,19 +25,20 @@ export function bindInput(canvas: HTMLCanvasElement, scene: CityScene, onCommand
   canvas.addEventListener(
     'pointermove',
     (event) => {
+      const position = point(event);
       if (pointer && pointer.id === event.pointerId) {
-        const dx = event.clientX - pointer.x,
-          dy = event.clientY - pointer.y;
+        const dx = position.x - pointer.x,
+          dy = position.y - pointer.y;
         if (Math.hypot(dx, dy) > 5 || pointer.moved) {
           scene.pan(dx, dy);
-          pointer.x = event.clientX;
-          pointer.y = event.clientY;
+          pointer.x = position.x;
+          pointer.y = position.y;
           pointer.moved = true;
           scene.hover(null);
           return;
         }
       }
-      scene.hover(scene.pick(event.clientX, event.clientY));
+      scene.hover(scene.pick(position.x, position.y));
     },
     options,
   );
@@ -38,7 +47,8 @@ export function bindInput(canvas: HTMLCanvasElement, scene: CityScene, onCommand
     (event) => {
       if (pointer?.id !== event.pointerId) return;
       if (!pointer.moved) {
-        const tile = scene.pick(event.clientX, event.clientY);
+        const position = point(event);
+        const tile = scene.pick(position.x, position.y);
         if (tile) onCommand({ type: 'build', ...tile });
       }
       pointer = null;

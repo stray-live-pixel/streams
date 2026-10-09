@@ -25,9 +25,10 @@ export function createScene({ canvas, board, onArrivalFinished, onError }: Scene
   const surface = document.createElement('canvas');
   surface.id = 'scene';
   surface.setAttribute('aria-hidden', 'true');
-  surface.style.cssText = 'position:fixed;inset:0;pointer-events:none';
+  surface.style.cssText = 'position:absolute;inset:0;pointer-events:none';
   canvas.before(surface);
   canvas.style.position = 'relative';
+  const viewport = canvas.parentElement!;
   let renderer: Engine;
   try {
     renderer = new Engine(surface, true, { alpha: true, preserveDrawingBuffer: true });
@@ -111,8 +112,10 @@ export function createScene({ canvas, board, onArrivalFinished, onError }: Scene
     dirty = true;
   }
   function resize() {
-    width = innerWidth;
-    height = innerHeight;
+    // CSS задаёт логический размер даже до показа скрытого игрового экрана.
+    const size = getComputedStyle(canvas);
+    width = parseFloat(size.width);
+    height = parseFloat(size.height);
     const dpr = quality === 'low' ? 1 : Math.min(devicePixelRatio || 1, 2);
     renderer.setHardwareScalingLevel(1 / dpr);
     renderer.setSize(width * dpr, height * dpr);
@@ -125,7 +128,8 @@ export function createScene({ canvas, board, onArrivalFinished, onError }: Scene
     context.setTransform(dpr, 0, 0, dpr, 0, 0);
     updateCamera();
   }
-  window.addEventListener('resize', resize, { signal: signal.signal });
+  const observer = new ResizeObserver(resize);
+  observer.observe(viewport);
   resize();
   function project(x: number, y: number, z: number) {
     const p = Vector3.Project(
@@ -324,6 +328,7 @@ export function createScene({ canvas, board, onArrivalFinished, onError }: Scene
     dispose() {
       cancelAnimationFrame(frameId);
       signal.abort();
+      observer.disconnect();
       scene.dispose();
       renderer.dispose();
       surface.remove();
