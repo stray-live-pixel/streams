@@ -29,6 +29,9 @@ export function createMenu(document: Document, settings: GameSettings, actions: 
   const video = element<HTMLVideoElement>('menu-video');
   const motionPreference = window.matchMedia('(prefers-reduced-motion: reduce)');
   video.muted = true;
+  // Замедляем при показе: файл хранит один 45-секундный облёт без растянутых кадров.
+  video.defaultPlaybackRate = 0.5;
+  video.playbackRate = 0.5;
   const intro = createIntro(document, (open) => {
     element('menu-shell').hidden = open;
     updateBackground();

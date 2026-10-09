@@ -13,4 +13,4 @@
 
 Фон главного меню `assets/art/main-menu.webp` создан встроенным генератором image_gen. Промпт и описание визуального стиля находятся в `assets/art/README.md`.
 
-Видео фона `assets/art/main-menu-source.mp4` создано из этой иллюстрации моделью Alibaba Wan 3.0 Prime через OpenRouter. Версия для игры — `assets/art/main-menu-loop.mp4`; параметры генерации и обработки сохранены в `assets/art/`.
+Видео полного облёта в `assets/art/orbit/` создано из этой иллюстрации моделью Alibaba Wan 3.0 Prime через OpenRouter. Версия для игры — `assets/art/main-menu-loop.mp4`; параметры генерации и обработки сохранены в `assets/art/`. Первая генерация прежнего фона сохранена как `assets/art/main-menu-source.mp4`.

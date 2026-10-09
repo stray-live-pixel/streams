@@ -1,0 +1,66 @@
+{
+  "model": "alibaba/wan-3.0-prime",
+  "duration": 15,
+  "resolution": "1080p",
+  "aspect_ratio": "16:9",
+  "generate_audio": false,
+  "seed": 2601009,
+  "prompt": "Create a 15-second seamless looping ambient main-menu background from the supplied first-frame illustration. Preserve its cozy low-poly 3D island harbor art direction exactly: warm late-afternoon sunlight, muted turquoise water, sage greenery, cream and timber cottages, terracotta roofs, lighthouse, wooden piers, windmill, distant coastline and small sailboats. A single continuous wide establishing shot, no cuts. The camera makes a very slow, smooth rightward lateral dolly with gentle natural parallax, surveying the lighthouse, village, windmill and harbor. In the second half it gently curves back toward the initial viewpoint, ending with exactly the initial camera position, framing, lighting and composition so the shot loops. Small subtle life only: softly rippling water and reflections, gently rotating windmill sails, very slow sailboat drift. Keep every building, coastline and pier geometrically stable and recognizable. No architecture morphing, no new buildings, no melting edges, no large waves, no sudden movement, no dramatic zoom, no tilt or roll. Calm steady camera speed with eased turns. Keep the center composition uncluttered because a menu will overlay it. Do not render any text, UI, logos, borders or watermarks. No audio.",
+  "first_frame": "assets/art/main-menu.webp",
+  "job": {
+    "id": "gen-vid-1791566760-oO2ZUiNdq6t6DmC40dcC",
+    "status": "completed",
+    "generation_id": "gen-vid-1791566760-oO2ZUiNdq6t6DmC40dcC",
+    "usage": {
+      "cost": 4.2,
+      "is_byok": false
+    }
+  },
+  "source": {
+    "file": "main-menu-source.mp4",
+    "sha256": "856cdd1d641c9f75d93aca520c92e3f13478379eb1b8a1202d083ab609ef27fa",
+    "programs": [],
+    "stream_groups": [],
+    "streams": [
+      {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1762,
+        "height": 1174,
+        "r_frame_rate": "30/1",
+        "nb_frames": "450"
+      },
+      {
+        "codec_name": "aac",
+        "codec_type": "audio",
+        "r_frame_rate": "0/0",
+        "nb_frames": "648"
+      }
+    ],
+    "format": {
+      "duration": "15.022993",
+      "size": "60146989"
+    }
+  },
+  "playback": {
+    "file": "main-menu-loop.mp4",
+    "sha256": "6642f415c5fa95ed60b503771066ef9e78db90e263e6b67aa0882dd7f4d265b2",
+    "programs": [],
+    "stream_groups": [],
+    "streams": [
+      {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 720,
+        "r_frame_rate": "24/1",
+        "nb_frames": "3600"
+      }
+    ],
+    "format": {
+      "duration": "150.000000",
+      "size": "39163501"
+    },
+    "loop_processing": "Last second crossfades into first; 14-second cycle retimed to 150 seconds (one fifth of the previous 30-second playback speed). Motion-compensated interpolation produces 24 fps. Original aspect ratio retained."
+  }
+}

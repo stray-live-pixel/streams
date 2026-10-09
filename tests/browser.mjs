@@ -263,10 +263,13 @@ try {
     duration: v.duration,
     muted: v.muted,
     loop: v.loop,
+    playbackRate: v.playbackRate,
   }));
-  assert(Math.abs(media.duration - 150) < 0.1);
+  assert(Math.abs(media.duration - 45) < 0.1);
   assert.equal(media.muted, true);
   assert.equal(media.loop, true);
+  assert.equal(media.playbackRate, 0.5);
+  await videoPage.screenshot({ path: path.join(screenshots, 'menu-video.png') });
   await video.evaluate((v) => {
     v.currentTime = v.duration - 0.2;
   });
@@ -290,7 +293,9 @@ try {
     return background.paused && background.hidden;
   });
   await videoContext.close();
-  console.log('Menu video: decoding, 150s loop, mute, pause, settings and reduced motion PASS');
+  console.log(
+    'Menu video: decoding, 45s loop at half speed, mute, pause, settings and reduced motion PASS',
+  );
 } finally {
   await browser.close();
 }

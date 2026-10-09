@@ -1,0 +1,45 @@
+{
+  "model": "alibaba/wan-3.0-prime",
+  "duration": 15,
+  "resolution": "720p",
+  "aspect_ratio": "16:9",
+  "generate_audio": false,
+  "seed": 2601012,
+  "prompt": "A single unbroken 15-second shot of this exact cozy low-poly island village. The supplied image is the EXACT first frame. Camera path is the priority: a constant-speed CLOCKWISE ORBIT around the center of the island, moving through a full 120 degrees in 15 seconds. This is a one-way arc, one third of a full circle. Do not return to the starting view, do not reverse, do not oscillate, do not pan in place. The camera travels physically around the island, so near and far buildings show continuous natural parallax and their sides and backs become visible. Keep the entire island within frame at all times, constant orbit radius, constant elevated three-quarter viewing angle, constant focal length and island size. No zoom, no cuts, no camera roll, no pause. The camera looks at the island center throughout. Preserve this SAME island layout and all its existing buildings, lighthouse, windmill, cottages, shoreline, wooden docks and trees, including their positions, shapes, proportions, textures and colors. Reveal believable previously hidden sides of the existing buildings, never spawn replacement buildings or morph the island. Cozy stylized low-poly 3D rendering, matte cream plaster, timber frames, terracotta and muted teal roofs, sage greenery, turquoise water, warm soft late-afternoon illumination with constant world-space sun direction. Subtle water ripples, gently turning windmill and slowly drifting sailboats, otherwise stable landscape. No text, no UI, no logos, no borders, no audio. This is the THIRD and FINAL 120-degree clockwise arc of a continuous 360-degree island tour. Continue clockwise directly from this supplied last frame, at constant speed. Travel onward around the remaining side of the island to the original FRONT HARBOR view: lighthouse on the left, broad wooden harbor piers along the foreground, windmill behind cottages at the upper center-right, small teal-roof waterfront house at lower center-right, distant mainland on the right horizon, warm sky upper left. Finish with that front harbor composition after another 120 degrees, completing the full circle. Continue forward, never reverse direction.",
+  "first_frame": "assets/art/orbit/segment-03-first.png",
+  "job": {
+    "id": "gen-vid-1791568638-Dz7L00aMRT1SFHVVKsXG",
+    "status": "completed",
+    "generation_id": "gen-vid-1791568638-Dz7L00aMRT1SFHVVKsXG",
+    "usage": {
+      "cost": 2.1,
+      "is_byok": false
+    }
+  },
+  "source": {
+    "file": "segment-03-source.mp4",
+    "sha256": "92e4b3eb8ae5292850f256ab31651b0e6e00ba988393fe45100b33357c3b8935",
+    "programs": [],
+    "stream_groups": [],
+    "streams": [
+      {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1176,
+        "height": 782,
+        "r_frame_rate": "30/1",
+        "nb_frames": "450"
+      },
+      {
+        "codec_name": "aac",
+        "codec_type": "audio",
+        "r_frame_rate": "0/0",
+        "nb_frames": "648"
+      }
+    ],
+    "format": {
+      "duration": "15.022993",
+      "size": "22500881"
+    }
+  }
+}

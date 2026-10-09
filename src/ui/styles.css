@@ -961,6 +961,10 @@ dialog .credits {
   object-position: center;
   pointer-events: none;
 }
+#menu-video {
+  filter: blur(var(--menu-art-blur));
+  transform: scale(1.005);
+}
 .main-menu::before {
   content: '';
   position: fixed;
