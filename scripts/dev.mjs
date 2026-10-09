@@ -2,7 +2,11 @@ import { createServer } from 'node:http';
 import { watch } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
-import { build, root } from './build.mjs';
+import { fileURLToPath } from 'node:url';
+import { buildFresh } from './build-fresh.mjs';
+
+const root = fileURLToPath(new URL('../', import.meta.url));
+const build = async () => console.log(await buildFresh(root));
 
 // Локальная разработка без внешнего сервиса. Готовый HTML не нуждается в этом сервере.
 const port = Number(process.env.PORT || 4173);

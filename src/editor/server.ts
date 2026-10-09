@@ -6,15 +6,19 @@ import path from 'node:path';
 import { createEditorRepository, EditorError } from './repository.js';
 import type { ObjectPart, ObjectSettings } from '../objects/index.js';
 import { buildEditor } from '../../scripts/build-editor.mjs';
-import { build as buildGame } from '../../scripts/build.mjs';
+import { buildFresh } from '../../scripts/build-fresh.mjs';
 
 export function createEditorServer(options: {
   root: string;
   directory: string;
   assets: ReadonlySet<string>;
   rebuild?: () => Promise<unknown>;
+  token?: string;
 }) {
-  const token = randomBytes(32).toString('hex');
+  // При перезапуске можно сохранить токен открытой вкладки, не теряя её черновики.
+  if (options.token !== undefined && !/^[a-f0-9]{64}$/.test(options.token))
+    throw new Error('Некорректный токен сессии редактора.');
+  const token = options.token ?? randomBytes(32).toString('hex');
   const repository = createEditorRepository(options.root, options.assets);
   let committing = false;
   const json = (response: ServerResponse, status: number, body: unknown) => {
@@ -128,7 +132,8 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
     root,
     directory,
     assets: new Set(Object.keys(library)),
-    rebuild: buildGame,
+    rebuild: () => buildFresh(root),
+    token: process.env.EDITOR_SESSION_TOKEN,
   });
   const port = Number(process.env.EDITOR_PORT ?? 4174);
   server.listen(port, '127.0.0.1', () =>
