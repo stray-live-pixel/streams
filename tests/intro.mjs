@@ -41,8 +41,9 @@ try {
     await portrait.evaluate((image) => image.decode());
     assert((await portrait.evaluate((image) => image.naturalWidth)) >= 1024);
     const portraitBox = await portrait.boundingBox();
+    const viewportBox = await page.locator('#game-viewport').boundingBox();
     assert(
-      Math.abs(portraitBox.y + portraitBox.height - height) <= 3,
+      Math.abs(portraitBox.y + portraitBox.height - viewportBox.y - viewportBox.height) <= 3,
       'portrait meets the bottom edge',
     );
     assert.equal(

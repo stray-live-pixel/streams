@@ -2,6 +2,7 @@ import type { GameModel, CommandHandler } from '../domain/index.js';
 import { LETTERS, CHAPTERS } from './letters.js';
 import art from '../../.generated/card-art.json';
 export { createMenu } from './menu.js';
+export { fitGameViewport } from './viewport.js';
 /**
  * DOM — только представление. Этот модуль сообщает о намерениях пользователя,
  * но не списывает монеты, не заселяет дома и не пишет сохранения.

@@ -63,7 +63,7 @@ try {
     assert.equal(await page.evaluate(() => cityDebug.renderer), 'Babylon.js');
     assert.equal(await page.evaluate(() => cityDebug.paused), false);
     assert.equal(await page.locator('#coach-title').isVisible(), true);
-    assert.equal(await page.locator('#scene').evaluate((c) => c.width), width);
+    assert.equal(await page.locator('#scene').evaluate((c) => c.width), 1440);
     const requestReset = async () => {
       await page.click('#open-menu');
       await page.click('#pause-settings');
@@ -289,7 +289,9 @@ try {
   await videoPage.mouse.move(50, 100);
   await videoPage.mouse.down();
   const dragStart = await viewProgress();
-  const viewportWidth = await videoPage.locator('#main-menu').evaluate((el) => el.clientWidth);
+  const viewportWidth = await videoPage
+    .locator('#main-menu')
+    .evaluate((el) => el.getBoundingClientRect().width);
   const expectedProgress = (x) => Math.max(0, Math.min(1, dragStart - (x - 50) / viewportWidth));
   await videoPage.mouse.move(250, 100);
   assert.equal(await video.evaluate((v) => v.paused), true);
