@@ -1,6 +1,147 @@
 {
   "version": 1,
-  "objects": {},
+  "objects": {
+    "game/house/0": [
+      {
+        "id": "floor",
+        "asset": "kenney-fantasy-town/planks",
+        "position": [
+          0,
+          0.002,
+          0
+        ],
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          0.688,
+          0.55,
+          0.688
+        ]
+      },
+      {
+        "id": "front-door",
+        "asset": "kenney-fantasy-town/wall-door",
+        "position": [
+          0,
+          0.035,
+          0
+        ],
+        "rotation": [
+          0,
+          -1.5707963267948966,
+          0
+        ],
+        "scale": [
+          0.86,
+          0.7396,
+          0.86
+        ]
+      },
+      {
+        "id": "right-window",
+        "asset": "kenney-fantasy-town/wall-window-glass",
+        "position": [
+          0,
+          0.035,
+          0
+        ],
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          0.86,
+          0.7396,
+          0.688
+        ]
+      },
+      {
+        "id": "left-window",
+        "asset": "kenney-fantasy-town/wall-window-glass",
+        "position": [
+          0,
+          0.035,
+          0
+        ],
+        "rotation": [
+          0,
+          3.141592653589793,
+          0
+        ],
+        "scale": [
+          0.86,
+          0.7396,
+          0.688
+        ]
+      },
+      {
+        "id": "back-wall",
+        "asset": "kenney-fantasy-town/wall",
+        "position": [
+          0,
+          0.035,
+          0
+        ],
+        "rotation": [
+          0,
+          1.5707963267948966,
+          0
+        ],
+        "scale": [
+          0.86,
+          0.7396,
+          0.86
+        ]
+      },
+      {
+        "id": "roof",
+        "asset": "kenney-fantasy-town/roof-gable",
+        "position": [
+          0,
+          0.7746,
+          0
+        ],
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          0.86,
+          0.731,
+          0.86
+        ],
+        "tint": [
+          65,
+          142,
+          133
+        ]
+      },
+      {
+        "id": "chimney",
+        "asset": "kenney-fantasy-town/chimney",
+        "position": [
+          0.0679,
+          0.82,
+          -0.18
+        ],
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          0.32,
+          0.36,
+          0.32
+        ]
+      }
+    ]
+  },
   "settings": {
     "game/house/0": {
       "scale": 0.7,
