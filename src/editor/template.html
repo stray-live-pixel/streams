@@ -9,22 +9,7 @@
   </head>
   <body>
     <main id="objects-dialog" class="objects-dialog" aria-labelledby="objects-title">
-      <header class="objects-header">
-        <div class="workshop-brand">
-          <span data-icon="box" aria-hidden="true"></span>
-          <div>
-            <h1 id="objects-title">Мастерская объектов</h1>
-            <p>Собирайте мир по деталям</p>
-          </div>
-        </div>
-        <div class="workshop-actions">
-          <span class="branch-badge">main · локально</span>
-
-          <button id="object-save" type="button" class="workshop-primary">
-            <span data-icon="save" aria-hidden="true"></span><span>Сохранить</span>
-          </button>
-        </div>
-      </header>
+      <h1 id="objects-title" class="visually-hidden">Мастерская объектов</h1>
       <div class="objects-layout">
         <aside class="objects-catalog" aria-label="Каталог 3D-объектов">
           <div class="panel-caption"><strong>Библиотека</strong><span>KENNEY</span></div>
@@ -40,64 +25,72 @@
           <p id="objects-count" role="status"></p>
           <nav id="objects-list" aria-label="Выбрать объект"></nav>
           <p id="objects-empty" hidden>Ничего не найдено. Измените поиск или набор.</p>
-          <p class="catalog-help">Выберите деталь, затем нажмите «Добавить в постройку».</p>
+          <div class="catalog-save">
+            <button id="object-save" type="button" class="workshop-primary">
+              <span data-icon="save" aria-hidden="true"></span><span>Сохранить</span>
+            </button>
+            <p class="save-shortcut">Ctrl / ⌘ S — сохранить в проект</p>
+            <p id="object-save-status" role="status" aria-live="polite"></p>
+          </div>
         </aside>
         <section class="object-preview" aria-labelledby="object-title">
-          <div class="workshop-toolbar">
-            <div class="transform-tools" aria-label="Инструмент">
-              <button
-                id="object-mode-position"
-                type="button"
-                data-mode="position"
-                aria-pressed="true"
-                title="Перемещение"
-                aria-label="Перемещение"
-              >
-                <span data-icon="move" aria-hidden="true"></span><span>Двигать</span>
-              </button>
-              <button
-                id="object-mode-rotation"
-                type="button"
-                data-mode="rotation"
-                aria-pressed="false"
-                title="Поворот"
-                aria-label="Поворот"
-              >
-                <span data-icon="rotate" aria-hidden="true"></span><span>Вращать</span>
-              </button>
-              <button
-                id="object-mode-scale"
-                type="button"
-                data-mode="scale"
-                aria-pressed="false"
-                title="Масштаб"
-                aria-label="Масштаб"
-              >
-                <span data-icon="scale" aria-hidden="true"></span><span>Масштаб</span>
-              </button>
-            </div>
-            <label class="snap-toggle"
-              ><input id="object-snap" type="checkbox" checked />Привязка</label
-            >
-            <div class="history-tools">
-              <button
-                id="object-undo"
-                type="button"
-                title="Отменить · Ctrl/⌘ Z"
-                aria-label="Отменить · Ctrl/⌘ Z"
-              >
-                <span data-icon="undo" aria-hidden="true"></span></button
-              ><button
-                id="object-redo"
-                type="button"
-                title="Повторить · Ctrl/⌘ Shift Z"
-                aria-label="Повторить · Ctrl/⌘ Shift Z"
-              >
-                <span data-icon="redo" aria-hidden="true"></span>
-              </button>
-            </div>
-          </div>
           <div class="object-stage">
+            <div class="workshop-toolbar">
+              <div class="transform-tools" aria-label="Инструмент">
+                <button
+                  id="object-mode-position"
+                  type="button"
+                  data-mode="position"
+                  aria-pressed="true"
+                  title="Перемещение"
+                  aria-label="Перемещение"
+                >
+                  <span data-icon="move" aria-hidden="true"></span><span>Двигать</span>
+                </button>
+                <button
+                  id="object-mode-rotation"
+                  type="button"
+                  data-mode="rotation"
+                  aria-pressed="false"
+                  title="Поворот"
+                  aria-label="Поворот"
+                >
+                  <span data-icon="rotate" aria-hidden="true"></span><span>Вращать</span>
+                </button>
+                <button
+                  id="object-mode-scale"
+                  type="button"
+                  data-mode="scale"
+                  aria-pressed="false"
+                  title="Масштаб"
+                  aria-label="Масштаб"
+                >
+                  <span data-icon="scale" aria-hidden="true"></span><span>Масштаб</span>
+                </button>
+              </div>
+              <div class="toolbar-options">
+                <label class="snap-toggle"
+                  ><input id="object-snap" type="checkbox" checked />Привязка</label
+                >
+                <div class="history-tools">
+                  <button
+                    id="object-undo"
+                    type="button"
+                    title="Отменить · Ctrl/⌘ Z"
+                    aria-label="Отменить · Ctrl/⌘ Z"
+                  >
+                    <span data-icon="undo" aria-hidden="true"></span></button
+                  ><button
+                    id="object-redo"
+                    type="button"
+                    title="Повторить · Ctrl/⌘ Shift Z"
+                    aria-label="Повторить · Ctrl/⌘ Shift Z"
+                  >
+                    <span data-icon="redo" aria-hidden="true"></span>
+                  </button>
+                </div>
+              </div>
+            </div>
             <div class="stage-caption">
               <h2 id="object-title"></h2>
               <p id="object-stats"></p>
@@ -108,7 +101,14 @@
               aria-label="3D-превью: WASD — полёт, Q/E — вниз/вверх, Shift — быстрее, правая кнопка мыши — обзор; левая — выбор деталей и орбита"
             ></canvas>
             <div id="object-bounds" class="bounds-status" role="status"></div>
-            <div class="stage-label">ПЕРСПЕКТИВА <span>·</span> КЛЕТКА 1 × 1 · ЦЕНТР (0, 0)</div>
+            <div class="stage-help">
+              <div class="stage-label">ПЕРСПЕКТИВА · КЛЕТКА 1 × 1 · ЦЕНТР (0, 0)</div>
+              <p
+                title="Щёлкните по сцене. Q/E — вниз/вверх, левая кнопка — орбита, колесо — приближение."
+              >
+                WASD — полёт · ПКМ — обзор · Shift — быстрее
+              </p>
+            </div>
             <div class="object-controls" aria-label="Камера">
               <button
                 id="object-left"
@@ -139,29 +139,6 @@
               </button>
             </div>
             <p id="object-error" role="alert"></p>
-          </div>
-          <div class="object-preview-footer">
-            <span
-              title="Щёлкните по сцене. Q/E — вниз/вверх, левая кнопка — орбита, колесо — приближение."
-              >WASD — полёт · ПКМ — обзор · Shift — быстрее</span
-            >
-            <div class="object-pagination">
-              <button
-                id="object-previous"
-                type="button"
-                title="Предыдущий объект"
-                aria-label="Предыдущий объект"
-              >
-                <span data-icon="back" aria-hidden="true"></span></button
-              ><button
-                id="object-next"
-                type="button"
-                title="Следующий объект"
-                aria-label="Следующий объект"
-              >
-                <span data-icon="next" aria-hidden="true"></span>
-              </button>
-            </div>
           </div>
         </section>
         <aside class="object-properties" aria-label="Свойства объекта">
@@ -315,10 +292,6 @@
           </details>
         </aside>
       </div>
-      <footer class="workshop-status">
-        <span id="object-save-status" role="status" aria-live="polite"></span
-        ><span>Ctrl/⌘ S — записать в проект и создать коммит в main</span>
-      </footer>
     </main>
     <script src="/app.js" defer></script>
   </body>

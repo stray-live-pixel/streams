@@ -166,9 +166,6 @@ export async function createObjectEditor(document: Document, options: ObjectEdit
     }
     for (const button of list.querySelectorAll('button'))
       button.setAttribute('aria-pressed', String(button.dataset.object === id));
-    const index = filtered.findIndex((entry) => entry.id === selected);
-    get<HTMLButtonElement>('object-previous').disabled = index <= 0;
-    get<HTMLButtonElement>('object-next').disabled = index < 0 || index >= filtered.length - 1;
   }
   function filter() {
     const query = search.value.trim().toLocaleLowerCase('ru-RU');
@@ -337,14 +334,6 @@ export async function createObjectEditor(document: Document, options: ObjectEdit
         { signal: signal.signal },
       );
     }
-  for (const [id, direction] of [
-    ['object-previous', -1],
-    ['object-next', 1],
-  ] as const)
-    listen(id, () => {
-      const next = filtered[filtered.findIndex((entry) => entry.id === selected) + direction];
-      if (next) select(next.id);
-    });
   search.addEventListener('input', filter, { signal: signal.signal });
   group.addEventListener('change', filter, { signal: signal.signal });
   list.addEventListener(
