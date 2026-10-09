@@ -7,38 +7,33 @@ import type { Scene } from '@babylonjs/core/scene.js';
 import type { GameModel } from '../domain/index.js';
 import type { Passenger } from './types.js';
 
+export const lifeColors = {
+  coats: ['#af6248', '#437e86', '#dec18b', '#677a4d'],
+  skin: '#eed0a0',
+  smoke: '#eff0dc',
+};
+
 /** Визуальная жизнь города. Эти жители декоративные: население считает только домен.
  * Объекты создаются один раз, затем двигаются; новые меши в каждом кадре не появляются. */
 export function createCityLife(scene: Scene) {
-  const colors = ['#af6248', '#437e86', '#dec18b', '#677a4d'];
   function material(name: string, color: string) {
     const result = new StandardMaterial(name, scene);
     result.disableLighting = true;
     result.emissiveColor = Color3.FromHexString(color);
     return result;
   }
-  const coats = colors.map((c, i) => material(`coat-${i}`, c));
-  const skin = material('skin', '#eed0a0');
-  const smokeMaterial = material('chimney-smoke', '#eff0dc');
+  const coats = lifeColors.coats.map((c, i) => material(`coat-${i}`, c));
+  const skin = material('skin', lifeColors.skin);
+  const smokeMaterial = material('chimney-smoke', lifeColors.smoke);
   smokeMaterial.alpha = 0.22;
-  function person(id: number) {
-    const node = new TransformNode(`neighbor-${id}`, scene);
-    const body = CreateBox(`coat-${id}`, { width: 0.065, height: 0.12, depth: 0.06 }, scene);
-    body.parent = node;
-    body.position.y = 0.085;
-    body.material = coats[id % coats.length];
-    const head = CreateSphere(`head-${id}`, { diameter: 0.07, segments: 4 }, scene);
-    head.parent = node;
-    head.position.y = 0.18;
-    head.material = skin;
-    node.setEnabled(false);
-    return node;
-  }
-  const neighbors = Array.from({ length: 12 }, (_, i) => person(i));
-  const passengers = Array.from({ length: 10 }, (_, i) => person(i + 12));
+  const neighbors = Array.from({ length: 12 }, (_, i) =>
+    createPerson(scene, i, coats[i % coats.length], skin),
+  );
+  const passengers = Array.from({ length: 10 }, (_, i) =>
+    createPerson(scene, i + 12, coats[(i + 12) % coats.length], skin),
+  );
   const smoke = Array.from({ length: 12 }, (_, i) => {
-    const mesh = CreateSphere(`smoke-${i}`, { diameter: 0.1, segments: 4 }, scene);
-    mesh.material = smokeMaterial;
+    const mesh = createSmoke(scene, smokeMaterial, i);
     mesh.setEnabled(false);
     return mesh;
   });
@@ -85,4 +80,30 @@ export function createCityLife(scene: Scene) {
       });
     },
   };
+}
+
+/** Общая фигура для города и изолированного просмотра. */
+export function createPerson(
+  scene: Scene,
+  id: number,
+  coat: StandardMaterial,
+  skin: StandardMaterial,
+) {
+  const node = new TransformNode(`neighbor-${id}`, scene);
+  const body = CreateBox(`coat-${id}`, { width: 0.065, height: 0.12, depth: 0.06 }, scene);
+  body.parent = node;
+  body.position.y = 0.085;
+  body.material = coat;
+  const head = CreateSphere(`head-${id}`, { diameter: 0.07, segments: 4 }, scene);
+  head.parent = node;
+  head.position.y = 0.18;
+  head.material = skin;
+  node.setEnabled(false);
+  return node;
+}
+
+export function createSmoke(scene: Scene, material: StandardMaterial, id = 0) {
+  const mesh = CreateSphere(`smoke-${id}`, { diameter: 0.1, segments: 4 }, scene);
+  mesh.material = material;
+  return mesh;
 }

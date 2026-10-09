@@ -24,7 +24,45 @@
   --space-md: 12px;
   --space-lg: 24px;
   --shadow-paper: 3px 5px 0 color-mix(in srgb, var(--color-shadow) 15%, transparent);
+  --shadow-menu: 0 22px 85px 8px color-mix(in srgb, var(--color-shadow) 22%, transparent);
   --border-paper: 1px solid var(--color-border);
   --surface-paper: linear-gradient(145deg, var(--color-paper-light), var(--color-paper-shade));
   --motion-fast: 160ms;
+  --menu-art-blur: 0.6px;
+  --surface-menu: radial-gradient(
+    ellipse at 30% 40%,
+    var(--color-paper-light),
+    var(--color-paper-shade)
+  );
+  --menu-art-overlay: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--color-paper-light) 12%, transparent),
+    transparent 28%,
+    transparent 78%,
+    color-mix(in srgb, var(--color-paper-light) 75%, transparent)
+  );
+  --intro-backdrop: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--color-shadow) 18%, transparent),
+    transparent 30%,
+    color-mix(in srgb, var(--color-shadow) 40%, transparent)
+  );
+  --shadow-character: 0 14px 30px color-mix(in srgb, var(--color-shadow) 28%, transparent);
+  --border-letter: 1px solid color-mix(in srgb, var(--color-border) 55%, var(--color-paper-light));
+  --shadow-letter: 0 10px 22px color-mix(in srgb, var(--color-shadow) 23%, transparent);
+  --shadow-lifted-page: 8px 15px 26px color-mix(in srgb, var(--color-shadow) 22%, transparent);
+  --shadow-control: 0 2px 5px color-mix(in srgb, var(--color-shadow) 9%, transparent);
+  --surface-control: color-mix(in srgb, var(--color-paper-light) 65%, transparent);
+  --surface-control-hover: color-mix(
+    in srgb,
+    var(--color-paper-shade) 65%,
+    var(--color-paper-light)
+  );
+  --surface-letter:
+    repeating-linear-gradient(
+      2deg,
+      transparent 0 3px,
+      color-mix(in srgb, var(--color-border) 3%, transparent) 3px 4px
+    ),
+    radial-gradient(ellipse at 15% 10%, var(--color-paper-light), var(--color-paper));
 }

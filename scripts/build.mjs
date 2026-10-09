@@ -4,11 +4,13 @@ import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { checkTypes } from './typecheck.mjs';
 import { packAssets } from './pack-assets.mjs';
+import { packIntro } from './pack-intro.mjs';
 export const root = fileURLToPath(new URL('../', import.meta.url));
 
 /** Единственный производитель release HTML. Исходный шаблон никогда не перезаписывается. */
 export async function build() {
   const models = await packAssets(root);
+  await packIntro(root);
   await checkTypes();
   const result = await bundle({
     absWorkingDir: root,
@@ -26,6 +28,10 @@ export async function build() {
     logLevel: 'warning',
   });
   const template = await readFile(path.join(root, 'src/ui/template.html'), 'utf8');
+  // Иллюстрация путешествует вместе с HTML: меню также работает офлайн и через file://.
+  const menuArt = await readFile(path.join(root, 'assets/art/main-menu.webp'));
+  const menuVideo = await readFile(path.join(root, 'assets/art/main-menu-loop.mp4'));
+  const martaPortrait = await readFile(path.join(root, 'assets/art/marta-portrait.webp'));
   const css = (
     await Promise.all(
       ['theme.css', 'styles.css'].map((name) => readFile(path.join(root, 'src/ui', name), 'utf8')),
@@ -38,8 +44,15 @@ export async function build() {
     'utf8',
   );
   const notice = await readFile(path.join(root, 'node_modules/@babylonjs/core/NOTICE.md'), 'utf8');
-  const notices = `Babylon.js\n${license}\n${notice}\nKenney Fantasy Town Kit / Pirate Kit: CC0\nhttps://kenney.nl/assets/fantasy-town-kit\nhttps://kenney.nl/assets/pirate-kit`;
+  const iconLicense = await readFile(path.join(root, 'node_modules/lucide-react/LICENSE'), 'utf8');
+  const notices = `Babylon.js\n${license}\n${notice}\nLucide icons\n${iconLicense}\nKenney Fantasy Town Kit / Pirate Kit: CC0\nhttps://kenney.nl/assets/fantasy-town-kit\nhttps://kenney.nl/assets/pirate-kit`;
   const html = template
+    .replaceAll('__MENU_BACKGROUND__', () => `data:image/webp;base64,${menuArt.toString('base64')}`)
+    .replace('__MENU_VIDEO__', () => `data:video/mp4;base64,${menuVideo.toString('base64')}`)
+    .replace(
+      '__MARTA_PORTRAIT__',
+      () => `data:image/webp;base64,${martaPortrait.toString('base64')}`,
+    )
     .replace('/* STYLES */', () => css)
     .replace(
       '<!-- APPLICATION -->',

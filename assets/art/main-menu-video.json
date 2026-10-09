@@ -1,0 +1,47 @@
+{
+  "model": "alibaba/wan-3.0-prime",
+  "segments": [
+    {
+      "source": "orbit/segment-01-source.mp4",
+      "metadata": "orbit/segment-01.json"
+    },
+    {
+      "source": "orbit/segment-02-source.mp4",
+      "metadata": "orbit/segment-02.json"
+    },
+    {
+      "source": "orbit/segment-03-source.mp4",
+      "metadata": "orbit/segment-03.json"
+    }
+  ],
+  "active_source": "orbit/segment-01-source.mp4",
+  "source_range_seconds": [
+    1,
+    6
+  ],
+  "original_generation": "main-menu-original.json",
+  "playback": {
+    "file": "main-menu-loop.mp4",
+    "sha256": "977c6e982f5b3c30ff9e98d6684faf91fa04c86c95f7e1f18cc24083b14d25e3",
+    "programs": [],
+    "stream_groups": [],
+    "streams": [
+      {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1080,
+        "height": 720,
+        "r_frame_rate": "48/1",
+        "nb_frames": "720"
+      }
+    ],
+    "format": {
+      "duration": "15.000000",
+      "size": "4033019"
+    },
+    "playback_rate": 0.5,
+    "presentation_duration": 30,
+    "motion": "ping-pong",
+    "loop_processing": "Stable seconds 1–6 of segment 01, eased to 7.5 seconds and mirrored in reverse. No crossfade, no mixing of different island geometry. Keyframes every 0.5 seconds for scrubbing. 48 fps with browser playback at 0.5 gives 24 presented fps and a 30-second round trip."
+  }
+}

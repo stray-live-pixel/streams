@@ -1,11 +1,11 @@
-import { readFile, writeFile, mkdir } from 'node:fs/promises';
+import { readFile, writeFile, mkdir, readdir } from 'node:fs/promises';
 import path from 'node:path';
 import { PNG } from 'pngjs';
 
 /**
  * На этапе сборки переводим OBJ + палитру в простые массивы.
  * В браузере не понадобится fetch(), поэтому HTML открывается через file://.
- * Оригинальные наборы не изменяем: используем лишь указанные в manifest модели.
+ * Оригинальные наборы не изменяем. Игра получает manifest, просмотрщик — весь каталог OBJ.
  */
 export async function packAssets(root) {
   const manifest = JSON.parse(await readFile(path.join(root, 'assets/manifest.json'), 'utf8'));
@@ -17,10 +17,15 @@ export async function packAssets(root) {
     })),
   ];
   const models = {};
+  const library = {};
   for (const source of sources) {
     const directory = path.join(root, 'assets', source.directory, 'Models/OBJ format');
     const image = PNG.sync.read(await readFile(path.join(directory, 'Textures/colormap.png')));
-    for (const name of source.models) {
+    const names = (await readdir(directory))
+      .filter((name) => name.endsWith('.obj'))
+      .map((name) => name.slice(0, -4))
+      .sort();
+    for (const name of names) {
       const positions = [],
         uvs = [],
         faces = [],
@@ -51,7 +56,9 @@ export async function packAssets(root) {
           faces.push([...triangle.map((r) => r[0] - 1), colorIds.get(key)]);
         }
       }
-      models[name] = { p: positions, f: faces, c: colors };
+      const data = { p: positions, f: faces, c: colors };
+      library[`${source.directory}/${name}`] = data;
+      if (source.models.includes(name)) models[name] = data;
     }
   }
   const imageTag = async (directory, name) => {
@@ -68,6 +75,7 @@ export async function packAssets(root) {
   };
   await mkdir(path.join(root, '.generated'), { recursive: true });
   await writeFile(path.join(root, '.generated/models.json'), JSON.stringify(models));
+  await writeFile(path.join(root, '.generated/library-models.json'), JSON.stringify(library));
   await writeFile(path.join(root, '.generated/card-art.json'), JSON.stringify(art));
   return Object.keys(models).length;
 }

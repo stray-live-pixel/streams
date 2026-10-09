@@ -3,6 +3,7 @@ import { promisify } from 'node:util';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { packAssets } from './pack-assets.mjs';
+import { packIntro } from './pack-intro.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 /** esbuild удаляет типы, но не проверяет их. Поэтому tsc обязателен до выпуска HTML. */
@@ -20,5 +21,6 @@ export async function checkTypes() {
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   // JSON импортируется типизированным кодом; чистая копия репозитория ещё не содержит его.
   await packAssets(root);
+  await packIntro(root);
   await checkTypes();
 }

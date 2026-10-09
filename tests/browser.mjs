@@ -18,6 +18,7 @@ try {
       deviceScaleFactor: width === 390 ? 2 : 1,
     });
     const page = await context.newPage();
+    page.setDefaultTimeout(20000);
     const errors = [],
       network = [];
     page.on('pageerror', (error) => errors.push(error.message));
@@ -26,7 +27,64 @@ try {
     });
     await page.goto(pathToFileURL(path.resolve('dist/index.html')).href);
     await page.waitForFunction(() => window.cityDebug);
+    assert.equal(await page.evaluate(() => cityDebug.renderer), 'not-started');
+    assert.equal(await page.locator('#scene').count(), 0);
+    assert.equal(await page.locator('#game-screen').isVisible(), false);
+    const background = page.locator('img.menu-background');
+    await background.evaluate((image) => image.decode());
+    assert.equal(await background.evaluate((image) => image.naturalWidth), 1536);
+    assert.match(await background.getAttribute('src'), /^data:image\/webp;base64,/);
+    assert.equal(await page.locator('#main-menu svg').count(), 0);
+    assert.equal(
+      await page.locator('#main-menu').evaluate((menu) => menu.scrollWidth > menu.clientWidth),
+      false,
+    );
+    assert.equal(await page.locator('#menu-start').textContent(), 'Новая игра');
+    assert.equal(await page.evaluate(() => localStorage.getItem('ostrov-simple-v2')), null);
+    await page.screenshot({ path: path.join(screenshots, `menu-${width}.png`) });
+    await page.click('#menu-help');
+    await page.keyboard.press('Escape');
+    assert.equal(await page.locator('#main-menu').isVisible(), true);
+    await page.click('#menu-settings');
+    assert.equal(await page.locator('#reset-progress').isDisabled(), true);
+    await page.selectOption('#setting-quality', 'low');
+    await page.uncheck('#setting-animation');
+    await page.uncheck('#setting-hints');
+    await page.screenshot({ path: path.join(screenshots, `settings-${width}.png`) });
+    await page.keyboard.press('Escape');
+    await page.reload();
+    await page.click('#menu-settings');
+    assert.equal(await page.locator('#setting-quality').inputValue(), 'low');
+    assert.equal(await page.locator('#setting-animation').isChecked(), false);
+    assert.equal(await page.locator('#setting-hints').isChecked(), false);
+    assert.equal(await page.locator('#scene').count(), 0);
+    await page.click('#close-settings');
+    await page.click('#menu-start');
     assert.equal(await page.evaluate(() => cityDebug.renderer), 'Babylon.js');
+    assert.equal(await page.evaluate(() => cityDebug.paused), false);
+    assert.equal(await page.locator('#coach-title').isVisible(), true);
+    assert.equal(await page.locator('#scene').evaluate((c) => c.width), width);
+    const requestReset = async () => {
+      await page.click('#open-menu');
+      await page.click('#pause-settings');
+      await page.click('#reset-progress');
+    };
+    const reloadAndContinue = async () => {
+      await page.reload();
+      assert.equal(await page.locator('#menu-start').textContent(), 'Продолжить');
+      assert.equal(await page.locator('#scene').count(), 0);
+      assert.equal(await page.locator('#ending-dialog').isVisible(), false);
+      await page.click('#menu-start');
+    };
+    // Escape работает с фокусом на кнопке; под паузой горячие клавиши не строят город.
+    await page.focus('#coach-action');
+    await page.keyboard.press('Escape');
+    assert.equal(await page.locator('#pause-dialog').isVisible(), true);
+    await page.click('#pause-settings');
+    await page.keyboard.press('Escape');
+    assert.equal(await page.locator('#pause-dialog').isVisible(), true);
+    await page.keyboard.press('Escape');
+    assert.equal(await page.evaluate(() => cityDebug.paused), false);
     // Логика может работать даже при пустом WebGL-кадре. Проверяем сам рисунок острова.
     await page.waitForFunction(() => {
       const source = document.querySelector('#scene');
@@ -68,18 +126,44 @@ try {
     await page.click('#next-day');
     assert.equal(await page.evaluate(() => cityDebug.state.pop), 10);
     assert.equal(await page.evaluate(() => cityDebug.state.money), 300);
+    // Пауза и главное меню замораживают рейс, даже дольше его полной длительности.
+    await page.keyboard.press('Escape');
+    const beforePause = await page.evaluate(() => cityDebug.state);
+    const pausedFrame = await page.locator('#scene').evaluate((c) => c.toDataURL());
+    await page.locator('#pause-title').evaluate((title) => {
+      title.tabIndex = -1;
+      title.focus();
+    });
+    await page.keyboard.press('Space');
+    await page.click('#main-menu-button');
+    assert.equal(await page.locator('#menu-start').textContent(), 'Продолжить');
+    await page.locator('#menu-title').evaluate((title) => {
+      title.tabIndex = -1;
+      title.focus();
+    });
+    await page.keyboard.press('Space');
+    await page.waitForTimeout(width === 1440 ? 7300 : 400);
+    assert.deepEqual(await page.evaluate(() => cityDebug.state), beforePause);
+    assert.equal(await page.evaluate(() => cityDebug.busy), true);
+    assert.equal(await page.locator('#scene').evaluate((c) => c.toDataURL()), pausedFrame);
+    await page.screenshot({ path: path.join(screenshots, `continue-${width}.png`) });
+    await page.click('#menu-start');
     await page.waitForTimeout(3100);
     await page.screenshot({ path: path.join(screenshots, `arrival-${width}.png`) });
     await page.waitForFunction(() => !cityDebug.busy);
     await page.click('#coach-action');
     await page.click('#next-day');
     assert.equal(await page.evaluate(() => cityDebug.busy), false);
-    await page.click('#reset-progress');
+    await requestReset();
     await page.click('#cancel-reset');
+    assert.equal(await page.locator('#settings-dialog').isVisible(), true);
+    await page.click('#close-settings');
+    await page.click('#resume-game');
     assert.equal(await page.evaluate(() => cityDebug.state.pop), 10);
-    await page.reload();
-    await page.waitForFunction(() => window.cityDebug);
+    await reloadAndContinue();
     assert.equal(await page.evaluate(() => cityDebug.state.pop), 10);
+    assert.equal(await page.locator('#coach-text').isVisible(), false);
+    assert.equal(await page.locator('#mission').isVisible(), true);
     await page.click('#rotate-right');
     await page.click('#home');
     assert.equal(
@@ -87,9 +171,11 @@ try {
       false,
     );
     await page.screenshot({ path: path.join(screenshots, `city-${width}.png`) });
-    await page.click('#reset-progress');
+    await requestReset();
     await page.click('#confirm-reset');
-    await page.reload();
+    assert.equal(await page.locator('#coach-title').isVisible(), true);
+    assert.equal(await page.locator('#setting-quality').inputValue(), 'low');
+    await reloadAndContinue();
     assert.equal(await page.evaluate(() => cityDebug.state.money), 600);
     assert.equal(await page.evaluate(() => cityDebug.state.step), 0);
     // Отдельный сохранённый город у порога финала. Полный экономический путь покрыт domain-тестом.
@@ -134,17 +220,17 @@ try {
       };
       localStorage.setItem('ostrov-simple-v2', JSON.stringify(state));
     });
-    await page.reload();
+    await reloadAndContinue();
     await page.waitForFunction(() => cityDebug.state.pop === 50);
     await page.click('#light-beacon');
     await page.waitForSelector('#ending-dialog[open]');
     assert.equal(await page.evaluate(() => cityDebug.state.money), 50);
     await page.screenshot({ path: path.join(screenshots, `ending-${width}.png`) });
-    await page.reload();
+    await reloadAndContinue();
     await page.waitForSelector('#ending-dialog[open]');
     assert.equal(await page.evaluate(() => cityDebug.state.money), 50);
     await page.click('#continue-city');
-    await page.reload();
+    await reloadAndContinue();
     await page.waitForFunction(() => cityDebug.state.endingSeen);
     assert.equal(await page.locator('#ending-dialog').evaluate((d) => d.open), false);
     await page.waitForTimeout(600);
@@ -157,9 +243,105 @@ try {
     assert.equal(await page.evaluate(() => cityDebug.state.day), 13);
     assert.deepEqual(errors, []);
     assert.deepEqual(network, []);
-    console.log(`${width}px: offline release, tutorial, roads, arrivals, saves, reset PASS`);
+    console.log(
+      `${width}px: offline release, main menu, pause, settings, tutorial, arrivals, saves, reset, finale PASS`,
+    );
     await context.close();
   }
+  // Проверяем реальный декодер, переход через конец ролика и экономию ресурсов вне меню.
+  const videoContext = await browser.newContext({ offline: true, reducedMotion: 'no-preference' });
+  const videoPage = await videoContext.newPage();
+  await videoPage.goto(pathToFileURL(path.resolve('dist/index.html')).href);
+  const video = videoPage.locator('#menu-video');
+  const waitForPlayback = () =>
+    videoPage.waitForFunction(() => {
+      const background = document.querySelector('#menu-video');
+      return !background.paused && background.currentTime > 0.1;
+    });
+  await waitForPlayback();
+  const media = await video.evaluate((v) => ({
+    duration: v.duration,
+    muted: v.muted,
+    loop: v.loop,
+    playbackRate: v.playbackRate,
+  }));
+  assert(Math.abs(media.duration - 15) < 0.1);
+  assert.equal(media.muted, true);
+  assert.equal(media.loop, true);
+  assert.equal(media.playbackRate, 0.5);
+  await videoPage.screenshot({ path: path.join(screenshots, 'menu-video.png') });
+  await video.evaluate((v) => {
+    v.currentTime = v.duration - 0.2;
+  });
+  await videoPage.waitForFunction(() => {
+    const background = document.querySelector('#menu-video');
+    return !background.paused && background.currentTime < 1;
+  });
+  // Обе половины показывают одну дугу: жест сохраняет направление и не перескакивает край.
+  await video.evaluate((v) => {
+    v.currentTime = v.duration / 4;
+  });
+  const viewProgress = () =>
+    video.evaluate((v) => {
+      const time = Math.min(v.currentTime, v.duration - v.currentTime);
+      return (1 - Math.cos((2 * Math.PI * time) / v.duration)) / 2;
+    });
+  await videoPage.mouse.move(50, 100);
+  await videoPage.mouse.down();
+  const dragStart = await viewProgress();
+  const viewportWidth = await videoPage.locator('#main-menu').evaluate((el) => el.clientWidth);
+  const expectedProgress = (x) => Math.max(0, Math.min(1, dragStart - (x - 50) / viewportWidth));
+  await videoPage.mouse.move(250, 100);
+  assert.equal(await video.evaluate((v) => v.paused), true);
+  assert(Math.abs((await viewProgress()) - expectedProgress(250)) < 0.01);
+  assert(
+    await video.evaluate((v) => v.currentTime > v.duration / 2),
+    'Продолжить в обратной половине',
+  );
+  await videoPage.mouse.move(20, 100);
+  assert(Math.abs((await viewProgress()) - expectedProgress(20)) < 0.01);
+  assert(
+    await video.evaluate((v) => v.currentTime < v.duration / 2),
+    'Продолжить в прямой половине',
+  );
+  await videoPage.mouse.move(1200, 100);
+  assert((await viewProgress()) < 0.001, 'Остановиться у края, не перескочить на другой ракурс');
+  await videoPage.mouse.move(20, 100);
+  await videoPage.waitForFunction(() => !document.querySelector('#menu-video').seeking);
+  await videoPage.screenshot({ path: path.join(screenshots, 'menu-dragged.png') });
+  await videoPage.waitForTimeout(5100);
+  assert.equal(await video.evaluate((v) => v.paused), true, 'Не играть, пока мышь зажата');
+  await videoPage.mouse.up();
+  const selectedTime = await video.evaluate((v) => v.currentTime);
+  await videoPage.waitForTimeout(4000);
+  assert.equal(await video.evaluate((v) => v.paused), true, 'Ждать 5 секунд после отпускания');
+  await waitForPlayback();
+  assert(Math.abs((await video.evaluate((v) => v.currentTime)) - selectedTime) < 0.7);
+  // Таймер после ручного обзора не должен запускать фон в самой игре.
+  await videoPage.mouse.move(50, 100);
+  await videoPage.mouse.down();
+  await videoPage.mouse.up();
+  await videoPage.click('#menu-start');
+  assert.equal(await video.evaluate((v) => v.paused), true);
+  await videoPage.waitForTimeout(5100);
+  assert.equal(await video.evaluate((v) => v.paused), true);
+  await videoPage.keyboard.press('Escape');
+  await videoPage.click('#main-menu-button');
+  await waitForPlayback();
+  await videoPage.click('#menu-settings');
+  await videoPage.uncheck('#setting-animation');
+  assert.equal(await video.evaluate((v) => v.paused && v.hidden), true);
+  await videoPage.check('#setting-animation');
+  await waitForPlayback();
+  await videoPage.emulateMedia({ reducedMotion: 'reduce' });
+  await videoPage.waitForFunction(() => {
+    const background = document.querySelector('#menu-video');
+    return background.paused && background.hidden;
+  });
+  await videoContext.close();
+  console.log(
+    'Menu video: stable 15s sweep, clamped two-way scrubbing, playback direction, 5s idle, pause, settings and reduced motion PASS',
+  );
 } finally {
   await browser.close();
 }

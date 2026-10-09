@@ -1,0 +1,8 @@
+{
+  "tool": "Built-in image_gen",
+  "use_case": "illustration-story",
+  "prompt": "Use case: illustration-story. Asset type: finished character portrait for a cozy seaside city-building game called Quiet Harbor. Create Marta, the warm, capable keeper of a small forgotten island harbor in an imaginary age of sailing ships. She is a woman around 55, approachable and intelligent, with gentle smile lines, kind hazel eyes, lightly sun-weathered skin and dark brown hair streaked with silver loosely pinned in a practical bun. Simple ivory linen blouse, muted terracotta waistcoat and a soft sage-green shoulder shawl; understated practical period clothing, small brass key on a cord. Chest-up portrait, slight three-quarter pose but looking warmly toward the viewer as if welcoming them home; shoulders and head entirely inside frame with comfortable margin. Hands outside frame. Style: beautiful softly painted storybook game illustration with simplified sculpted forms, subtle low-poly inspired planes, matte textures, soft natural golden coastal light; mature and believable face, not a photograph, not anime, not a cartoon caricature. Palette ivory, faded sea green, warm clay and honey, matching a cozy low-poly island harbor with timber houses, sailboats and a lighthouse. Transparent background so the character can sit over the game's moving island background; clean soft silhouette, no environment, no frame, no badge. Square composition. No text, no lettering, no watermark.",
+  "source": "marta-portrait-source.png",
+  "runtime": "marta-portrait.webp",
+  "transparent_background": true
+}
