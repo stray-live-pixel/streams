@@ -985,18 +985,8 @@ dialog .credits {
 .menu-intro {
   position: relative;
   align-self: start;
-  isolation: isolate;
-  text-shadow: var(--menu-text-glow);
-}
-/* Локальная светлая дымка отделяет буквы от деталей гавани без видимой плашки. */
-.menu-intro::before {
-  content: '';
-  position: absolute;
-  inset: -50px -65px -55px -50px;
-  z-index: -1;
-  background: var(--menu-title-wash);
-  filter: blur(var(--menu-text-halo-blur));
-  pointer-events: none;
+  /* Контур следует за буквами и оставляет детали иллюстрации открытыми. */
+  text-shadow: var(--menu-text-outline);
 }
 .menu-kicker,
 .menu-footer {
@@ -1019,10 +1009,6 @@ dialog .credits {
 .menu-intro h1 em {
   color: var(--color-primary);
   font-weight: normal;
-}
-.menu-motto {
-  font: 19px/1.6 var(--font-story);
-  color: var(--color-ink);
 }
 .menu-card {
   position: relative;
@@ -1241,9 +1227,6 @@ body[data-hints='hide'] .coach.freeplay .mission {
   .menu-intro {
     text-align: center;
   }
-  .menu-intro::before {
-    inset: -40px -15px -45px;
-  }
   .menu-kicker {
     font-size: 8px;
     letter-spacing: 1.5px;
@@ -1252,13 +1235,6 @@ body[data-hints='hide'] .coach.freeplay .mission {
     font-size: clamp(40px, 13vw, 58px);
     margin: 17px 0 12px;
     letter-spacing: -2px;
-  }
-  .menu-motto {
-    font-size: 15px;
-    margin: 0;
-  }
-  .menu-motto br {
-    display: none;
   }
   .menu-card {
     padding: 29px 24px 22px;
