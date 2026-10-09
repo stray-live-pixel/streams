@@ -5,6 +5,7 @@
   --game-width: 1440px;
   --game-height: 810px;
   --color-letterbox: #000;
+  --surface-workshop: radial-gradient(ellipse at 45% 30%, #78988c, #405e57);
   --color-sea: #8eb8b7;
   --color-ink: #344c40;
   --color-ink-muted: #74694e;

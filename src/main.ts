@@ -1,9 +1,15 @@
+import { createObjectStore } from './objects/index.js';
 import type { Command } from './domain/index.js';
 import type { CityScene } from './scene/index.js';
 import { createGame, MAP_SIZE, isLand, shoreDirection } from './domain/index.js';
 import { createStorage } from './persistence/index.js';
 import { createUI, createMenu, fitGameViewport } from './ui/index.js';
-import { createScene, createObjectPreview, previewObjects } from './scene/index.js';
+import {
+  createScene,
+  createObjectPreview,
+  previewObjects,
+  defaultObjectParts,
+} from './scene/index.js';
 import { bindInput } from './input/index.js';
 
 /** Только координатор соединяет город, навигацию, сохранения и ленивую 3D-сцену. */
@@ -21,8 +27,17 @@ const ui = createUI(document, dispatch, (action) => {
   if (action === 'home') scene?.resetCamera();
   else scene?.rotate(action === 'left' ? -1 : 1);
 });
+const objectStore = createObjectStore(
+  () => window.localStorage,
+  new Set(previewObjects.filter((o) => !o.id.startsWith('game/')).map((o) => o.id)),
+);
 const menu = createMenu(document, settings, {
-  preview: { objects: previewObjects, create: createObjectPreview },
+  preview: {
+    objects: previewObjects,
+    create: createObjectPreview,
+    store: objectStore,
+    createDefaultParts: defaultObjectParts,
+  },
   start() {
     if (!ensureScene()) return false;
     if (!hasGame) {

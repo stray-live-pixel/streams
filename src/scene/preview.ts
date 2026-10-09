@@ -1,3 +1,8 @@
+import { GizmoManager } from '@babylonjs/core/Gizmos/gizmoManager.js';
+import { CreateLineSystem } from '@babylonjs/core/Meshes/Builders/linesBuilder.js';
+import { CreateGround } from '@babylonjs/core/Meshes/Builders/groundBuilder.js';
+import { PointerEventTypes } from '@babylonjs/core/Events/pointerEvents.js';
+import { copyParts, editableObjectIds, objectTemplate, type ObjectPart } from '../objects/index.js';
 import { Engine } from '@babylonjs/core/Engines/engine.js';
 import { Scene } from '@babylonjs/core/scene.js';
 import { ArcRotateCamera } from '@babylonjs/core/Cameras/arcRotateCamera.js';
@@ -7,6 +12,8 @@ import { Vector3 } from '@babylonjs/core/Maths/math.vector.js';
 import { Color3, Color4 } from '@babylonjs/core/Maths/math.color.js';
 import {
   buildingGeometry,
+  defaultObjectParts,
+  objectPartGeometry,
   modelGeometry,
   shipGeometry,
   streetGeometry,
@@ -131,6 +138,66 @@ export function createObjectPreview(canvas: HTMLCanvasElement) {
   camera.panningSensibility = 0;
   camera.wheelDeltaPercentage = 0.01;
   camera.pinchDeltaPercentage = 0.01;
+  const gizmos = new GizmoManager(scene);
+  gizmos.usePointerToAttachGizmos = false;
+  gizmos.enableAutoPicking = false;
+  gizmos.scaleRatio = 1.2;
+  let meshes = new Map<string, Mesh>();
+  let parts: ObjectPart[] = [];
+  let picked: string | null = null;
+  let mode: 'position' | 'rotation' | 'scale' = 'position';
+  let onPick = (_id: string | null) => {};
+  let onChange = (_parts: ObjectPart[]) => {};
+  let snap = true;
+  let grid: ReturnType<typeof CreateLineSystem> | undefined;
+  function attach(id: string | null) {
+    picked = id;
+    for (const [key, mesh] of meshes) mesh.showBoundingBox = key === id;
+    gizmos.attachToMesh(id ? (meshes.get(id) ?? null) : null);
+  }
+  function setMode(next: typeof mode) {
+    mode = next;
+    gizmos.positionGizmoEnabled = mode === 'position';
+    gizmos.rotationGizmoEnabled = mode === 'rotation';
+    gizmos.scaleGizmoEnabled = mode === 'scale';
+    attach(picked);
+    const current = gizmos.gizmos[`${mode}Gizmo`];
+    if (current) {
+      current.snapDistance = snap ? (mode === 'rotation' ? Math.PI / 12 : 0.05) : 0;
+      if (!observed.has(current)) {
+        observed.add(current);
+        current.onDragStartObservable.add(() => camera.detachControl());
+        current.onDragEndObservable.add(() => {
+          camera.attachControl(canvas, true);
+          for (const part of parts) {
+            const mesh = meshes.get(part.id)!;
+            part.position = mesh.position.asArray() as ObjectPart['position'];
+            part.rotation = (
+              mesh.rotationQuaternion?.toEulerAngles() ?? mesh.rotation
+            ).asArray() as ObjectPart['rotation'];
+            part.scale = mesh.scaling
+              .asArray()
+              .map((v) => Math.max(0.01, Math.min(100, v))) as ObjectPart['scale'];
+            part.position = part.position.map((v) =>
+              Math.max(-100, Math.min(100, v)),
+            ) as ObjectPart['position'];
+          }
+          onChange(copyParts(parts));
+        });
+      }
+    }
+  }
+  const observed = new WeakSet<object>();
+  scene.onPointerObservable.add((event) => {
+    if (event.type !== PointerEventTypes.POINTERTAP || gizmos.isHovered || gizmos.isDragging)
+      return;
+    const mesh = event.pickInfo?.pickedMesh;
+    const id = [...meshes].find(([, value]) => value === mesh)?.[0];
+    if (id) {
+      attach(id);
+      onPick(id);
+    }
+  });
   let radius = 4;
   let extent = 1;
   let target = Vector3.Zero();
@@ -159,35 +226,127 @@ export function createObjectPreview(canvas: HTMLCanvasElement) {
   engine.runRenderLoop(() => {
     if (!document.hidden) scene.render();
   });
-  return {
-    select(id: string) {
-      const entry = entries.find((entry) => entry.id === id);
-      if (!entry) throw new Error(`Неизвестный объект: ${id}`);
-      for (const node of [...scene.transformNodes]) node.dispose();
-      for (const mesh of [...scene.meshes]) mesh.dispose();
-      for (const material of [...scene.materials]) material.dispose();
-      const material = new StandardMaterial('palette', scene);
-      material.disableLighting = true;
-      material.emissiveColor = Color3.White();
-      material.backFaceCulling = false;
-      entry.create(scene, material);
-      const min = new Vector3(Infinity, Infinity, Infinity);
-      const max = new Vector3(-Infinity, -Infinity, -Infinity);
-      let triangles = 0;
-      for (const mesh of scene.meshes) {
-        mesh.computeWorldMatrix(true);
-        const bounds = mesh.getBoundingInfo().boundingBox;
-        min.minimizeInPlace(bounds.minimumWorld);
-        max.maximizeInPlace(bounds.maximumWorld);
-        triangles += mesh.getTotalIndices() / 3;
-      }
-      const size = max.subtract(min);
+  function clear() {
+    attach(null);
+    meshes.clear();
+    grid = undefined;
+    for (const node of [...scene.transformNodes]) node.dispose();
+    for (const mesh of [...scene.meshes]) mesh.dispose();
+    for (const material of [...scene.materials]) material.dispose();
+  }
+  function palette() {
+    const material = new StandardMaterial('palette', scene);
+    material.disableLighting = true;
+    material.emissiveColor = Color3.White();
+    material.backFaceCulling = false;
+    return material;
+  }
+  function measure(fit = true, minExtent = 0.001) {
+    const min = new Vector3(Infinity, Infinity, Infinity);
+    const max = new Vector3(-Infinity, -Infinity, -Infinity);
+    let triangles = 0;
+    for (const mesh of scene.meshes) {
+      if (mesh.metadata?.editorHelper) continue;
+      mesh.computeWorldMatrix(true);
+      const bounds = mesh.getBoundingInfo().boundingBox;
+      min.minimizeInPlace(bounds.minimumWorld);
+      max.maximizeInPlace(bounds.maximumWorld);
+      triangles += mesh.getTotalIndices() / 3;
+    }
+    if (!triangles) {
+      min.set(-0.5, 0, -0.5);
+      max.set(0.5, 1, 0.5);
+    }
+    const size = max.subtract(min);
+    if (fit) {
       target = min.add(max).scale(0.5);
-      extent = Math.max(size.length() / 2, 0.001);
+      extent = Math.max(size.length() / 2, minExtent);
       engine.resize();
       fitRadius();
       resetCamera();
-      return { triangles, size: [size.x, size.y, size.z] };
+    }
+    return { triangles, size: [size.x, size.y, size.z] };
+  }
+  function setParts(next: ObjectPart[], id: string | null, fit = false) {
+    clear();
+    parts = copyParts(next);
+    const material = palette();
+    for (const part of parts) {
+      const mesh = new Mesh(part.id, scene);
+      objectPartGeometry(part).applyToMesh(mesh);
+      mesh.material = material;
+      mesh.position.copyFromFloats(...part.position);
+      mesh.rotation.copyFromFloats(...part.rotation);
+      mesh.scaling.copyFromFloats(...part.scale);
+      meshes.set(part.id, mesh);
+    }
+    const lines: Vector3[][] = [];
+    for (let n = -2; n <= 2.001; n += 0.25) {
+      lines.push([new Vector3(n, -0.025, -2), new Vector3(n, -0.025, 2)]);
+      lines.push([new Vector3(-2, -0.025, n), new Vector3(2, -0.025, n)]);
+    }
+    // Светлая рамка показывает границу одной игровой клетки; сетка — четверти клетки.
+    lines.push(
+      [
+        [-0.5, -0.015, -0.5],
+        [0.5, -0.015, -0.5],
+        [0.5, -0.015, 0.5],
+        [-0.5, -0.015, 0.5],
+        [-0.5, -0.015, -0.5],
+      ].map((p) => Vector3.FromArray(p)),
+    );
+    grid = CreateLineSystem('building-area', { lines }, scene);
+    grid.color = Color3.FromHexString('#b4c9bf');
+    grid.alpha = 0.2;
+    grid.isPickable = false;
+    grid.metadata = { editorHelper: true };
+    const cell = CreateGround('building-cell', { width: 1, height: 1 }, scene);
+    cell.position.y = -0.018;
+    cell.isPickable = false;
+    cell.metadata = { editorHelper: true };
+    const floor = new StandardMaterial('building-cell-material', scene);
+    floor.disableLighting = true;
+    floor.emissiveColor = Color3.FromHexString('#e8bf70');
+    floor.alpha = 0.12;
+    floor.backFaceCulling = false;
+    cell.material = floor;
+    const border = CreateLineSystem(
+      'building-cell-border',
+      { lines: [lines[lines.length - 1]] },
+      scene,
+    );
+    border.color = Color3.FromHexString('#e8bf70');
+    border.metadata = { editorHelper: true };
+    border.isPickable = false;
+    const stats = measure(fit, 0.7);
+    setMode(mode);
+    attach(id);
+    return stats;
+  }
+  return {
+    setParts,
+    getParts(id: string) {
+      return copyParts(objectTemplate(id) ?? defaultObjectParts(id));
+    },
+    bindEditor(select: typeof onPick, change: typeof onChange) {
+      onPick = select;
+      onChange = change;
+    },
+    setMode,
+    setSnap(value: boolean) {
+      snap = value;
+      setMode(mode);
+    },
+    attach,
+    select(id: string) {
+      const entry = entries.find((entry) => entry.id === id);
+      if (!entry) throw new Error(`Неизвестный объект: ${id}`);
+      if (editableObjectIds.includes(id))
+        return setParts(copyParts(objectTemplate(id) ?? defaultObjectParts(id)), null, true);
+      clear();
+      parts = [];
+      entry.create(scene, palette());
+      return measure();
     },
     rotate(direction: number) {
       camera.alpha += (direction * Math.PI) / 4;
@@ -198,9 +357,12 @@ export function createObjectPreview(canvas: HTMLCanvasElement) {
         Math.min(camera.upperRadiusLimit!, camera.radius * (direction > 0 ? 0.8 : 1.25)),
       );
     },
-    resetCamera,
+    resetCamera() {
+      measure(true, grid ? 0.7 : 0.001);
+    },
     dispose() {
       resize.disconnect();
+      gizmos.dispose();
       scene.dispose();
       engine.dispose();
     },

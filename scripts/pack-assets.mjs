@@ -17,6 +17,7 @@ export async function packAssets(root) {
     })),
   ];
   const models = {};
+  const modelIds = {};
   const library = {};
   for (const source of sources) {
     const directory = path.join(root, 'assets', source.directory, 'Models/OBJ format');
@@ -58,7 +59,10 @@ export async function packAssets(root) {
       }
       const data = { p: positions, f: faces, c: colors };
       library[`${source.directory}/${name}`] = data;
-      if (source.models.includes(name)) models[name] = data;
+      if (source.models.includes(name)) {
+        models[name] = data;
+        modelIds[name] = `${source.directory}/${name}`;
+      }
     }
   }
   const imageTag = async (directory, name) => {
@@ -75,6 +79,7 @@ export async function packAssets(root) {
   };
   await mkdir(path.join(root, '.generated'), { recursive: true });
   await writeFile(path.join(root, '.generated/models.json'), JSON.stringify(models));
+  await writeFile(path.join(root, '.generated/model-ids.json'), JSON.stringify(modelIds));
   await writeFile(path.join(root, '.generated/library-models.json'), JSON.stringify(library));
   await writeFile(path.join(root, '.generated/card-art.json'), JSON.stringify(art));
   return Object.keys(models).length;

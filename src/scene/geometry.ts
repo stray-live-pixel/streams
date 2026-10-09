@@ -1,3 +1,7 @@
+import { Matrix, Quaternion, Vector3 } from '@babylonjs/core/Maths/math.vector.js';
+import { objectTemplate, type ObjectPart } from '../objects/index.js';
+import library from '../../.generated/library-models.json';
+import modelIds from '../../.generated/model-ids.json';
 import { VertexData } from '@babylonjs/core/Meshes/mesh.vertexData.js';
 import type { Building } from '../domain/index.js';
 import type { Board } from './types.js';
@@ -18,7 +22,13 @@ export interface ModelData {
   f: number[][];
   c: number[][];
 }
-function builder(board: Board, completed = false, models: Record<string, ModelData> = assets) {
+function builder(
+  board: Board,
+  completed = false,
+  models: Record<string, ModelData> = assets,
+  capture?: ObjectPart[],
+  overrides = true,
+) {
   const sceneVertices: number[] = [];
   function rgb(hex: string) {
     return hex.match(/[0-9a-f]{2}/gi)!.map((v) => parseInt(v, 16));
@@ -68,6 +78,15 @@ function builder(board: Board, completed = false, models: Record<string, ModelDa
     angle = 0,
     tint?: number[],
   ) {
+    if (capture)
+      capture.push({
+        id: `part-${capture.length + 1}`,
+        asset: (modelIds as Record<string, string>)[name],
+        position: [x, y, z],
+        rotation: [0, -angle, 0],
+        scale: [sx, sy, sz],
+        ...(tint ? { tint: [...tint] as [number, number, number] } : {}),
+      });
     let a = models[name],
       co = Math.cos(angle),
       si = Math.sin(angle),
@@ -80,6 +99,27 @@ function builder(board: Board, completed = false, models: Record<string, ModelDa
       const original = a.c[f[3]];
       const color = tint ? tint.map((v) => v * (0.7 + Math.max(...original) / 850)) : original;
       triangle(points[f[0]], points[f[1]], points[f[2]], color);
+    }
+  }
+  function parts(items: ObjectPart[], x = 0, z = 0) {
+    for (const part of items) {
+      const data = (library as Record<string, ModelData>)[part.asset];
+      const matrix = Matrix.Compose(
+        Vector3.FromArray(part.scale),
+        Quaternion.FromEulerAngles(...part.rotation),
+        Vector3.FromArray(part.position),
+      );
+      const points = data.p.map((p) => {
+        const v = Vector3.TransformCoordinates(Vector3.FromArray(p), matrix);
+        return [v.x + x, v.y, v.z + z];
+      });
+      for (const f of data.f) {
+        const original = data.c[f[3]];
+        const color = part.tint
+          ? part.tint.map((v) => v * (0.7 + Math.max(...original) / 850))
+          : original;
+        triangle(points[f[0]], points[f[1]], points[f[2]], color);
+      }
     }
   }
   function shadow(x: number, z: number, rx: number, rz: number) {
@@ -176,6 +216,43 @@ function builder(board: Board, completed = false, models: Record<string, ModelDa
     const x = b.x + 0.5,
       z = b.z + 0.5;
     const variant = (b.x * 3 + b.z) % 4;
+    const id =
+      b.t === 'port'
+        ? completed
+          ? 'game/beacon'
+          : 'game/port'
+        : `game/${b.t}/${b.t === 'house' ? variant : b.t === 'shop' ? variant % 2 : 0}`;
+    const custom = overrides ? objectTemplate(id) : undefined;
+    if (custom) {
+      if (b.t !== 'road' && b.t !== 'port') shadow(x + 0.03, z + 0.06, 0.52, 0.45);
+      if (b.t === 'port') {
+        const layout = harborLayout(b, board);
+        const [dx, dz] = layout.direction;
+        const shore = Quaternion.FromEulerAngles(0, Math.atan2(dx, dz), 0);
+        parts(
+          custom.map((part) => {
+            const position = [...part.position] as [number, number, number];
+            // Базовый пирс вынесен на 1,8; у вырезанных берегов удлиняем морскую часть.
+            if (position[2] >= 0.9) position[2] += layout.distance - 1.8;
+            return {
+              ...part,
+              position: [
+                dz * position[0] + dx * position[2],
+                position[1],
+                -dx * position[0] + dz * position[2],
+              ],
+              rotation: shore
+                .multiply(Quaternion.FromEulerAngles(...part.rotation))
+                .toEulerAngles()
+                .asArray() as [number, number, number],
+            };
+          }),
+          x,
+          z,
+        );
+      } else parts(custom, x, z);
+      return;
+    }
     if (b.t === 'road') {
       model('planks', x, 0.018, z, 0.96, 0.6, 0.96);
       return;
@@ -237,7 +314,7 @@ function builder(board: Board, completed = false, models: Record<string, ModelDa
       model('fountain-center', x + 0.5, 0.065, z + 0.5, 0.18);
     } else model('lantern', x + 0.9, 0.07, z + 0.1, 0.38);
   }
-  return { terrain, building, model, shadow, streetDecoration, finish };
+  return { terrain, building, model, parts, shadow, streetDecoration, finish };
 }
 /** Полностью пересобирается только при изменении списка построек. */
 export function islandGeometry(buildings: Building[], board: Board, completed = false) {
@@ -262,18 +339,33 @@ export function islandGeometry(buildings: Building[], board: Board, completed = 
         );
       }
     }
-  for (const building of buildings) b.building(building);
-  // Маленькая площадь возникает на перекрёстке: декор использует уже построенную улицу,
-  // не захватывает свободные клетки и не меняет правила движения/экономики.
+  // Маленькая площадь использует построенную улицу, не захватывая свободные клетки.
   const roads = new Set(buildings.filter((p) => p.t === 'road').map((p) => `${p.x},${p.z}`));
-  for (const road of buildings.filter((p) => p.t === 'road')) {
-    const neighbors = [
+  const roadNeighbors = (road: Building) =>
+    [
       [0, 1],
       [1, 0],
       [-1, 0],
       [0, -1],
     ].filter(([dx, dz]) => roads.has(`${road.x + dx},${road.z + dz}`)).length;
-    if (neighbors >= 3) {
+  const roadTemplate = (road: Building) => {
+    const neighbors = roadNeighbors(road);
+    return neighbors >= 3
+      ? objectTemplate('game/fountain')
+      : (road.x + road.z) % 3 === 0
+        ? objectTemplate('game/lantern')
+        : undefined;
+  };
+  for (const building of buildings) {
+    // Композиция дороги с декором уже содержит настил: второй дал бы мерцание.
+    if (building.t !== 'road' || !roadTemplate(building)) b.building(building);
+  }
+  for (const road of buildings.filter((p) => p.t === 'road')) {
+    const neighbors = roadNeighbors(road);
+    const decoration = roadTemplate(road);
+    if (decoration && (neighbors >= 3 || (road.x + road.z) % 3 === 0)) {
+      b.parts(decoration, road.x + 0.5, road.z + 0.5);
+    } else if (neighbors >= 3) {
       b.streetDecoration(road.x, road.z, true);
     } else if ((road.x + road.z) % 3 === 0) {
       b.streetDecoration(road.x, road.z, false);
@@ -284,7 +376,9 @@ export function islandGeometry(buildings: Building[], board: Board, completed = 
 /** Корабль — отдельный объект; анимация не пересоздаёт геометрию острова. */
 export function shipGeometry() {
   const b = builder({ size: 0, isLand: () => false, shoreDirection: () => null });
-  b.model('ship-small', 0, 0, 0, 0.19, 0.19, 0.19);
+  const custom = objectTemplate('game/ship');
+  if (custom) b.parts(custom);
+  else b.model('ship-small', 0, 0, 0, 0.19, 0.19, 0.19);
   return b.finish();
 }
 
@@ -307,12 +401,53 @@ export function terrainGeometry() {
 }
 export function streetGeometry(fountain: boolean) {
   const b = builder(previewBoard);
-  b.building({ t: 'road', x: 0, z: 0 });
-  b.streetDecoration(0, 0, fountain);
+  const custom = objectTemplate(fountain ? 'game/fountain' : 'game/lantern');
+  if (custom) b.parts(custom, 0.5, 0.5);
+  else {
+    b.building({ t: 'road', x: 0, z: 0 });
+    b.streetDecoration(0, 0, fountain);
+  }
   return b.finish();
 }
 export function modelGeometry(data: ModelData) {
   const b = builder(previewBoard, false, { preview: data });
   b.model('preview', 0, 0, 0);
   return b.finish();
+}
+
+/** Исходная сборка переводится в детали без копирования рецептов зданий в редактор. */
+export function defaultObjectParts(id: string): ObjectPart[] {
+  const result: ObjectPart[] = [];
+  const b = builder(previewBoard, id === 'game/beacon', assets, result, false);
+  let center = 0.5;
+  if (id === 'game/ship') {
+    b.model('ship-small', 0, 0, 0, 0.19);
+    center = 0;
+  } else if (id === 'game/fountain' || id === 'game/lantern') {
+    b.building({ t: 'road', x: 0, z: 0 });
+    b.streetDecoration(0, 0, id === 'game/fountain');
+  } else {
+    const [, type, variant] = id.split('/');
+    const t = type === 'beacon' ? 'port' : type;
+    if (!['house', 'shop', 'farm', 'hall', 'road', 'port'].includes(t)) return [];
+    const z = Number(variant ?? 0);
+    b.building({ t: t as Building['t'], x: 0, z });
+    for (const part of result) part.position[2] -= z;
+  }
+  for (const part of result) {
+    part.position[0] -= center;
+    part.position[2] -= center;
+  }
+  return result;
+}
+export function objectPartGeometry(part: ObjectPart) {
+  const b = builder(previewBoard);
+  b.parts([part]);
+  const transform = Matrix.Compose(
+    Vector3.FromArray(part.scale),
+    Quaternion.FromEulerAngles(...part.rotation),
+    Vector3.FromArray(part.position),
+  );
+  // Запекаем свет в мировой ориентации, но оставляем локальные вершины для манипулятора.
+  return b.finish().transform(transform.invert());
 }

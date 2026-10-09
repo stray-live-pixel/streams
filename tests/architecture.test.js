@@ -5,7 +5,7 @@ import path from 'node:path';
 
 // Проверяем договорённость о границах модулей автоматически, а не только в README.
 test('слои не импортируют внутренности соседей; домен независим от платформы', async () => {
-  for (const layer of ['domain', 'ui', 'scene', 'input', 'persistence']) {
+  for (const layer of ['domain', 'ui', 'scene', 'input', 'persistence', 'objects']) {
     for (const file of await readdir(`src/${layer}`)) {
       if (!file.endsWith('.ts')) continue;
       const source = await readFile(`src/${layer}/${file}`, 'utf8');

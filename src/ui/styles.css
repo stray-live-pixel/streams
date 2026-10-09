@@ -1536,217 +1536,479 @@ body[data-hints='hide'] .coach.freeplay .mission {
   }
 }
 
-/* Изолированная мастерская: каталог остаётся доступен рядом с живым 3D. */
+/* Мастерская: библиотека, рабочая область и свойства видны одновременно. */
 dialog.objects-dialog {
-  width: min(1440px, calc(var(--game-width) * 0.96));
+  width: 1400px;
+  height: 780px;
   max-width: none;
-  height: calc(var(--game-height) * 0.94);
   max-height: none;
-  padding: 24px;
+  padding: 0;
   overflow: hidden;
-  background: var(--surface-paper);
+  background: var(--color-paper);
+  border-radius: 12px;
+  border: var(--border-paper);
+  font-size: 13px;
 }
-.objects-header,
-.object-pagination,
-.object-controls {
+.objects-dialog button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 8px 10px;
+  font: inherit;
+  border-radius: 6px;
+}
+.objects-dialog button svg,
+.objects-dialog [data-icon] svg {
+  display: block;
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+}
+.objects-dialog button:disabled {
+  opacity: 0.38;
+  cursor: default;
+}
+.objects-dialog button[aria-pressed='true'],
+.objects-dialog .workshop-primary {
+  color: var(--color-paper-light);
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+}
+.objects-dialog button:focus-visible,
+.objects-dialog input:focus-visible,
+.objects-dialog select:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+.objects-header {
+  height: 76px;
+  padding: 0 20px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  border-bottom: var(--border-paper);
+  background: var(--color-paper-light);
 }
-.objects-header {
-  margin-bottom: 18px;
+.workshop-brand,
+.workshop-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.workshop-brand > [data-icon] {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  background: var(--color-paper-shade);
+  border-radius: 10px;
 }
 .objects-header h1 {
   margin: 0;
-  font: 28px var(--font-story);
+  font: 23px var(--font-story);
 }
 .objects-header p {
-  margin: 6px 0 0;
+  margin: 3px 0 0;
   color: var(--color-ink-muted);
+  font-size: 12px;
+}
+#objects-close {
+  margin-left: 10px;
 }
 .objects-layout {
+  height: calc(100% - 113px);
   display: grid;
-  grid-template-columns: 290px minmax(0, 1fr);
-  gap: 24px;
-  height: calc(100% - 80px);
+  grid-template-columns: 246px minmax(0, 1fr) 284px;
+}
+.objects-catalog,
+.object-properties {
+  padding: 16px 14px;
+  min-height: 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 .objects-catalog {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  min-height: 0;
+  border-right: var(--border-paper);
 }
-.objects-catalog input,
-.objects-catalog select {
-  width: 100%;
-  padding: 10px;
+.object-properties {
+  border-left: var(--border-paper);
+  overflow-y: auto;
+}
+.panel-caption {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+.panel-caption > span {
+  color: var(--color-ink-muted);
+  font-size: 10px;
+  letter-spacing: 0.5px;
+}
+.objects-dialog input,
+.objects-dialog select {
+  min-width: 0;
   border: var(--border-paper);
-  border-radius: var(--radius-card);
-  font: inherit;
+  border-radius: 6px;
+  padding: 8px;
   color: var(--color-ink);
+  font: inherit;
   background: var(--color-paper-light);
 }
-#objects-count {
-  margin: 4px 0;
+.workshop-search {
+  position: relative;
+}
+.workshop-search > span {
+  position: absolute;
+  top: 9px;
+  left: 10px;
   color: var(--color-ink-muted);
 }
+#objects-search {
+  width: 100%;
+  padding-left: 35px;
+}
+#objects-group {
+  width: 100%;
+}
+#objects-count {
+  margin: 0;
+  color: var(--color-ink-muted);
+  font-size: 11px;
+}
 #objects-list {
-  overflow-y: auto;
+  flex: 1;
   min-height: 0;
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 5px;
-  padding: 2px 6px 2px 2px;
+  gap: 3px;
+  scrollbar-width: thin;
 }
 #objects-list button {
-  text-align: left;
-  overflow-wrap: anywhere;
+  width: 100%;
   flex-shrink: 0;
+  justify-content: flex-start;
+  text-align: left;
+  padding: 9px 8px;
+  border: 1px solid transparent;
+  background: transparent;
+  overflow-wrap: anywhere;
+}
+#objects-list button > span:first-child {
+  opacity: 0.7;
+}
+#objects-list button:hover {
+  background: var(--color-paper-shade);
 }
 #objects-list button[aria-pressed='true'] {
   background: var(--color-primary);
-  color: var(--color-paper-light);
+}
+.catalog-help {
+  margin: 0;
+  padding-top: 10px;
+  border-top: var(--border-paper);
+  color: var(--color-ink-muted);
+  font-size: 11px;
+  line-height: 1.5;
 }
 .object-preview {
   display: flex;
   flex-direction: column;
-  min-height: 0;
   min-width: 0;
-  gap: 10px;
+  min-height: 0;
+  background: var(--color-paper-light);
 }
-.object-preview h2 {
-  margin: 0;
-  font: 24px var(--font-story);
+.object-project-header {
+  padding: 13px 16px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  border-bottom: var(--border-paper);
 }
-#object-stats {
-  margin: 5px 0 0;
+.object-project-header label {
   color: var(--color-ink-muted);
-  font-size: 13px;
+  font-size: 12px;
+}
+#object-project {
+  flex: 1;
+  font-weight: 600;
+}
+.workshop-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+}
+.transform-tools,
+.history-tools {
+  display: flex;
+  gap: 3px;
+}
+.transform-tools button {
+  padding: 7px 8px;
+  font-size: 12px;
+}
+.snap-toggle {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  white-space: nowrap;
+}
+.snap-toggle input {
+  accent-color: var(--color-primary);
+}
+.history-tools button {
+  padding: 7px;
 }
 .object-stage {
   position: relative;
   flex: 1;
-  min-height: 160px;
+  min-height: 0;
+  margin: 0 12px;
   overflow: hidden;
-  background: var(--color-sea);
-  border-radius: var(--radius-card);
+  background: var(--surface-workshop);
+  border-radius: 8px;
 }
 #object-canvas {
   display: block;
   width: 100%;
   height: 100%;
   touch-action: none;
-  outline-offset: -4px;
+  outline-offset: -3px;
+}
+.stage-caption {
+  position: absolute;
+  left: 18px;
+  top: 16px;
+  pointer-events: none;
+  color: var(--color-paper-light);
+  z-index: 1;
+}
+.stage-caption h2 {
+  margin: 0;
+  font: 20px var(--font-story);
+}
+#object-stats {
+  color: inherit;
+  margin: 5px 0 0;
+  opacity: 0.7;
+  font-size: 11px;
+}
+.stage-label {
+  position: absolute;
+  bottom: 16px;
+  left: 16px;
+  color: var(--color-paper-light);
+  opacity: 0.65;
+  font-size: 9px;
+  letter-spacing: 1px;
+  pointer-events: none;
+}
+.stage-label span {
+  padding: 0 7px;
+}
+.object-controls {
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  display: flex;
+  gap: 3px;
+  padding: 4px;
+  background: var(--color-paper);
+  border-radius: 8px;
+  box-shadow: var(--shadow-control);
+}
+.object-controls button {
+  padding: 6px;
+  border: 0;
+  background: transparent;
+}
+.object-preview-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  gap: 8px;
+  color: var(--color-ink-muted);
+  font-size: 11px;
+}
+.object-pagination {
+  display: flex;
+  gap: 3px;
+}
+.object-pagination button {
+  border: 0;
+  padding: 4px;
 }
 #object-error {
   position: absolute;
-  left: 20px;
-  right: 20px;
-  top: 20px;
-  color: var(--color-accent);
+  left: 16px;
+  right: 16px;
+  top: 60px;
+  padding: 12px;
   background: var(--color-paper-light);
+  color: var(--color-accent);
 }
 #object-error:empty {
   display: none;
 }
-.object-controls {
-  justify-content: center;
-  flex-wrap: wrap;
+#object-inspector {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1;
+  min-height: 0;
 }
-.object-hint {
-  margin: 0;
-  text-align: center;
+#object-inspector[hidden],
+#object-asset-actions[hidden] {
+  display: none;
+}
+.add-part-button {
+  width: 100%;
+}
+#object-parts {
+  min-height: 80px;
+  height: 185px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  scrollbar-width: thin;
+}
+#object-parts button {
+  justify-content: flex-start;
+  text-align: left;
+  border: 0;
+  background: transparent;
+  padding: 6px 8px;
+  flex-shrink: 0;
   font-size: 12px;
+}
+#object-parts button span:last-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+#object-parts button[aria-pressed='true'] {
+  background: var(--color-primary);
+}
+.property-heading {
+  padding-top: 12px;
+  border-top: var(--border-paper);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.property-heading > div {
+  display: flex;
+  gap: 2px;
+}
+.property-heading button {
+  border: 0;
+  padding: 5px;
+}
+#object-transform-empty {
+  margin: 0;
+  color: var(--color-ink-muted);
+  font-size: 12px;
+}
+#object-transform {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+}
+#object-transform:disabled {
+  opacity: 0.4;
+}
+.transform-group legend {
+  padding: 0;
+  margin-bottom: 6px;
+  font-size: 11px;
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+}
+.transform-group legend span {
   color: var(--color-ink-muted);
 }
-#object-source {
-  font-size: 12px;
-  overflow-wrap: anywhere;
-  padding: 8px;
-  background: var(--color-paper-shade);
-  border-radius: var(--radius-paper);
+.transform-inputs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 5px;
 }
-@container game (max-width: 760px) {
-  dialog.objects-dialog {
-    padding: 12px;
-    width: var(--game-width);
-    height: var(--game-height);
-    border: 0;
-    border-radius: 0;
-  }
-  .objects-header {
-    gap: 8px;
-    margin-bottom: 12px;
-  }
-  .objects-header h1 {
-    font-size: 21px;
-  }
-  .objects-header p {
-    font-size: 12px;
-  }
-  .objects-header button {
-    padding: 8px;
-    flex-shrink: 0;
-  }
-  .objects-layout {
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: minmax(180px, 30%) minmax(0, 1fr);
-    gap: 12px;
-    height: calc(100% - 66px);
-  }
-  .objects-catalog {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    grid-template-rows: auto auto auto minmax(0, 1fr);
-    gap: 4px 8px;
-  }
-  .objects-catalog label {
-    font-size: 12px;
-  }
-  .objects-catalog label[for='objects-group'] {
-    grid-row: 1;
-    grid-column: 2;
-  }
-  #objects-search,
-  #objects-group {
-    grid-row: 2;
-    padding: 7px;
-    font-size: 13px;
-  }
-  #objects-count {
-    grid-column: 1 / -1;
-    font-size: 12px;
-    margin: 0;
-  }
-  #objects-list {
-    grid-column: 1 / -1;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    align-content: start;
-  }
-  #objects-list button {
-    font-size: 12px;
-    padding: 7px;
-  }
-  #objects-empty {
-    grid-column: 1 / -1;
-    margin: 0;
-  }
-  .object-preview {
-    gap: 6px;
-  }
-  .object-preview h2 {
-    font-size: 19px;
-  }
-  .object-controls button,
-  .object-pagination button {
-    padding: 7px 10px;
-    font-size: 12px;
-  }
-  .object-stage {
-    min-height: 100px;
-  }
+.transform-inputs label {
+  position: relative;
+}
+.transform-inputs label > span {
+  position: absolute;
+  left: 6px;
+  top: 8px;
+  font-size: 10px;
+  color: var(--color-ink-muted);
+  pointer-events: none;
+}
+.transform-inputs input {
+  width: 100%;
+  padding: 6px 4px 6px 19px;
+  font-size: 12px;
+}
+.transform-inputs input::-webkit-inner-spin-button {
+  width: 8px;
+}
+.original-button {
+  margin-top: auto;
+  font-size: 11px !important;
+  border: 0 !important;
+  color: var(--color-ink-muted);
+}
+.object-source-details {
+  font-size: 11px;
+  color: var(--color-ink-muted);
+  padding-top: 8px;
+  border-top: var(--border-paper);
+}
+.object-source-details summary {
+  cursor: pointer;
+}
+#object-source {
+  display: block;
+  overflow-wrap: anywhere;
+  padding-top: 8px;
+  font-size: 10px;
+}
+#object-asset-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1;
+}
+#object-asset-actions p {
+  color: var(--color-ink-muted);
+  line-height: 1.6;
+}
+.workshop-status {
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 16px;
+  border-top: var(--border-paper);
+  font-size: 10px;
+  color: var(--color-ink-muted);
+  background: var(--color-paper-light);
+}
+#object-save-status {
+  color: var(--color-primary);
 }
 
 /* showModal() выносит диалог в верхний слой браузера: масштаб задаём ему отдельно.

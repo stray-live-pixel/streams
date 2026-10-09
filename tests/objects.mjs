@@ -81,8 +81,136 @@ try {
           () =>
             new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))),
         );
-        await visiblePixels();
+        await visiblePixels().catch((error) => {
+          throw new Error(`${id}: ${error.message}`);
+        });
       }
+    }
+    if (width === 1440) {
+      await page.selectOption('#object-project', 'game/house/0');
+      assert.equal(await page.locator('#object-parts button').count(), 8);
+      await page.locator('#object-parts button').first().click();
+      // Drag the actual rendered Y-axis handle, rather than invoking scene internals.
+      await page.waitForTimeout(150);
+      const beforeDrag = await page.inputValue('#part-position-1');
+      const handle = await page.locator('#object-canvas').evaluate((canvas) => {
+        const context = document.createElement('canvas').getContext('2d');
+        context.canvas.width = canvas.width;
+        context.canvas.height = canvas.height;
+        context.drawImage(canvas, 0, 0);
+        const data = context.getImageData(0, 0, canvas.width, canvas.height).data;
+        let sumX = 0,
+          sumY = 0,
+          count = 0;
+        for (let y = 0; y < canvas.height; y++)
+          for (let x = 0; x < canvas.width; x++) {
+            const i = (y * canvas.width + x) * 4;
+            if (data[i + 1] > 170 && data[i] < 90 && data[i + 2] < 90) {
+              sumX += x;
+              sumY += y;
+              count++;
+            }
+          }
+        if (!count) throw new Error('Y-axis gizmo is not visible');
+        const box = canvas.getBoundingClientRect();
+        return {
+          x: box.x + ((sumX / count) * box.width) / canvas.width,
+          y: box.y + ((sumY / count) * box.height) / canvas.height,
+        };
+      });
+      await page.mouse.move(handle.x, handle.y);
+      await page.mouse.down();
+      await page.mouse.move(handle.x, handle.y - 45, { steps: 12 });
+      await page.mouse.up();
+      assert.notEqual(await page.inputValue('#part-position-1'), beforeDrag);
+      await page.click('#object-undo');
+      assert.equal(await page.inputValue('#part-position-1'), beforeDrag);
+      // Numeric transforms survive selection changes and undo/redo.
+      for (const [field, value] of [
+        ['position-0', '0.25'],
+        ['rotation-2', '15'],
+        ['scale-1', '0.9'],
+      ]) {
+        await page.fill(`#part-${field}`, value);
+        await page.locator(`#part-${field}`).press('Tab');
+      }
+      await page.click('#object-undo');
+      assert.notEqual(await page.inputValue('#part-scale-1'), '0.9');
+      await page.click('#object-redo');
+      assert.equal(await page.inputValue('#part-scale-1'), '0.9');
+      await page.click('#object-duplicate');
+      assert.equal(await page.locator('#object-parts button').count(), 9);
+      await page.click('#object-delete');
+      assert.equal(await page.locator('#object-parts button').count(), 8);
+      await page.click('#object-undo');
+      assert.equal(await page.locator('#object-parts button').count(), 9);
+      await page.click('#object-redo');
+      assert.equal(await page.locator('#object-parts button').count(), 8);
+      await page.click('#object-library');
+      await page.fill('#objects-search', 'chimney');
+      await page.click('#object-add');
+      assert.equal(await page.locator('#object-title').textContent(), 'Жилой дом · вариант 1');
+      assert.equal(await page.locator('#object-parts button').count(), 9);
+      await page.fill('#part-position-0', '0.4');
+      await page.locator('#part-position-0').press('Tab');
+      await page.fill('#part-scale-0', '0.3');
+      await page.locator('#part-scale-0').press('Tab');
+      await page.selectOption('#object-project', 'game/shop/0');
+      await page.selectOption('#object-project', 'game/house/0');
+      assert.equal(await page.locator('#object-parts button').count(), 9);
+      await page.locator('#object-parts button').last().click();
+      assert.equal(await page.inputValue('#part-position-0'), '0.4');
+      // Export includes unsaved work; save persists separately from the city.
+      const downloadEvent = page.waitForEvent('download');
+      await page.click('#object-export');
+      const download = await downloadEvent;
+      const downloadPath = await download.path();
+      const exported = JSON.parse(
+        await (await import('node:fs/promises')).readFile(downloadPath, 'utf8'),
+      );
+      assert.equal(exported.objects['game/house/0'].length, 9);
+      await page.click('#object-save');
+      const savedTemplates = await page.evaluate(() =>
+        localStorage.getItem('ostrov-object-templates-v1'),
+      );
+      assert.equal(JSON.parse(savedTemplates).objects['game/house/0'].at(-1).position[0], 0.4);
+      await page.keyboard.press('Escape');
+      await page.click('#menu-objects');
+      assert.equal(await page.locator('#object-parts button').count(), 9);
+      await page.reload();
+      await page.click('#menu-objects');
+      assert.equal(await page.locator('#object-parts button').count(), 9);
+      const invalid = {
+        version: 1,
+        objects: { 'game/house/0': [{ id: 'bad', asset: 'missing' }] },
+      };
+      await page.setInputFiles('#object-import-file', {
+        name: 'invalid.json',
+        mimeType: 'application/json',
+        buffer: Buffer.from(JSON.stringify(invalid)),
+      });
+      await page.waitForFunction(() =>
+        document.querySelector('#object-save-status').textContent.includes('Некорректный'),
+      );
+      assert.equal(
+        await page.evaluate(() => localStorage.getItem('ostrov-object-templates-v1')),
+        savedTemplates,
+      );
+      await page.setInputFiles('#object-import-file', {
+        name: 'templates.json',
+        mimeType: 'application/json',
+        buffer: Buffer.from(JSON.stringify(exported)),
+      });
+      await page.waitForFunction(() =>
+        document.querySelector('#object-save-status').textContent.includes('импортирована'),
+      );
+      await page.locator('#object-parts button').first().click();
+      await page.screenshot({ path: path.join(screenshots, 'workshop-editor.png') });
+      // Restore a clean composition through the same reversible editing path.
+      await page.click('#object-original');
+      assert.equal(await page.locator('#object-parts button').count(), 8);
+      await page.click('#object-save');
+      await page.fill('#objects-search', '');
     }
     await page.selectOption('#objects-group', 'Объекты игры');
     await page.fill('#objects-search', 'маяк');
@@ -130,7 +258,7 @@ try {
     await context.close();
   }
   console.log(
-    `Objects: all ${rawIds.length} OBJ models, game compositions, camera, search, mobile, offline and save isolation PASS`,
+    `Objects: all ${rawIds.length} OBJ models, game compositions, editing, history, import/export, persistence, camera, search, mobile, offline and save isolation PASS`,
   );
   console.log(`Screenshots: ${screenshots}`);
 } finally {

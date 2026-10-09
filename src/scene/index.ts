@@ -1,3 +1,4 @@
+import { objectTemplateRevision } from '../objects/index.js';
 import { Engine } from '@babylonjs/core/Engines/engine.js';
 import { Scene } from '@babylonjs/core/scene.js';
 import { FreeCamera } from '@babylonjs/core/Cameras/freeCamera.js';
@@ -14,6 +15,7 @@ import { islandGeometry, shipGeometry } from './geometry.js';
 import { createCityLife } from './life.js';
 import { harborLayout } from './harbor.js';
 import { voyageFrame } from './voyage.js';
+export { defaultObjectParts } from './geometry.js';
 export { createObjectPreview, previewObjects } from './preview.js';
 
 /**
@@ -283,11 +285,12 @@ export function createScene({ canvas, board, onArrivalFinished, onError }: Scene
     setModel(next: GameModel) {
       model = next;
       life.setModel(next);
-      const key = JSON.stringify([next.buildings, next.won]);
+      const key = JSON.stringify([next.buildings, next.won, objectTemplateRevision()]);
       if (key !== signature) {
         if (island) {
           island.dispose();
         }
+        shipGeometry().applyToMesh(ship);
         island = new Mesh('island', scene);
         islandGeometry(next.buildings, board, next.won).applyToMesh(island);
         island.material = material;

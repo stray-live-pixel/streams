@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { checkTypes } from './typecheck.mjs';
 import { packAssets } from './pack-assets.mjs';
+import { packWorkshop } from './pack-workshop.mjs';
 import { packIntro } from './pack-intro.mjs';
 export const root = fileURLToPath(new URL('../', import.meta.url));
 
@@ -11,6 +12,7 @@ export const root = fileURLToPath(new URL('../', import.meta.url));
 export async function build() {
   const models = await packAssets(root);
   await packIntro(root);
+  await packWorkshop(root);
   await checkTypes();
   const result = await bundle({
     absWorkingDir: root,
