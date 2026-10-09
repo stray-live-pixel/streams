@@ -20,4 +20,3 @@ Composition: the distinctive island, harbor and lighthouse occupy the LOWER LEFT
 Lighting: warm late-afternoon sun from upper left, soft long shadows, subtle atmospheric depth, water has broad calm facets and restrained reflections, realistic sense of materials and volume while every silhouette stays low-poly.
 Palette to harmonize with current game: desaturated sea #8eb8b7, sage grass #a8b78d, pine green #496951, cream #f7efd9, terracotta #aa503c, warm timber brown and soft honey highlights. Avoid saturated blue, neon green, stark white, and heavy orange cinematic grading.
 Materials: matte faceted surfaces, simplified timber and stucco, enough believable detail to guide future game art, no gritty photographic texture, no miniature tilt-shift blur, no outlines, no flat infographic shapes. Keep the whole main island in focus. Cheerful but quiet and unhurried.
-
