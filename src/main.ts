@@ -5,12 +5,13 @@ import { createStorage } from './persistence/index.js';
 import { createUI, createMenu, fitGameViewport } from './ui/index.js';
 import { createScene } from './scene/index.js';
 import { bindInput } from './input/index.js';
+import { objectFootprints } from './objects/index.js';
 
 /** Только координатор соединяет город, навигацию, сохранения и ленивую 3D-сцену. */
 const disposeViewport = fitGameViewport(document.getElementById('game-viewport')!);
 const storage = createStorage(() => window.localStorage);
 const loaded = storage.load();
-const game = createGame(loaded.state);
+const game = createGame(loaded.state, objectFootprints());
 let settings = storage.loadSettings();
 let hasGame = loaded.state !== null;
 let scene: CityScene | undefined;

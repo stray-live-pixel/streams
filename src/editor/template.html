@@ -102,7 +102,7 @@
             ></canvas>
             <div id="object-bounds" class="bounds-status" role="status"></div>
             <div class="stage-help">
-              <div class="stage-label">ПЕРСПЕКТИВА · КЛЕТКА 1 × 1 · ЦЕНТР (0, 0)</div>
+              <div class="stage-label" id="object-grid-label">ПЕРСПЕКТИВА · СЕТКА 0,05</div>
               <p
                 title="Щёлкните по сцене. Q/E — вниз/вверх, левая кнопка — орбита, колесо — приближение."
               >
@@ -143,6 +143,34 @@
         </section>
         <aside class="object-properties" aria-label="Свойства объекта">
           <div id="object-inspector">
+            <section class="object-layout" aria-label="Размер постройки и участок">
+              <div class="panel-caption">
+                <strong>Постройка и участок</strong><span id="object-footprint-count"></span>
+              </div>
+              <label class="object-scale-label" for="object-scale"
+                >Общий масштаб
+                <span
+                  ><input id="object-scale" type="number" min="10" max="300" step="1" value="100" />
+                  %</span
+                >
+              </label>
+              <div id="object-footprint-editor">
+                <div class="footprint-presets" aria-label="Форма участка">
+                  <button type="button" data-preset="single">1×1</button>
+                  <button type="button" data-preset="horizontal">2×1</button>
+                  <button type="button" data-preset="vertical">1×2</button>
+                  <button type="button" data-preset="square">2×2</button>
+                  <button type="button" data-preset="corner">Г</button>
+                </div>
+                <div class="footprint-layout">
+                  <div id="object-footprint-cells" aria-label="Занимаемые клетки участка"></div>
+                  <p>
+                    Нажимайте на клетки.<br />⌖ — точка размещения в игре.<br />Масштаб меняет
+                    модель, клетки — занятое место.
+                  </p>
+                </div>
+              </div>
+            </section>
             <div class="panel-caption">
               <strong>Состав постройки</strong><span id="object-parts-count"></span>
             </div>

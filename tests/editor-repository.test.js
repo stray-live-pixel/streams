@@ -86,3 +86,32 @@ test('отказ Git hook восстанавливает конфигураци�
   assert.equal(git('rev-parse', 'HEAD'), before.commit);
   assert.equal(git('status', '--porcelain'), '');
 });
+test('масштаб и маска сохраняются с деталями в одном коммите без потери соседних объектов', async (t) => {
+  const { repo, git } = await fixture(t);
+  const original = await repo.read();
+  const setting = {
+    scale: 0.7,
+    footprint: [
+      { x: 0, z: 0 },
+      { x: 1, z: 0 },
+      { x: 0, z: 1 },
+    ],
+  };
+  const first = await repo.save('game/house/0', [part()], original.revision, setting);
+  const second = await repo.save('game/house/1', [part()], first.revision, {
+    scale: 0.5,
+    footprint: [{ x: 0, z: 0 }],
+  });
+  assert.deepEqual(second.config.settings['game/house/0'], setting);
+  const unchanged = await repo.save(
+    'game/house/1',
+    [part()],
+    second.revision,
+    second.config.settings['game/house/1'],
+  );
+  assert.equal(unchanged.changed, false);
+  assert.equal(
+    git('diff-tree', '--no-commit-id', '--name-only', '-r', 'HEAD'),
+    'src/objects/templates.json',
+  );
+});

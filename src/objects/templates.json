@@ -1,4 +1,42 @@
 {
   "version": 1,
-  "objects": {}
+  "objects": {},
+  "settings": {
+    "game/house/0": {
+      "scale": 0.7,
+      "footprint": [
+        {
+          "x": 0,
+          "z": 0
+        }
+      ]
+    },
+    "game/house/1": {
+      "scale": 0.7,
+      "footprint": [
+        {
+          "x": 0,
+          "z": 0
+        }
+      ]
+    },
+    "game/house/2": {
+      "scale": 0.7,
+      "footprint": [
+        {
+          "x": 0,
+          "z": 0
+        }
+      ]
+    },
+    "game/house/3": {
+      "scale": 0.7,
+      "footprint": [
+        {
+          "x": 0,
+          "z": 0
+        }
+      ]
+    }
+  }
 }

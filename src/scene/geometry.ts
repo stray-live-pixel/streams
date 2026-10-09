@@ -5,11 +5,13 @@ import {
   setObjectTemplates,
   parseObjectTemplates,
   builtInObjectTemplates,
+  objectSettings,
+  scaleObjectParts,
 } from '../objects/index.js';
 import templateModels from '../../.generated/template-models.json';
 import modelIds from '../../.generated/model-ids.json';
 import { VertexData } from '@babylonjs/core/Meshes/mesh.vertexData.js';
-import type { Building } from '../domain/index.js';
+import { buildingObjectId, buildingCells, type Building } from '../domain/index.js';
 import type { Board } from './types.js';
 import { harborLayout } from './harbor.js';
 import assets from '../../.generated/models.json';
@@ -239,15 +241,16 @@ function builder(
     const x = b.x + 0.5,
       z = b.z + 0.5;
     const variant = (b.x * 3 + b.z) % 4;
-    const id =
-      b.t === 'port'
-        ? completed
-          ? 'game/beacon'
-          : 'game/port'
-        : `game/${b.t}/${b.t === 'house' ? variant : b.t === 'shop' ? variant % 2 : 0}`;
-    const custom = overrides ? objectTemplate(id) : undefined;
+    const id = b.t === 'port' && completed ? 'game/beacon' : buildingObjectId(b);
+    const custom = overrides ? gameObjectParts(id) : undefined;
     if (custom) {
-      if (b.t !== 'road' && b.t !== 'port') shadow(x + 0.03, z + 0.06, 0.52, 0.45);
+      if (b.t !== 'road' && b.t !== 'port')
+        shadow(
+          x + 0.03,
+          z + 0.06,
+          0.52 * objectSettings(id).scale,
+          0.45 * objectSettings(id).scale,
+        );
       if (b.t === 'port') {
         const layout = harborLayout(b, board);
         const [dx, dz] = layout.direction;
@@ -342,7 +345,7 @@ function builder(
 /** Полностью пересобирается только при изменении списка построек. */
 export function islandGeometry(buildings: Building[], board: Board, completed = false) {
   const b = builder(board, completed),
-    occupied = new Set(buildings.map((p) => p.x + ',' + p.z));
+    occupied = new Set(buildings.flatMap(buildingCells).map((p) => p.x + ',' + p.z));
   for (let x = 0; x < board.size; x++)
     for (let z = 0; z < board.size; z++) {
       if (!board.isLand(x, z)) continue;
@@ -374,9 +377,9 @@ export function islandGeometry(buildings: Building[], board: Board, completed = 
   const roadTemplate = (road: Building) => {
     const neighbors = roadNeighbors(road);
     return neighbors >= 3
-      ? objectTemplate('game/fountain')
+      ? gameObjectParts('game/fountain')
       : (road.x + road.z) % 3 === 0
-        ? objectTemplate('game/lantern')
+        ? gameObjectParts('game/lantern')
         : undefined;
   };
   for (const building of buildings) {
@@ -399,7 +402,7 @@ export function islandGeometry(buildings: Building[], board: Board, completed = 
 /** Корабль — отдельный объект; анимация не пересоздаёт геометрию острова. */
 export function shipGeometry() {
   const b = builder({ size: 0, isLand: () => false, shoreDirection: () => null });
-  const custom = objectTemplate('game/ship');
+  const custom = gameObjectParts('game/ship');
   if (custom) b.parts(custom);
   else b.model('ship-small', 0, 0, 0, 0.19, 0.19, 0.19);
   return b.finish();
@@ -424,7 +427,7 @@ export function terrainGeometry() {
 }
 export function streetGeometry(fountain: boolean) {
   const b = builder(previewBoard);
-  const custom = objectTemplate(fountain ? 'game/fountain' : 'game/lantern');
+  const custom = gameObjectParts(fountain ? 'game/fountain' : 'game/lantern');
   if (custom) b.parts(custom, 0.5, 0.5);
   else {
     b.building({ t: 'road', x: 0, z: 0 });
@@ -462,6 +465,11 @@ export function defaultObjectParts(id: string): ObjectPart[] {
     part.position[2] -= center;
   }
   return result;
+}
+function gameObjectParts(id: string) {
+  const scale = objectSettings(id).scale;
+  const parts = objectTemplate(id) ?? (scale !== 1 ? defaultObjectParts(id) : undefined);
+  return parts && scaleObjectParts(parts, scale);
 }
 export function objectPartGeometry(part: ObjectPart) {
   const b = builder(previewBoard);

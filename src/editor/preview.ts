@@ -2,7 +2,15 @@ import { GizmoManager } from '@babylonjs/core/Gizmos/gizmoManager.js';
 import { CreateLineSystem } from '@babylonjs/core/Meshes/Builders/linesBuilder.js';
 import { CreateGround } from '@babylonjs/core/Meshes/Builders/groundBuilder.js';
 import { PointerEventTypes } from '@babylonjs/core/Events/pointerEvents.js';
-import { copyParts, editableObjectIds, objectTemplate, type ObjectPart } from '../objects/index.js';
+import {
+  copyParts,
+  editableObjectIds,
+  objectTemplate,
+  type ObjectPart,
+  type ObjectSettings,
+  defaultObjectSettings,
+  objectSettings,
+} from '../objects/index.js';
 import { Engine } from '@babylonjs/core/Engines/engine.js';
 import { Scene } from '@babylonjs/core/scene.js';
 import { ArcRotateCamera } from '@babylonjs/core/Cameras/arcRotateCamera.js';
@@ -150,6 +158,7 @@ export function createObjectPreview(canvas: HTMLCanvasElement) {
   gizmos.scaleRatio = 1.2;
   let meshes = new Map<string, Mesh>();
   let parts: ObjectPart[] = [];
+  let layout = defaultObjectSettings();
   let picked: string | null = null;
   let mode: 'position' | 'rotation' | 'scale' = 'position';
   let onPick = (_id: string | null) => {};
@@ -169,7 +178,7 @@ export function createObjectPreview(canvas: HTMLCanvasElement) {
     attach(picked);
     const current = gizmos.gizmos[`${mode}Gizmo`];
     if (current) {
-      current.snapDistance = snap ? (mode === 'rotation' ? Math.PI / 12 : 0.05) : 0;
+      current.snapDistance = snap ? (mode === 'rotation' ? Math.PI / 12 : 0.025) : 0;
       if (!observed.has(current)) {
         observed.add(current);
         current.onDragStartObservable.add(() => camera.detachControl());
@@ -177,13 +186,15 @@ export function createObjectPreview(canvas: HTMLCanvasElement) {
           camera.attachControl(canvas, true);
           for (const part of parts) {
             const mesh = meshes.get(part.id)!;
-            part.position = mesh.position.asArray() as ObjectPart['position'];
+            part.position = mesh.position
+              .scale(1 / layout.scale)
+              .asArray() as ObjectPart['position'];
             part.rotation = (
               mesh.rotationQuaternion?.toEulerAngles() ?? mesh.rotation
             ).asArray() as ObjectPart['rotation'];
             part.scale = mesh.scaling
               .asArray()
-              .map((v) => Math.max(0.01, Math.min(100, v))) as ObjectPart['scale'];
+              .map((v) => Math.max(0.01, Math.min(100, v / layout.scale))) as ObjectPart['scale'];
             part.position = part.position.map((v) =>
               Math.max(-100, Math.min(100, v)),
             ) as ObjectPart['position'];
@@ -260,6 +271,7 @@ export function createObjectPreview(canvas: HTMLCanvasElement) {
     const min = new Vector3(Infinity, Infinity, Infinity);
     const max = new Vector3(-Infinity, -Infinity, -Infinity);
     let triangles = 0;
+    let outside = false;
     for (const mesh of scene.meshes) {
       if (mesh.metadata?.editorHelper) continue;
       mesh.computeWorldMatrix(true);
@@ -267,6 +279,23 @@ export function createObjectPreview(canvas: HTMLCanvasElement) {
       min.minimizeInPlace(bounds.minimumWorld);
       max.maximizeInPlace(bounds.maximumWorld);
       triangles += mesh.getTotalIndices() / 3;
+      if (grid) {
+        const positions = mesh.getVerticesData('position') ?? [];
+        for (let i = 0; i < positions.length; i += 3) {
+          const point = Vector3.TransformCoordinates(
+            new Vector3(positions[i], positions[i + 1], positions[i + 2]),
+            mesh.getWorldMatrix(),
+          );
+          if (
+            !layout.footprint.some(
+              (cell) => Math.abs(point.x - cell.x) <= 0.501 && Math.abs(point.z - cell.z) <= 0.501,
+            )
+          ) {
+            outside = true;
+            break;
+          }
+        }
+      }
     }
     if (!triangles) {
       min.set(-0.5, 0, -0.5);
@@ -275,7 +304,16 @@ export function createObjectPreview(canvas: HTMLCanvasElement) {
     const size = max.subtract(min);
     if (fit) {
       const frameMin = grid ? Vector3.Minimize(min, new Vector3(-0.6, 0, -0.6)) : min;
-      const frameMax = grid ? Vector3.Maximize(max, new Vector3(0.6, 0.1, 0.6)) : max;
+      const frameMax = grid
+        ? Vector3.Maximize(
+            max,
+            new Vector3(
+              Math.max(...layout.footprint.map((c) => c.x)) + 0.6,
+              0.1,
+              Math.max(...layout.footprint.map((c) => c.z)) + 0.6,
+            ),
+          )
+        : max;
       target = frameMin.add(frameMax).scale(0.5);
       extent = Math.max(frameMax.subtract(frameMin).length() / 2, minExtent);
       engine.resize();
@@ -285,51 +323,72 @@ export function createObjectPreview(canvas: HTMLCanvasElement) {
     return {
       triangles,
       size: [size.x, size.y, size.z],
-      outside: min.x < -0.501 || max.x > 0.501 || min.z < -0.501 || max.z > 0.501,
+      outside,
     };
   }
-  function setParts(next: ObjectPart[], id: string | null, fit = false) {
+  function setParts(
+    next: ObjectPart[],
+    id: string | null,
+    fit = false,
+    settings: ObjectSettings = defaultObjectSettings(),
+  ) {
     clear();
     parts = copyParts(next);
+    layout = structuredClone(settings);
     const material = palette();
     for (const part of parts) {
       const mesh = new Mesh(part.id, scene);
       objectPartGeometry(part).applyToMesh(mesh);
       mesh.material = material;
-      mesh.position.copyFromFloats(...part.position);
+      mesh.position.copyFromFloats(
+        ...(part.position.map((n) => n * layout.scale) as ObjectPart['position']),
+      );
       mesh.rotation.copyFromFloats(...part.rotation);
-      mesh.scaling.copyFromFloats(...part.scale);
+      mesh.scaling.copyFromFloats(
+        ...(part.scale.map((n) => n * layout.scale) as ObjectPart['scale']),
+      );
       meshes.set(part.id, mesh);
     }
     const lines: Vector3[][] = [];
-    for (let i = 0; i <= 10; i++) {
-      const n = -0.5 + i / 10;
-      lines.push([new Vector3(n, 0.002, -0.5), new Vector3(n, 0.002, 0.5)]);
-      lines.push([new Vector3(-0.5, 0.002, n), new Vector3(0.5, 0.002, n)]);
-    }
+    for (const cell of layout.footprint)
+      for (let i = 0; i <= 20; i++) {
+        const n = -0.5 + i / 20;
+        lines.push([
+          new Vector3(cell.x + n, 0.002, cell.z - 0.5),
+          new Vector3(cell.x + n, 0.002, cell.z + 0.5),
+        ]);
+        lines.push([
+          new Vector3(cell.x - 0.5, 0.002, cell.z + n),
+          new Vector3(cell.x + 0.5, 0.002, cell.z + n),
+        ]);
+      }
     grid = CreateLineSystem('building-cell-grid', { lines }, scene);
     grid.color = Color3.FromHexString('#c7b37f');
     grid.alpha = 0.4;
     grid.isPickable = false;
     grid.metadata = { editorHelper: true };
-    const cell = CreateGround('building-cell', { width: 1, height: 1 }, scene);
-    cell.position.y = -0.004;
-    cell.isPickable = false;
-    cell.metadata = { editorHelper: true };
     const floor = new StandardMaterial('building-cell-material', scene);
     floor.disableLighting = true;
     floor.emissiveColor = Color3.FromHexString('#a6b08b');
     floor.alpha = 0.8;
     floor.backFaceCulling = false;
-    cell.material = floor;
+    for (const point of layout.footprint) {
+      const cell = CreateGround('building-cell', { width: 1, height: 1 }, scene);
+      cell.position.set(point.x, -0.004, point.z);
+      cell.isPickable = false;
+      cell.metadata = { editorHelper: true };
+      cell.material = floor;
+    }
     // Контур имеет физическую ширину 0,012 игровой единицы и остаётся видимым на фоне.
-    const edgeLines = [-0.006, 0, 0.006].map((offset) => [
-      new Vector3(-0.5 + offset, 0.004, -0.5 + offset),
-      new Vector3(0.5 - offset, 0.004, -0.5 + offset),
-      new Vector3(0.5 - offset, 0.004, 0.5 - offset),
-      new Vector3(-0.5 + offset, 0.004, 0.5 - offset),
-      new Vector3(-0.5 + offset, 0.004, -0.5 + offset),
-    ]);
+    const edgeLines = layout.footprint.flatMap((cell) =>
+      [-0.006, 0, 0.006].map((offset) => [
+        new Vector3(cell.x - 0.5 + offset, 0.004, cell.z - 0.5 + offset),
+        new Vector3(cell.x + 0.5 - offset, 0.004, cell.z - 0.5 + offset),
+        new Vector3(cell.x + 0.5 - offset, 0.004, cell.z + 0.5 - offset),
+        new Vector3(cell.x - 0.5 + offset, 0.004, cell.z + 0.5 - offset),
+        new Vector3(cell.x - 0.5 + offset, 0.004, cell.z - 0.5 + offset),
+      ]),
+    );
     const border = CreateLineSystem('building-cell-border', { lines: edgeLines }, scene);
     border.color = Color3.FromHexString('#ffe2a5');
     border.metadata = { editorHelper: true };
@@ -358,7 +417,12 @@ export function createObjectPreview(canvas: HTMLCanvasElement) {
       const entry = entries.find((entry) => entry.id === id);
       if (!entry) throw new Error(`Неизвестный объект: ${id}`);
       if (editableObjectIds.includes(id))
-        return setParts(copyParts(objectTemplate(id) ?? defaultObjectParts(id)), null, true);
+        return setParts(
+          copyParts(objectTemplate(id) ?? defaultObjectParts(id)),
+          null,
+          true,
+          objectSettings(id),
+        );
       clear();
       parts = [];
       entry.create(scene, palette());

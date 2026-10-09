@@ -47,3 +47,30 @@ test('пустая композиция допустима и сохраняет
   setObjectTemplates(parseObjectTemplates({ version: 1, objects: { 'game/house/0': [] } }, assets));
   assert.deepEqual(objectTemplate('game/house/0'), []);
 });
+test('масштаб и форма участка проверяются независимо от геометрии', () => {
+  const settings = {
+    'game/house/0': {
+      scale: 0.7,
+      footprint: [
+        { x: 0, z: 0 },
+        { x: 1, z: 0 },
+        { x: 0, z: 1 },
+      ],
+    },
+  };
+  assert.deepEqual(parseObjectTemplates({ ...config(), settings }, assets).settings, settings);
+  for (const setting of [
+    { scale: 0, footprint: [{ x: 0, z: 0 }] },
+    { scale: NaN, footprint: [{ x: 0, z: 0 }] },
+    {
+      scale: 1,
+      footprint: [
+        { x: 0, z: 0 },
+        { x: 2, z: 0 },
+      ],
+    },
+  ])
+    assert.throws(() =>
+      parseObjectTemplates({ ...config(), settings: { 'game/house/0': setting } }, assets),
+    );
+});

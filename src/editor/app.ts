@@ -3,7 +3,11 @@ import {
   editableObjectIds,
   type ObjectPart,
   setObjectTemplates,
+  objectSettings,
+  footprintObjectIds,
+  type ObjectSettings,
 } from '../objects/index.js';
+import { validFootprint } from '../domain/index.js';
 import icons from '../../.generated/workshop-icons.json';
 import { createObjectPreview, previewObjects } from './preview.js';
 import { defaultObjectParts } from '../scene/index.js';
@@ -12,7 +16,12 @@ import type { ProjectSnapshot, SaveResult } from './protocol.js';
 export interface ObjectEditorOptions {
   objects: readonly { id: string; name: string; group: string; source: string }[];
   load(): Promise<ProjectSnapshot>;
-  save(id: string, parts: ObjectPart[], revision: string): Promise<SaveResult>;
+  save(
+    id: string,
+    parts: ObjectPart[],
+    revision: string,
+    settings: ObjectSettings,
+  ): Promise<SaveResult>;
   createDefaultParts(id: string): ObjectPart[];
   create(canvas: HTMLCanvasElement): {
     select(id: string): { triangles: number; size: number[]; outside: boolean };
@@ -21,6 +30,7 @@ export interface ObjectEditorOptions {
       parts: ObjectPart[],
       id: string | null,
       fit?: boolean,
+      settings?: ObjectSettings,
     ): { triangles: number; size: number[]; outside: boolean };
     bindEditor(select: (id: string | null) => void, change: (parts: ObjectPart[]) => void): void;
     setMode(mode: 'position' | 'rotation' | 'scale'): void;
@@ -34,9 +44,10 @@ export interface ObjectEditorOptions {
 }
 interface Draft {
   parts: ObjectPart[];
+  settings: ObjectSettings;
   saved: string;
-  past: ObjectPart[][];
-  future: ObjectPart[][];
+  past: { parts: ObjectPart[]; settings: ObjectSettings }[];
+  future: { parts: ObjectPart[]; settings: ObjectSettings }[];
 }
 
 /** UI хранит черновики; сцена — меши, хранилище — только проверенные композиции. */
@@ -64,7 +75,9 @@ export async function createObjectEditor(document: Document, options: ObjectEdit
     group.append(option);
   }
   const draft = () => (selected ? drafts.get(selected) : undefined);
-  const dirty = (item: Draft) => JSON.stringify(item.parts) !== item.saved;
+  const snapshot = (item: Pick<Draft, 'parts' | 'settings'>) =>
+    structuredClone({ parts: item.parts, settings: item.settings });
+  const dirty = (item: Draft) => JSON.stringify(snapshot(item)) !== item.saved;
   const status = (text: string) => {
     get('object-save-status').textContent = text;
   };
@@ -72,9 +85,11 @@ export async function createObjectEditor(document: Document, options: ObjectEdit
     const bounds = get('object-bounds');
     bounds.hidden = !draft();
     bounds.dataset.outside = String(result.outside);
+    const count = draft()?.settings.footprint.length ?? 1;
     bounds.textContent = result.outside
-      ? 'Часть объекта выходит за клетку'
-      : 'Объект внутри клетки 1 × 1';
+      ? 'Часть объекта выходит за участок'
+      : `Объект внутри участка · ${count} кл.`;
+    get('object-grid-label').textContent = `ПЕРСПЕКТИВА · ${count} КЛ. · СЕТКА 0,05`;
     get('object-stats').textContent =
       `${result.triangles.toLocaleString('ru-RU')} треугольников · ${result.size.map((n) => n.toFixed(2)).join(' × ')} ед.`;
   }
@@ -91,6 +106,28 @@ export async function createObjectEditor(document: Document, options: ObjectEdit
     get<HTMLButtonElement>('object-duplicate').disabled = !part;
     get<HTMLButtonElement>('object-delete').disabled = !part;
     get<HTMLFieldSetElement>('object-transform').disabled = !part;
+    get<HTMLInputElement>('object-scale').value = String(
+      Math.round((item?.settings.scale ?? 1) * 100),
+    );
+    get('object-footprint-editor').hidden = !selected || !footprintObjectIds.includes(selected);
+    get('object-footprint-count').textContent = `${item?.settings.footprint.length ?? 1} кл.`;
+    const cells = get('object-footprint-cells');
+    cells.replaceChildren();
+    for (let z = 3; z >= 0; z--)
+      for (let x = 0; x < 4; x++) {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.dataset.x = String(x);
+        button.dataset.z = String(z);
+        button.setAttribute('aria-label', `Клетка ${x}, ${z}${!x && !z ? ' — опорная' : ''}`);
+        button.setAttribute(
+          'aria-pressed',
+          String(!!item?.settings.footprint.some((cell) => cell.x === x && cell.z === z)),
+        );
+        button.textContent = !x && !z ? '⌖' : '';
+        button.disabled = !x && !z;
+        cells.append(button);
+      }
     get('object-transform-empty').hidden = !!part;
     get('object-parts-count').textContent = `${item?.parts.length ?? 0} деталей`;
     const layers = get('object-parts');
@@ -119,7 +156,7 @@ export async function createObjectEditor(document: Document, options: ObjectEdit
   }
   function draw(fit = false) {
     const item = draft();
-    if (item && preview) stats(preview.setParts(item.parts, selectedPart, fit));
+    if (item && preview) stats(preview.setParts(item.parts, selectedPart, fit, item.settings));
     renderInspector();
   }
   function selectPart(id: string | null) {
@@ -127,15 +164,27 @@ export async function createObjectEditor(document: Document, options: ObjectEdit
     preview?.attach(id);
     renderInspector();
   }
-  function change(parts: ObjectPart[], nextPart = selectedPart) {
+  function change(
+    parts: ObjectPart[],
+    nextPart = selectedPart,
+    settings = draft()?.settings,
+    fit = false,
+  ) {
     const item = draft();
-    if (!item || JSON.stringify(item.parts) === JSON.stringify(parts)) return;
-    item.past.push(copyParts(item.parts));
+    if (
+      !item ||
+      !settings ||
+      (JSON.stringify(item.parts) === JSON.stringify(parts) &&
+        JSON.stringify(item.settings) === JSON.stringify(settings))
+    )
+      return;
+    item.past.push(snapshot(item));
     if (item.past.length > 100) item.past.shift();
     item.future = [];
     item.parts = copyParts(parts);
+    item.settings = structuredClone(settings);
     selectedPart = nextPart;
-    draw();
+    draw(fit);
   }
   function select(id: string) {
     const object = options.objects.find((o) => o.id === id);
@@ -151,7 +200,14 @@ export async function createObjectEditor(document: Document, options: ObjectEdit
         target = id;
         if (!drafts.has(id)) {
           const parts = preview.getParts(id);
-          drafts.set(id, { parts, saved: JSON.stringify(parts), past: [], future: [] });
+          const settings = objectSettings(id);
+          drafts.set(id, {
+            parts,
+            settings,
+            saved: JSON.stringify({ parts, settings }),
+            past: [],
+            future: [],
+          });
         }
         draw(true);
         if (changedObject) get('object-parts').scrollTop = 0;
@@ -199,13 +255,14 @@ export async function createObjectEditor(document: Document, options: ObjectEdit
     if (!item || !selected || saving || !dirty(item)) return;
     saving = true;
     const parts = copyParts(item.parts);
+    const settings = structuredClone(item.settings);
     renderInspector();
     status('Записываем конфигурацию и создаём коммит в main…');
     try {
-      const result = await options.save(selected, parts, revision);
+      const result = await options.save(selected, parts, revision, settings);
       revision = result.revision;
       setObjectTemplates(result.config);
-      item.saved = JSON.stringify(parts);
+      item.saved = JSON.stringify({ parts, settings });
       saving = false;
       renderInspector();
       status(
@@ -229,10 +286,12 @@ export async function createObjectEditor(document: Document, options: ObjectEdit
     const source = redo ? item.future : item.past;
     const next = source.pop();
     if (!next) return;
-    (redo ? item.past : item.future).push(copyParts(item.parts));
-    item.parts = next;
-    selectedPart = next.some((p) => p.id === selectedPart) ? selectedPart : null;
-    draw();
+    const refit = JSON.stringify(item.settings) !== JSON.stringify(next.settings);
+    (redo ? item.past : item.future).push(snapshot(item));
+    item.parts = next.parts;
+    item.settings = next.settings;
+    selectedPart = next.parts.some((p) => p.id === selectedPart) ? selectedPart : null;
+    draw(refit);
   }
   listen('object-save', save);
   listen('object-undo', () => history(false));
@@ -293,6 +352,70 @@ export async function createObjectEditor(document: Document, options: ObjectEdit
     const item = draft();
     if (item) change(options.createDefaultParts(selected), null);
   });
+  get<HTMLInputElement>('object-scale').addEventListener(
+    'change',
+    () => {
+      const item = draft(),
+        input = get<HTMLInputElement>('object-scale');
+      if (!item || !input.value || !input.checkValidity()) {
+        renderInspector();
+        return;
+      }
+      change(
+        item.parts,
+        selectedPart,
+        { ...item.settings, scale: Number(input.value) / 100 },
+        true,
+      );
+    },
+    { signal: signal.signal },
+  );
+  get('object-footprint-editor').addEventListener(
+    'click',
+    (event) => {
+      const item = draft();
+      const button = (event.target as HTMLElement).closest<HTMLButtonElement>('button');
+      if (!item || !button) return;
+      const presets: Record<string, { x: number; z: number }[]> = {
+        single: [{ x: 0, z: 0 }],
+        horizontal: [
+          { x: 0, z: 0 },
+          { x: 1, z: 0 },
+        ],
+        vertical: [
+          { x: 0, z: 0 },
+          { x: 0, z: 1 },
+        ],
+        square: [
+          { x: 0, z: 0 },
+          { x: 1, z: 0 },
+          { x: 0, z: 1 },
+          { x: 1, z: 1 },
+        ],
+        corner: [
+          { x: 0, z: 0 },
+          { x: 1, z: 0 },
+          { x: 0, z: 1 },
+        ],
+      };
+      let footprint = presets[button.dataset.preset ?? ''];
+      if (!footprint && button.dataset.x !== undefined) {
+        const x = Number(button.dataset.x),
+          z = Number(button.dataset.z);
+        footprint = item.settings.footprint.some((cell) => cell.x === x && cell.z === z)
+          ? item.settings.footprint.filter((cell) => cell.x !== x || cell.z !== z)
+          : [...item.settings.footprint, { x, z }];
+      }
+      if (!footprint) return;
+      if (!validFootprint(footprint)) {
+        status('Клетки должны соединяться сторонами с опорной клеткой.');
+        return;
+      }
+      footprint = [...footprint].sort((a, b) => a.z - b.z || a.x - b.x);
+      change(item.parts, selectedPart, { ...item.settings, footprint }, true);
+    },
+    { signal: signal.signal },
+  );
   for (const mode of ['position', 'rotation', 'scale'] as const)
     listen(`object-mode-${mode}`, () => {
       preview?.setMode(mode);
@@ -412,5 +535,6 @@ void createObjectEditor(document, {
   create: createObjectPreview,
   createDefaultParts: defaultObjectParts,
   load: () => request<ProjectSnapshot>('/api/project'),
-  save: (id, parts, revision) => request<SaveResult>('/api/save', { id, parts, revision }),
+  save: (id, parts, revision, settings) =>
+    request<SaveResult>('/api/save', { id, parts, revision, settings }),
 });

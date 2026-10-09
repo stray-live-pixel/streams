@@ -4,7 +4,7 @@ import { randomBytes } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { createEditorRepository, EditorError } from './repository.js';
-import type { ObjectPart } from '../objects/index.js';
+import type { ObjectPart, ObjectSettings } from '../objects/index.js';
 import { buildEditor } from '../../scripts/build-editor.mjs';
 import { build as buildGame } from '../../scripts/build.mjs';
 
@@ -77,6 +77,7 @@ export function createEditorServer(options: {
               data.id,
               data.parts as ObjectPart[],
               data.revision,
+              'settings' in data ? (data.settings as ObjectSettings) : undefined,
             );
             if (result.changed && options.rebuild) {
               try {

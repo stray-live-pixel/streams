@@ -3,7 +3,12 @@ import { promisify } from 'node:util';
 import { readFile, writeFile, rename, unlink, access } from 'node:fs/promises';
 import { createHash, randomUUID } from 'node:crypto';
 import path from 'node:path';
-import { editableObjectIds, parseObjectTemplates, type ObjectPart } from '../objects/index.js';
+import {
+  editableObjectIds,
+  parseObjectTemplates,
+  type ObjectPart,
+  type ObjectSettings,
+} from '../objects/index.js';
 import type { ProjectSnapshot, SaveResult } from './protocol.js';
 
 const run = promisify(execFile);
@@ -43,7 +48,12 @@ export function createEditorRepository(root: string, assets: ReadonlySet<string>
   }
   return {
     read,
-    async save(id: string, parts: ObjectPart[], expectedRevision: string): Promise<SaveResult> {
+    async save(
+      id: string,
+      parts: ObjectPart[],
+      expectedRevision: string,
+      settings?: ObjectSettings,
+    ): Promise<SaveResult> {
       if (saving) throw new EditorError(409, 'Предыдущее сохранение ещё выполняется.');
       saving = true;
       try {
@@ -85,10 +95,16 @@ export function createEditorRepository(root: string, assets: ReadonlySet<string>
             throw new EditorError(409, 'Завершите текущую операцию Git перед сохранением.');
         }
         const next = parseObjectTemplates(
-          { version: 1, objects: { ...before.config.objects, [id]: parts } },
+          {
+            ...before.config,
+            objects: { ...before.config.objects, [id]: parts },
+            ...(settings !== undefined
+              ? { settings: { ...before.config.settings, [id]: settings } }
+              : {}),
+          },
           assets,
         );
-        if (JSON.stringify(before.config.objects[id]) === JSON.stringify(next.objects[id]))
+        if (JSON.stringify(before.config) === JSON.stringify(next))
           return { ...before, changed: false };
         const original = await readFile(filename, 'utf8');
         // Повторная проверка перед записью защищает от внешнего редактирования во время Git-проверок.

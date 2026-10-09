@@ -1,4 +1,5 @@
 import builtIn from './templates.json';
+import { singleCell, validFootprint, type Tile, type FootprintCatalog } from '../domain/index.js';
 
 export type Triple = [number, number, number];
 export interface ObjectPart {
@@ -12,6 +13,11 @@ export interface ObjectPart {
 export interface ObjectTemplates {
   version: 1;
   objects: Record<string, ObjectPart[]>;
+  settings?: Record<string, ObjectSettings>;
+}
+export interface ObjectSettings {
+  scale: number;
+  footprint: Tile[];
 }
 export const editableObjectIds = [
   ...Array.from({ length: 4 }, (_, i) => `game/house/${i}`),
@@ -27,11 +33,30 @@ export const editableObjectIds = [
   'game/lantern',
 ];
 export const builtInObjectTemplates: unknown = builtIn;
+export const footprintObjectIds = editableObjectIds.filter(
+  (id) => /^game\/(house|shop|farm|hall|road)\//.test(id) || id === 'game/port',
+);
+export const defaultObjectSettings = (): ObjectSettings => ({ scale: 1, footprint: singleCell() });
 let templates: ObjectTemplates = { version: 1, objects: {} };
 let revision = 0;
 export const objectTemplateRevision = () => revision;
 export const objectTemplate = (id: string) => templates.objects[id];
 export const copyParts = (parts: ObjectPart[]): ObjectPart[] => structuredClone(parts);
+export const objectSettings = (id: string): ObjectSettings =>
+  structuredClone(templates.settings?.[id] ?? defaultObjectSettings());
+export const objectFootprints = (): FootprintCatalog =>
+  Object.fromEntries(
+    Object.entries(templates.settings ?? {})
+      .filter(([id]) => footprintObjectIds.includes(id))
+      .map(([id, settings]) => [id, structuredClone(settings.footprint)]),
+  );
+export function scaleObjectParts(parts: ObjectPart[], scale: number): ObjectPart[] {
+  return parts.map((part) => ({
+    ...structuredClone(part),
+    position: part.position.map((n) => n * scale) as Triple,
+    scale: part.scale.map((n) => n * scale) as Triple,
+  }));
+}
 
 /** Проверяем весь импорт до изменения памяти или сохранения. Город здесь не хранится. */
 export function parseObjectTemplates(value: unknown, assets: ReadonlySet<string>): ObjectTemplates {
@@ -50,6 +75,32 @@ export function parseObjectTemplates(value: unknown, assets: ReadonlySet<string>
   )
     return fail();
   const result: ObjectTemplates = { version: 1, objects: {} };
+  if ('settings' in value && value.settings !== undefined) {
+    if (!value.settings || typeof value.settings !== 'object' || Array.isArray(value.settings))
+      return fail();
+    result.settings = {};
+    for (const [id, setting] of Object.entries(value.settings)) {
+      if (
+        !editableObjectIds.includes(id) ||
+        !setting ||
+        typeof setting !== 'object' ||
+        !('scale' in setting) ||
+        typeof setting.scale !== 'number' ||
+        !Number.isFinite(setting.scale) ||
+        setting.scale < 0.1 ||
+        setting.scale > 3 ||
+        !('footprint' in setting) ||
+        !validFootprint(setting.footprint) ||
+        (!footprintObjectIds.includes(id) && setting.footprint.length !== 1)
+      )
+        return fail();
+      const footprint: Tile[] = structuredClone(setting.footprint);
+      result.settings[id] = {
+        scale: setting.scale,
+        footprint: footprint.sort((a, b) => a.z - b.z || a.x - b.x),
+      };
+    }
+  }
   for (const [id, parts] of Object.entries(value.objects)) {
     if (!editableObjectIds.includes(id) || !Array.isArray(parts) || parts.length > 200)
       return fail();

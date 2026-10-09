@@ -2,7 +2,8 @@ import { BUILDINGS } from './catalog.js';
 import { isLand, MAP_SIZE, shoreDirection } from './world.js';
 import { STEP } from './tutorial.js';
 import type { CityState, Building, BuildingType } from './types.js';
-export const SAVE_VERSION = 4;
+import { validFootprint, buildingCells } from './footprint.js';
+export const SAVE_VERSION = 5;
 export function initialState(): CityState {
   return {
     version: SAVE_VERSION,
@@ -26,12 +27,13 @@ function isBuilding(value: unknown): value is Building {
     Object.hasOwn(BUILDINGS, value.t) &&
     typeof value.x === 'number' &&
     typeof value.z === 'number' &&
-    isLand(value.x, value.z)
+    isLand(value.x, value.z) &&
+    (value.footprint === undefined || validFootprint(value.footprint))
   );
 }
 /** JSON не становится безопасным от наличия TypeScript: проверяем каждое внешнее поле. */
 export function restoreState(raw: unknown): CityState {
-  if (!isRecord(raw) || (raw.version !== 2 && raw.version !== 3 && raw.version !== 4))
+  if (!isRecord(raw) || typeof raw.version !== 'number' || ![2, 3, 4, 5].includes(raw.version))
     throw new Error('Неизвестная версия сохранения');
   const { money, food, day, step, buildings } = raw;
   if (
@@ -55,6 +57,12 @@ export function restoreState(raw: unknown): CityState {
     new Set(buildings.map((b) => `${b.x},${b.z}`)).size !== buildings.length
   )
     throw new Error('Сохранение повреждено');
+  const cells = buildings.flatMap(buildingCells);
+  if (
+    cells.some((cell) => !isLand(cell.x, cell.z)) ||
+    new Set(cells.map((cell) => `${cell.x},${cell.z}`)).size !== cells.length
+  )
+    throw new Error('Участки зданий пересекаются или выходят за остров');
   const capacity = buildings.filter((b) => b.t === 'house').length * BUILDINGS.house.capacity;
   // Версия 2 заселяла дома сразу. Не теряем этих жителей при обновлении игры.
   const pop = raw.version === 2 ? capacity : raw.pop;
@@ -77,7 +85,12 @@ export function restoreState(raw: unknown): CityState {
     step,
     won: raw.won === true,
     endingSeen: raw.won === true && raw.endingSeen === true,
-    buildings: buildings.map(({ x, z, t }) => ({ x, z, t: t as BuildingType })),
+    buildings: buildings.map(({ x, z, t, footprint }) => ({
+      x,
+      z,
+      t: t as BuildingType,
+      ...(footprint ? { footprint: structuredClone(footprint) } : {}),
+    })),
   };
   // Победа старой версии остаётся победой: маяк достраивается без повторной оплаты.
   if (state.won) {

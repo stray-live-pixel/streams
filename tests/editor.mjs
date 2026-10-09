@@ -115,6 +115,22 @@ try {
   }
   await choose('game/house/0');
   await visible();
+  const originalSize = await page.locator('#object-stats').textContent();
+  await page.fill('#object-scale', '70');
+  await page.locator('#object-scale').press('Tab');
+  assert.notEqual(await page.locator('#object-stats').textContent(), originalSize);
+  await page.click('[data-preset="horizontal"]');
+  assert.equal(await page.locator('#object-footprint-count').textContent(), '2 кл.');
+  await page.click('[data-preset="square"]');
+  assert.equal(await page.locator('#object-footprint-count').textContent(), '4 кл.');
+  await page.click('[data-preset="corner"]');
+  assert.equal(await page.locator('#object-footprint-count').textContent(), '3 кл.');
+  await page.click('#object-footprint-cells [data-x="3"][data-z="3"]');
+  assert.equal(await page.locator('#object-footprint-count').textContent(), '3 кл.');
+  await page.click('#object-undo');
+  assert.equal(await page.locator('#object-footprint-count').textContent(), '4 кл.');
+  await page.click('#object-redo');
+  assert.equal(await page.locator('#object-footprint-count').textContent(), '3 кл.');
   await page.locator('#object-parts button').first().click();
   await page.waitForTimeout(150);
   const startY = await page.inputValue('#part-position-1');
@@ -150,7 +166,7 @@ try {
   assert.notEqual(await page.inputValue('#part-position-1'), startY);
   await page.click('#object-undo');
   assert.equal(await page.inputValue('#part-position-1'), startY);
-  await page.fill('#part-position-0', '1');
+  await page.fill('#part-position-0', '6');
   await page.locator('#part-position-0').press('Tab');
   assert.equal(await page.locator('#object-bounds').getAttribute('data-outside'), 'true');
   await page.click('#object-undo');
@@ -191,10 +207,21 @@ try {
     0.4,
   );
   assert.equal(git('status', '--porcelain'), '');
+  const savedLayout = JSON.parse(git('show', 'main:src/objects/templates.json')).settings[
+    'game/house/0'
+  ];
+  assert.equal(savedLayout.scale, 0.7);
+  assert.deepEqual(savedLayout.footprint, [
+    { x: 0, z: 0 },
+    { x: 1, z: 0 },
+    { x: 0, z: 1 },
+  ]);
   await page.reload();
   await page.waitForFunction(() => document.querySelectorAll('#object-parts button').length === 9);
   await page.locator('#object-parts button').last().click();
   assert.equal(await page.inputValue('#part-position-0'), '0.4');
+  assert.equal(await page.inputValue('#object-scale'), '70');
+  assert.equal(await page.locator('#object-footprint-count').textContent(), '3 кл.');
   assert.equal(await page.evaluate(() => localStorage.length), 0);
   const token = await page.locator('meta[name="editor-token"]').getAttribute('content');
   assert.equal((await fetch(`${url}/api/project`)).status, 403);
@@ -217,7 +244,7 @@ try {
   assert.deepEqual(errors, []);
   assert.deepEqual(external, []);
   console.log(
-    'Editor: camera flight and focus, 239 assets, bounded game cell, gizmos, transforms, history, direct file save, main commit, reload, no browser storage and local API access PASS',
+    'Editor: camera flight, 239 assets, proportional scale, custom footprint, gizmos, history, direct file save, main commit and reload PASS',
   );
   console.log(`Screenshots: ${screenshots}`);
 } finally {

@@ -4,7 +4,8 @@ import { CreateSphere } from '@babylonjs/core/Meshes/Builders/sphereBuilder.js';
 import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial.js';
 import { Color3 } from '@babylonjs/core/Maths/math.color.js';
 import type { Scene } from '@babylonjs/core/scene.js';
-import type { GameModel } from '../domain/index.js';
+import { buildingObjectId, type GameModel } from '../domain/index.js';
+import { objectSettings } from '../objects/index.js';
 import type { Passenger } from './types.js';
 
 export const lifeColors = {
@@ -70,10 +71,11 @@ export function createCityLife(scene: Scene) {
         if (!home) return;
         const phase = (seconds * 0.25 + i / 3) % 1;
         const tall = (home.x * 3 + home.z) % 2 === 1;
+        const scale = objectSettings(buildingObjectId(home)).scale;
         mesh.position.set(
-          home.x + 0.67 + phase * 0.18,
-          (tall ? 1.45 : 1.18) + phase * 0.7,
-          home.z + 0.32,
+          home.x + 0.5 + (0.17 + phase * 0.18) * scale,
+          ((tall ? 1.45 : 1.18) + phase * 0.7) * scale,
+          home.z + 0.5 - 0.18 * scale,
         );
         mesh.scaling.setAll(0.5 + phase * 1.8);
         mesh.visibility = 1 - phase;
