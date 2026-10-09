@@ -985,13 +985,25 @@ dialog .credits {
 .menu-intro {
   position: relative;
   align-self: start;
+  isolation: isolate;
+  text-shadow: var(--menu-text-glow);
+}
+/* Локальная светлая дымка отделяет буквы от деталей гавани без видимой плашки. */
+.menu-intro::before {
+  content: '';
+  position: absolute;
+  inset: -50px -65px -55px -50px;
+  z-index: -1;
+  background: var(--menu-title-wash);
+  filter: blur(var(--menu-text-halo-blur));
+  pointer-events: none;
 }
 .menu-kicker,
 .menu-footer {
   font-size: 10px;
   letter-spacing: 2px;
   text-transform: uppercase;
-  color: var(--color-ink-muted);
+  color: var(--color-ink);
 }
 .menu-kicker span {
   color: var(--color-accent);
@@ -1010,14 +1022,14 @@ dialog .credits {
 }
 .menu-motto {
   font: 19px/1.6 var(--font-story);
-  color: var(--color-ink-muted);
+  color: var(--color-ink);
 }
 .menu-card {
   position: relative;
   padding: 44px 34px 30px;
   background: var(--surface-paper);
   border: var(--border-paper);
-  box-shadow: var(--shadow-paper);
+  box-shadow: var(--shadow-menu);
   border-radius: var(--radius-paper);
   transform: rotate(0.5deg);
 }
@@ -1228,6 +1240,9 @@ body[data-hints='hide'] .coach.freeplay .mission {
   }
   .menu-intro {
     text-align: center;
+  }
+  .menu-intro::before {
+    inset: -40px -15px -45px;
   }
   .menu-kicker {
     font-size: 8px;
