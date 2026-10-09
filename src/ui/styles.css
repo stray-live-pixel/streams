@@ -944,3 +944,406 @@ dialog .credits {
   stroke: var(--color-primary);
   stroke-width: 2;
 }
+
+/* Главное меню — морская открытка. Остров здесь нарисован без запуска 3D. */
+.main-menu {
+  position: fixed;
+  inset: 0;
+  overflow: auto;
+  background: var(--surface-menu);
+}
+.menu-shell {
+  max-width: 1240px;
+  min-height: 100%;
+  margin: auto;
+  padding: 65px 65px 35px;
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(300px, 0.85fr);
+  column-gap: 65px;
+  align-content: center;
+  align-items: center;
+}
+.menu-intro {
+  position: relative;
+}
+.menu-kicker,
+.menu-coordinate,
+.menu-footer {
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--color-ink-muted);
+}
+.menu-kicker span {
+  color: var(--color-accent);
+  font-size: 23px;
+  vertical-align: middle;
+  margin-right: 10px;
+}
+.menu-intro h1 {
+  font: 90px/0.95 var(--font-story);
+  letter-spacing: -4px;
+  margin: 28px 0 22px;
+}
+.menu-intro h1 em {
+  color: var(--color-primary);
+  font-weight: normal;
+}
+.menu-motto {
+  font: 19px/1.6 var(--font-story);
+  color: var(--color-ink-muted);
+}
+.menu-illustration {
+  display: block;
+  width: 113%;
+  max-height: 350px;
+  margin: -20px 0 0 -30px;
+}
+.map-lines {
+  stroke: var(--color-border);
+  opacity: 0.45;
+}
+.menu-island {
+  fill: var(--color-island);
+}
+.menu-island-edge,
+.menu-tree {
+  fill: var(--color-island-edge);
+}
+.menu-path {
+  fill: none;
+  stroke: var(--color-paper-shade);
+  stroke-width: 12px;
+}
+.menu-pier,
+.menu-boat {
+  fill: var(--color-wood);
+}
+.menu-pier-lines {
+  fill: none;
+  stroke: var(--color-ink-muted);
+  stroke-width: 2px;
+}
+.menu-house,
+.menu-tower,
+.menu-sail {
+  fill: var(--color-paper-light);
+}
+.menu-roof,
+.menu-stripe {
+  fill: var(--color-accent);
+}
+.menu-window {
+  fill: var(--color-primary);
+}
+.menu-lantern,
+.menu-rays {
+  fill: var(--color-gold);
+}
+.menu-rays {
+  opacity: 0.4;
+}
+.menu-wave {
+  fill: none;
+  stroke: var(--color-sea);
+  stroke-width: 3px;
+  stroke-linecap: round;
+}
+.menu-coordinate {
+  display: block;
+  text-align: center;
+  font-size: 8px;
+  letter-spacing: 3px;
+}
+.menu-card {
+  position: relative;
+  padding: 44px 34px 30px;
+  background: var(--surface-paper);
+  border: var(--border-paper);
+  box-shadow: var(--shadow-paper);
+  border-radius: var(--radius-paper);
+  transform: rotate(0.5deg);
+}
+.menu-card::before {
+  content: '';
+  position: absolute;
+  top: -11px;
+  left: 35%;
+  width: 105px;
+  height: 24px;
+  background: color-mix(in srgb, var(--color-paper-shade) 75%, transparent);
+  transform: rotate(-4deg);
+}
+.menu-stamp {
+  position: absolute;
+  right: 24px;
+  top: 19px;
+  border: 2px double var(--color-accent);
+  border-radius: 50%;
+  width: 67px;
+  height: 67px;
+  display: grid;
+  align-content: center;
+  text-align: center;
+  color: var(--color-accent);
+  font-size: 7px;
+  line-height: 1.4;
+  letter-spacing: 1px;
+  opacity: 0.65;
+  transform: rotate(14deg);
+}
+.menu-stamp span {
+  font-size: 19px;
+}
+.menu-card h2 {
+  font: 30px/1.1 var(--font-story);
+  max-width: 240px;
+  margin: 25px 0 16px;
+}
+.menu-card > p {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--color-ink-muted);
+}
+.menu-progress {
+  padding: 13px 0 18px;
+  margin-bottom: 20px;
+  border-bottom: 1px dashed var(--color-border);
+  color: var(--color-ink-muted);
+  font-size: 11px;
+}
+.menu-actions {
+  display: grid;
+  gap: 11px;
+}
+.menu-actions button {
+  min-height: 47px;
+  transition: background var(--motion-fast);
+}
+.menu-actions button:not(.primary):hover {
+  background: var(--color-paper-shade);
+}
+.menu-card .menu-footnote,
+.menu-footnote {
+  text-align: center;
+  font: italic 13px/1.6 var(--font-story);
+  color: var(--color-ink-muted);
+  margin: 24px 0 0;
+}
+.menu-status:empty {
+  display: none;
+}
+.menu-card .menu-status {
+  font-size: 12px;
+  color: var(--color-accent);
+}
+.menu-footer {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  border-top: 1px solid color-mix(in srgb, var(--color-border) 50%, transparent);
+  padding-top: 20px;
+  margin-top: 50px;
+  letter-spacing: 1.5px;
+  font-size: 8px;
+}
+.pause-menu {
+  text-align: center;
+}
+.pause-menu h2 {
+  margin-top: 17px;
+}
+.settings-menu {
+  width: min(560px, calc(100% - 28px));
+}
+.settings-menu h2 {
+  margin-top: 14px;
+}
+.setting-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 19px 0;
+  border-bottom: 1px solid var(--color-paper-shade);
+}
+.setting-row b,
+.settings-reset b {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+}
+.setting-row small {
+  display: block;
+  font-size: 12px;
+  line-height: 1.5;
+  margin-top: 5px;
+  color: var(--color-ink-muted);
+}
+.setting-row select {
+  max-width: 145px;
+  padding: 8px;
+  font: inherit;
+  font-size: 13px;
+  color: var(--color-ink);
+  background: var(--color-paper-light);
+  border: var(--border-paper);
+  border-radius: var(--radius-paper);
+}
+.setting-row input {
+  width: 21px;
+  height: 21px;
+  flex-shrink: 0;
+  accent-color: var(--color-primary);
+}
+.setting-row input:focus-visible,
+.setting-row select:focus-visible {
+  outline: 3px solid var(--color-accent);
+  outline-offset: 4px;
+}
+.settings-reset {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding-block: 20px;
+  border-top: 1px dashed var(--color-border);
+  margin-top: 18px;
+}
+.settings-reset p,
+.settings-status {
+  font-size: 12px;
+  margin-bottom: 0;
+}
+.danger {
+  color: var(--color-accent);
+  flex-shrink: 0;
+}
+#close-settings {
+  width: 100%;
+}
+dialog {
+  max-height: calc(100dvh - 28px);
+  overflow: auto;
+}
+#world:focus {
+  outline: none;
+}
+body[data-hints='hide'] .coach.freeplay {
+  display: none;
+}
+/* Цель и финальное действие остаются доступны даже при скрытых письмах. */
+body[data-hints='hide'] .coach.freeplay:has(#mission:not([hidden])) {
+  display: block;
+}
+body[data-hints='hide']
+  .coach.freeplay
+  :is(.correspondent, .postmark, .eyebrow, h1, #coach-text, #instruction) {
+  display: none;
+}
+body[data-hints='hide'] .coach.freeplay .mission {
+  margin-top: 0;
+  border-top: 0;
+  padding-top: 0;
+}
+@media (max-width: 900px) {
+  .menu-shell {
+    padding: 40px 28px 25px;
+    column-gap: 25px;
+  }
+  .menu-intro h1 {
+    font-size: 72px;
+  }
+  .menu-card {
+    padding: 38px 25px 25px;
+  }
+  .menu-illustration {
+    margin-left: -15px;
+  }
+}
+@media (max-width: 650px) {
+  .menu-shell {
+    grid-template-columns: 1fr;
+    padding: 28px 22px 20px;
+  }
+  .menu-intro {
+    text-align: center;
+  }
+  .menu-kicker {
+    font-size: 8px;
+    letter-spacing: 1.5px;
+  }
+  .menu-intro h1 {
+    font-size: 58px;
+    margin: 17px 0 12px;
+    letter-spacing: -2px;
+  }
+  .menu-intro h1 br {
+    display: none;
+  }
+  .menu-intro h1 em {
+    margin-left: 9px;
+  }
+  .menu-motto {
+    font-size: 15px;
+    margin: 0;
+  }
+  .menu-motto br {
+    display: none;
+  }
+  .menu-illustration {
+    width: 100%;
+    height: 165px;
+    margin: 0 auto -2px;
+  }
+  .menu-coordinate {
+    display: none;
+  }
+  .menu-card {
+    padding: 29px 24px 22px;
+    max-width: 430px;
+    width: 100%;
+    margin: 15px auto 0;
+  }
+  .menu-card h2 {
+    font-size: 26px;
+    margin: 23px 0 10px;
+  }
+  .menu-card > p {
+    font-size: 12px;
+    margin-block: 10px;
+  }
+  .menu-progress {
+    font-size: 10px;
+    padding: 8px 0 14px;
+    margin-bottom: 15px;
+  }
+  .menu-card .menu-footnote {
+    margin-top: 17px;
+    font-size: 12px;
+  }
+  .menu-stamp {
+    top: 12px;
+    right: 17px;
+    width: 57px;
+    height: 57px;
+  }
+  .menu-footer {
+    margin-top: 30px;
+    font-size: 7px;
+    letter-spacing: 1px;
+  }
+  .setting-row {
+    gap: 12px;
+  }
+  .setting-row select {
+    max-width: 116px;
+    font-size: 12px;
+  }
+  .settings-reset {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 14px;
+  }
+}

@@ -80,7 +80,6 @@ export function bindInput(canvas: HTMLCanvasElement, scene: CityScene, onCommand
         e.preventDefault();
         onCommand({ type: 'next-day' });
       }
-      if (e.key === 'Escape') onCommand({ type: 'select', building: null });
       const shortcuts: Record<string, BuildingType> = {
         1: 'house',
         2: 'farm',

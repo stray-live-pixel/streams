@@ -18,6 +18,7 @@ try {
       deviceScaleFactor: width === 390 ? 2 : 1,
     });
     const page = await context.newPage();
+    page.setDefaultTimeout(20000);
     const errors = [],
       network = [];
     page.on('pageerror', (error) => errors.push(error.message));
@@ -26,7 +27,55 @@ try {
     });
     await page.goto(pathToFileURL(path.resolve('dist/index.html')).href);
     await page.waitForFunction(() => window.cityDebug);
+    assert.equal(await page.evaluate(() => cityDebug.renderer), 'not-started');
+    assert.equal(await page.locator('#scene').count(), 0);
+    assert.equal(await page.locator('#game-screen').isVisible(), false);
+    assert.equal(await page.locator('#menu-start').textContent(), 'Новая игра');
+    assert.equal(await page.evaluate(() => localStorage.getItem('ostrov-simple-v2')), null);
+    await page.screenshot({ path: path.join(screenshots, `menu-${width}.png`) });
+    await page.click('#menu-help');
+    await page.keyboard.press('Escape');
+    assert.equal(await page.locator('#main-menu').isVisible(), true);
+    await page.click('#menu-settings');
+    assert.equal(await page.locator('#reset-progress').isDisabled(), true);
+    await page.selectOption('#setting-quality', 'low');
+    await page.uncheck('#setting-animation');
+    await page.uncheck('#setting-hints');
+    await page.screenshot({ path: path.join(screenshots, `settings-${width}.png`) });
+    await page.keyboard.press('Escape');
+    await page.reload();
+    await page.click('#menu-settings');
+    assert.equal(await page.locator('#setting-quality').inputValue(), 'low');
+    assert.equal(await page.locator('#setting-animation').isChecked(), false);
+    assert.equal(await page.locator('#setting-hints').isChecked(), false);
+    assert.equal(await page.locator('#scene').count(), 0);
+    await page.click('#close-settings');
+    await page.click('#menu-start');
     assert.equal(await page.evaluate(() => cityDebug.renderer), 'Babylon.js');
+    assert.equal(await page.evaluate(() => cityDebug.paused), false);
+    assert.equal(await page.locator('#coach-title').isVisible(), true);
+    assert.equal(await page.locator('#scene').evaluate((c) => c.width), width);
+    const requestReset = async () => {
+      await page.click('#open-menu');
+      await page.click('#pause-settings');
+      await page.click('#reset-progress');
+    };
+    const reloadAndContinue = async () => {
+      await page.reload();
+      assert.equal(await page.locator('#menu-start').textContent(), 'Продолжить');
+      assert.equal(await page.locator('#scene').count(), 0);
+      assert.equal(await page.locator('#ending-dialog').isVisible(), false);
+      await page.click('#menu-start');
+    };
+    // Escape работает с фокусом на кнопке; под паузой горячие клавиши не строят город.
+    await page.focus('#coach-action');
+    await page.keyboard.press('Escape');
+    assert.equal(await page.locator('#pause-dialog').isVisible(), true);
+    await page.click('#pause-settings');
+    await page.keyboard.press('Escape');
+    assert.equal(await page.locator('#pause-dialog').isVisible(), true);
+    await page.keyboard.press('Escape');
+    assert.equal(await page.evaluate(() => cityDebug.paused), false);
     // Логика может работать даже при пустом WebGL-кадре. Проверяем сам рисунок острова.
     await page.waitForFunction(() => {
       const source = document.querySelector('#scene');
@@ -68,18 +117,44 @@ try {
     await page.click('#next-day');
     assert.equal(await page.evaluate(() => cityDebug.state.pop), 10);
     assert.equal(await page.evaluate(() => cityDebug.state.money), 300);
+    // Пауза и главное меню замораживают рейс, даже дольше его полной длительности.
+    await page.keyboard.press('Escape');
+    const beforePause = await page.evaluate(() => cityDebug.state);
+    const pausedFrame = await page.locator('#scene').evaluate((c) => c.toDataURL());
+    await page.locator('#pause-title').evaluate((title) => {
+      title.tabIndex = -1;
+      title.focus();
+    });
+    await page.keyboard.press('Space');
+    await page.click('#main-menu-button');
+    assert.equal(await page.locator('#menu-start').textContent(), 'Продолжить');
+    await page.locator('#menu-title').evaluate((title) => {
+      title.tabIndex = -1;
+      title.focus();
+    });
+    await page.keyboard.press('Space');
+    await page.waitForTimeout(width === 1440 ? 7300 : 400);
+    assert.deepEqual(await page.evaluate(() => cityDebug.state), beforePause);
+    assert.equal(await page.evaluate(() => cityDebug.busy), true);
+    assert.equal(await page.locator('#scene').evaluate((c) => c.toDataURL()), pausedFrame);
+    await page.screenshot({ path: path.join(screenshots, `continue-${width}.png`) });
+    await page.click('#menu-start');
     await page.waitForTimeout(3100);
     await page.screenshot({ path: path.join(screenshots, `arrival-${width}.png`) });
     await page.waitForFunction(() => !cityDebug.busy);
     await page.click('#coach-action');
     await page.click('#next-day');
     assert.equal(await page.evaluate(() => cityDebug.busy), false);
-    await page.click('#reset-progress');
+    await requestReset();
     await page.click('#cancel-reset');
+    assert.equal(await page.locator('#settings-dialog').isVisible(), true);
+    await page.click('#close-settings');
+    await page.click('#resume-game');
     assert.equal(await page.evaluate(() => cityDebug.state.pop), 10);
-    await page.reload();
-    await page.waitForFunction(() => window.cityDebug);
+    await reloadAndContinue();
     assert.equal(await page.evaluate(() => cityDebug.state.pop), 10);
+    assert.equal(await page.locator('#coach-text').isVisible(), false);
+    assert.equal(await page.locator('#mission').isVisible(), true);
     await page.click('#rotate-right');
     await page.click('#home');
     assert.equal(
@@ -87,9 +162,11 @@ try {
       false,
     );
     await page.screenshot({ path: path.join(screenshots, `city-${width}.png`) });
-    await page.click('#reset-progress');
+    await requestReset();
     await page.click('#confirm-reset');
-    await page.reload();
+    assert.equal(await page.locator('#coach-title').isVisible(), true);
+    assert.equal(await page.locator('#setting-quality').inputValue(), 'low');
+    await reloadAndContinue();
     assert.equal(await page.evaluate(() => cityDebug.state.money), 600);
     assert.equal(await page.evaluate(() => cityDebug.state.step), 0);
     // Отдельный сохранённый город у порога финала. Полный экономический путь покрыт domain-тестом.
@@ -134,17 +211,17 @@ try {
       };
       localStorage.setItem('ostrov-simple-v2', JSON.stringify(state));
     });
-    await page.reload();
+    await reloadAndContinue();
     await page.waitForFunction(() => cityDebug.state.pop === 50);
     await page.click('#light-beacon');
     await page.waitForSelector('#ending-dialog[open]');
     assert.equal(await page.evaluate(() => cityDebug.state.money), 50);
     await page.screenshot({ path: path.join(screenshots, `ending-${width}.png`) });
-    await page.reload();
+    await reloadAndContinue();
     await page.waitForSelector('#ending-dialog[open]');
     assert.equal(await page.evaluate(() => cityDebug.state.money), 50);
     await page.click('#continue-city');
-    await page.reload();
+    await reloadAndContinue();
     await page.waitForFunction(() => cityDebug.state.endingSeen);
     assert.equal(await page.locator('#ending-dialog').evaluate((d) => d.open), false);
     await page.waitForTimeout(600);
@@ -157,7 +234,9 @@ try {
     assert.equal(await page.evaluate(() => cityDebug.state.day), 13);
     assert.deepEqual(errors, []);
     assert.deepEqual(network, []);
-    console.log(`${width}px: offline release, tutorial, roads, arrivals, saves, reset PASS`);
+    console.log(
+      `${width}px: offline release, main menu, pause, settings, tutorial, arrivals, saves, reset, finale PASS`,
+    );
     await context.close();
   }
 } finally {

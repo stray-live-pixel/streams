@@ -13,69 +13,196 @@
     </style>
   </head>
   <body>
-    <canvas id="world" aria-label="Карта острова: выберите постройку и нажмите на участок"></canvas>
-    <header class="header">
-      <div class="brand">Тихая Гавань<small>Остров · маленькие начала</small></div>
-      <div class="resources">
-        <div class="stat">
-          <label>◈ Казна</label><strong id="money"></strong><small id="income"></small>
+    <main id="main-menu" class="main-menu" aria-labelledby="menu-title">
+      <div class="menu-shell">
+        <section class="menu-intro">
+          <div class="menu-kicker">
+            <span aria-hidden="true">✦</span> История маленького острова
+          </div>
+          <h1 id="menu-title">Тихая<br /><em>Гавань</em></h1>
+          <p class="menu-motto">Большие истории начинаются<br />с маленького причала.</p>
+          <svg class="menu-illustration" viewBox="0 0 620 360" aria-hidden="true">
+            <g class="map-lines" fill="none">
+              <ellipse cx="300" cy="218" rx="275" ry="115" />
+              <ellipse cx="300" cy="218" rx="242" ry="90" stroke-dasharray="3 9" />
+              <path d="M12 218h570M300 82v265" stroke-dasharray="2 8" />
+              <path d="M480 62h58m-29-29v58m-12-41 24 24m0-24-24 24" />
+            </g>
+            <path class="menu-island-edge" d="m89 240 112-73 179 3 103 65-121 76-162-2Z" />
+            <path class="menu-island" d="m89 227 112-73 179 3 103 65-121 76-162-2Z" />
+            <path class="menu-path" d="m181 229 92-27 71 36 70 5" />
+            <path class="menu-pier" d="m353 262 57-35 92 49-55 34Z" />
+            <path
+              class="menu-pier-lines"
+              d="m378 267 54-33m-33 44 55-33m-33 44 54-33m-34 44 55-33"
+            />
+            <g class="menu-house">
+              <path d="M154 175v50l38 21 38-22v-49l-38 20Z" />
+              <path class="menu-roof" d="m144 179 48-48 49 49-48 26Z" />
+              <path class="menu-window" d="M175 213v-16l13 7v17Zm27 12v-16l14-7v16Z" />
+            </g>
+            <g class="menu-house">
+              <path d="M273 176v29l28 15 26-16v-29l-26 15Z" />
+              <path class="menu-roof" d="m264 179 37-35 36 35-36 21Z" />
+              <path class="menu-window" d="M284 203v-12l10 5v12Z" />
+            </g>
+            <path
+              class="menu-tree"
+              d="m240 184 13-39 14 39Zm-93 58 12-36 12 36Zm202-40 13-40 14 40Z"
+            />
+            <path class="menu-rays" d="m387 104 92-28v51Zm-11 0-91-28v51Z" />
+            <path class="menu-tower" d="m359 229 13-116h20l15 116-24 13Z" />
+            <path class="menu-stripe" d="m366 165 33 17-4-24-27-13Zm-5 46 42 21-3-25-36-17Z" />
+            <path class="menu-lantern" d="M369 93h25v23h-25Z" />
+            <path class="menu-roof" d="m362 94 20-23 20 23Zm-7 139 28 16 28-16v9l-28 17-28-17Z" />
+            <path
+              class="menu-wave"
+              d="M51 273q13-9 26 0t26 0m8 39q13-9 26 0t26 0m320 14q13-9 26 0t26 0M474 185q13-9 26 0t26 0"
+            />
+            <g class="menu-boat">
+              <path d="m500 235 19 9 30-18-10 24-20 12-19-11Z" />
+              <path class="menu-sail" d="M521 180v56l-26-14Zm5 8v47l23-14Z" />
+            </g>
+          </svg>
+          <span class="menu-coordinate">СЕВЕРНЫЕ ВОДЫ · ТАМ, ГДЕ ВАС ЖДУТ</span>
+        </section>
+        <section class="menu-card" aria-labelledby="menu-greeting">
+          <div class="menu-stamp" aria-hidden="true">ОСТРОВНАЯ<br />ПОЧТА<br /><span>⚓</span></div>
+          <div class="eyebrow">Ваша история</div>
+          <h2 id="menu-greeting">Письмо с острова</h2>
+          <p id="menu-description"></p>
+          <div id="menu-progress" class="menu-progress"></div>
+          <nav class="menu-actions" aria-label="Главное меню">
+            <button id="menu-start" class="primary">Новая игра</button>
+            <button id="menu-settings">Настройки</button>
+            <button id="menu-help">Как играть</button>
+          </nav>
+          <p class="menu-footnote">Никуда не спешите.<br />Новый день наступит, когда вы решите.</p>
+          <p id="menu-status" class="menu-status" role="status"></p>
+        </section>
+        <footer class="menu-footer">
+          <span>Тихая Гавань</span><span>Маленький остров. Своя история.</span>
+        </footer>
+      </div>
+    </main>
+    <div id="game-screen" hidden>
+      <canvas
+        id="world"
+        tabindex="-1"
+        aria-label="Карта острова: выберите постройку и нажмите на участок"
+      ></canvas>
+      <header class="header">
+        <div class="brand">Тихая Гавань<small>Остров · маленькие начала</small></div>
+        <div class="resources">
+          <div class="stat">
+            <label>◈ Казна</label><strong id="money"></strong><small id="income"></small>
+          </div>
+          <div class="stat">
+            <label>⌂ Поселенцы</label><strong id="pop"></strong><small>/ 50</small>
+          </div>
+          <div class="stat">
+            <label>♧ Запасы еды</label><strong id="food"></strong><small id="foodflow"></small>
+          </div>
         </div>
-        <div class="stat">
-          <label>⌂ Поселенцы</label><strong id="pop"></strong><small>/ 50</small>
+        <div class="header-actions">
+          <button id="help" class="help">Как играть</button
+          ><button id="open-menu" class="help">Меню · Esc</button>
         </div>
-        <div class="stat">
-          <label>♧ Запасы еды</label><strong id="food"></strong><small id="foodflow"></small>
+      </header>
+      <div class="chart-mark" aria-hidden="true">✧<small>СЕВЕРНЫЕ ВОДЫ</small></div>
+      <div class="island-caption" aria-hidden="true">бухта тихих надежд</div>
+      <aside class="coach" aria-live="polite">
+        <div class="correspondent">
+          <span class="portrait" aria-hidden="true">М</span>
+          <div><b>Марта</b><small>смотрительница гавани</small></div>
         </div>
-      </div>
-      <div class="header-actions">
-        <button id="help" class="help">Как играть</button
-        ><button id="reset-progress" class="help">Начать заново</button>
-      </div>
-    </header>
-    <div class="chart-mark" aria-hidden="true">✧<small>СЕВЕРНЫЕ ВОДЫ</small></div>
-    <div class="island-caption" aria-hidden="true">бухта тихих надежд</div>
-    <aside class="coach" aria-live="polite">
-      <div class="correspondent">
-        <span class="portrait" aria-hidden="true">М</span>
-        <div><b>Марта</b><small>смотрительница гавани</small></div>
-      </div>
-      <span class="postmark" aria-hidden="true">ОСТРОВНАЯ<br />ПОЧТА</span>
-      <div class="eyebrow" id="step-label"></div>
-      <h1 id="coach-title"></h1>
-      <p id="coach-text"></p>
-      <p class="instruction" id="instruction"></p>
-      <button id="coach-action" class="primary"></button>
-      <section id="mission" class="mission" aria-label="Цель истории" hidden>
-        <div class="mission-heading">Открытие гавани <span id="mission-progress"></span></div>
-        <div id="goal-people" class="goal-row"></div>
-        <div id="goal-food" class="goal-row"></div>
-        <div id="goal-money" class="goal-row"></div>
-        <button id="light-beacon" class="primary">Зажечь маяк · 300 монет</button>
-        <button id="read-ending" class="help" hidden>Прочитать финальное письмо</button>
-      </section>
-      <div class="steps" id="steps" aria-hidden="true">
-        <span></span><span></span><span></span><span></span><span></span>
-      </div>
-    </aside>
-    <div class="camera">
-      <button id="rotate-left" aria-label="Повернуть карту влево" title="Повернуть карту">↶</button
-      ><button id="rotate-right" aria-label="Повернуть карту вправо" title="Повернуть карту">
-        ↷</button
-      ><button id="home" aria-label="Вернуть карту в центр" title="Вернуть карту в центр">⌖</button>
-    </div>
-    <div class="dock">
-      <div class="dock-hint" id="hint"></div>
-      <div class="controls" id="build-controls" hidden>
-        <div class="buildings" id="buildings"></div>
-        <button class="next primary" id="next-day">
-          <b>Следующий день →</b><small id="day-label"></small>
+        <span class="postmark" aria-hidden="true">ОСТРОВНАЯ<br />ПОЧТА</span>
+        <div class="eyebrow" id="step-label"></div>
+        <h1 id="coach-title"></h1>
+        <p id="coach-text"></p>
+        <p class="instruction" id="instruction"></p>
+        <button id="coach-action" class="primary"></button>
+        <section id="mission" class="mission" aria-label="Цель истории" hidden>
+          <div class="mission-heading">Открытие гавани <span id="mission-progress"></span></div>
+          <div id="goal-people" class="goal-row"></div>
+          <div id="goal-food" class="goal-row"></div>
+          <div id="goal-money" class="goal-row"></div>
+          <button id="light-beacon" class="primary">Зажечь маяк · 300 монет</button>
+          <button id="read-ending" class="help" hidden>Прочитать финальное письмо</button>
+        </section>
+        <div class="steps" id="steps" aria-hidden="true">
+          <span></span><span></span><span></span><span></span><span></span>
+        </div>
+      </aside>
+      <div class="camera">
+        <button id="rotate-left" aria-label="Повернуть карту влево" title="Повернуть карту">
+          ↶</button
+        ><button id="rotate-right" aria-label="Повернуть карту вправо" title="Повернуть карту">
+          ↷</button
+        ><button id="home" aria-label="Вернуть карту в центр" title="Вернуть карту в центр">
+          ⌖
         </button>
       </div>
+      <div class="dock">
+        <div class="dock-hint" id="hint"></div>
+        <div class="controls" id="build-controls" hidden>
+          <div class="buildings" id="buildings"></div>
+          <button class="next primary" id="next-day">
+            <b>Следующий день →</b><small id="day-label"></small>
+          </button>
+        </div>
+      </div>
+      <div class="save-note" id="save-note">✦ Летопись сохраняется сама</div>
     </div>
-    <div class="save-note" id="save-note">✦ Летопись сохраняется сама</div>
     <div class="toast" role="status" id="toast"></div>
-    <dialog id="help-dialog">
-      <h2>Гавань начинается с порта</h2>
+    <dialog id="pause-dialog" class="pause-menu" aria-labelledby="pause-title">
+      <div class="eyebrow">Тихая Гавань</div>
+      <h2 id="pause-title">Тихая пауза</h2>
+      <p>Город подождёт. Продолжите, когда будете готовы.</p>
+      <div class="menu-actions">
+        <button id="resume-game" class="primary" autofocus>Вернуться в игру</button>
+        <button id="pause-settings">Настройки</button>
+        <button id="main-menu-button">В главное меню</button>
+      </div>
+      <p class="menu-footnote">Прогресс сохраняется автоматически · Esc — вернуться</p>
+    </dialog>
+    <dialog id="settings-dialog" class="settings-menu" aria-labelledby="settings-title">
+      <div class="eyebrow">Устройтесь поудобнее</div>
+      <h2 id="settings-title">Настройки</h2>
+      <label class="setting-row" for="setting-quality">
+        <span
+          ><b>Качество графики</b><small>Экономное — меньше нагрузка на устройство.</small></span
+        >
+        <select id="setting-quality">
+          <option value="high">Высокое</option>
+          <option value="low">Экономное</option>
+        </select>
+      </label>
+      <label class="setting-row" for="setting-animation">
+        <span><b>Анимация города</b><small>Прогулки жителей, дым и блики на воде.</small></span>
+        <input type="checkbox" id="setting-animation" />
+      </label>
+      <label class="setting-row" for="setting-hints">
+        <span
+          ><b>Подсказки Марты</b
+          ><small>Письма после обучения. Цели и учебные шаги видны всегда.</small></span
+        >
+        <input type="checkbox" id="setting-hints" />
+      </label>
+      <p id="settings-status" class="settings-status" role="status">
+        Изменения применяются сразу и сохраняются в этом браузере.
+      </p>
+      <div class="settings-reset">
+        <div>
+          <b>Новая история</b>
+          <p>Начните город с чистого листа. Настройки сохранятся.</p>
+        </div>
+        <button id="reset-progress" class="danger">Начать заново</button>
+      </div>
+      <button id="close-settings" class="primary">Готово</button>
+    </dialog>
+    <dialog id="help-dialog" aria-labelledby="help-title">
+      <h2 id="help-title">Гавань начинается с порта</h2>
       <p>
         <b>Порт</b> строится бесплатно на берегу первым. Утром корабль привозит до 10 новых жителей,
         если в домах есть свободные места. Во время высадки следующий день недоступен.
@@ -99,8 +226,8 @@
       <p>
         Финал истории — зажечь маяк. Для этого нужны 50 жителей, неотрицательный дневной баланс еды
         и 300 монет. Нажмите «Зажечь маяк» в письме Марты: 300 монет будут потрачены на башню. После
-        финала можно продолжить свободную игру. Карту можно перетаскивать и поворачивать стрелками,
-        масштаб — колесом мыши.
+        финала можно продолжить свободную игру. Меню открывается клавишей <b>Escape</b> или кнопкой
+        «Меню». Карту можно перетаскивать и поворачивать стрелками, масштаб — колесом мыши.
       </p>
       <p class="credits">
         3D-модели:
@@ -112,15 +239,14 @@
         CC0.
       </p>
       <div class="actions">
-        <button class="primary" id="close-help">Понятно</button
-        ><button id="restart">Новое обучение</button>
+        <button class="primary" id="close-help">Понятно</button>
       </div>
     </dialog>
-    <dialog id="reset-dialog">
-      <h2>Сбросить прогресс?</h2>
+    <dialog id="reset-dialog" aria-labelledby="reset-title">
+      <h2 id="reset-title">Начать новую историю?</h2>
       <p>
         Все постройки и накопленные ресурсы будут сброшены. Вы начнёте с первого дня, 600 монет и
-        обучения.
+        обучения. Настройки останутся прежними.
       </p>
       <div class="actions">
         <button id="cancel-reset">Оставить город</button

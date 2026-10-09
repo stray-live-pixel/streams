@@ -27,14 +27,25 @@ export function createScene({ canvas, board, onArrivalFinished, onError }: Scene
   surface.style.cssText = 'position:fixed;inset:0;pointer-events:none';
   canvas.before(surface);
   canvas.style.position = 'relative';
-  const renderer = new Engine(surface, true, { alpha: true, preserveDrawingBuffer: true });
+  let renderer: Engine;
+  try {
+    renderer = new Engine(surface, true, { alpha: true, preserveDrawingBuffer: true });
+  } catch (error) {
+    surface.remove();
+    throw error;
+  }
   const scene = new Scene(renderer);
   // Сохраняем систему координат прежней игры: это важно для старых городов и моделей.
   scene.useRightHandedSystem = true;
   scene.clearColor = new Color4(0, 0, 0, 0);
   scene.imageProcessingConfiguration.isEnabled = false;
   const life = createCityLife(scene);
-  const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const motionPreference = matchMedia('(prefers-reduced-motion: reduce)');
+  let animateCity = true;
+  let quality: 'high' | 'low' = 'high';
+  let paused = false;
+  let pausedAt = 0;
+  let pausedDuration = 0;
   const camera = new FreeCamera('city-camera', Vector3.Zero(), scene);
   camera.mode = Camera.ORTHOGRAPHIC_CAMERA;
   camera.minZ = 0.1;
@@ -101,7 +112,7 @@ export function createScene({ canvas, board, onArrivalFinished, onError }: Scene
   function resize() {
     width = innerWidth;
     height = innerHeight;
-    const dpr = Math.min(devicePixelRatio || 1, 2);
+    const dpr = quality === 'low' ? 1 : Math.min(devicePixelRatio || 1, 2);
     renderer.setHardwareScalingLevel(1 / dpr);
     renderer.setSize(width * dpr, height * dpr);
     surface.style.width = width + 'px';
@@ -171,7 +182,8 @@ export function createScene({ canvas, board, onArrivalFinished, onError }: Scene
       const x = ((i * 7) % 23) - 6,
         z = ((i * 11) % 23) - 6;
       if (board.isLand(Math.floor(x), Math.floor(z))) continue;
-      const drift = reducedMotion ? 0 : Math.sin(seconds * 0.35 + i) * 0.3;
+      const drift =
+        !animateCity || motionPreference.matches ? 0 : Math.sin(seconds * 0.35 + i) * 0.3;
       const a = project(x + drift, -0.3, z),
         b = project(x + 0.45 + drift, -0.3, z);
       context.beginPath();
@@ -196,7 +208,9 @@ export function createScene({ canvas, board, onArrivalFinished, onError }: Scene
 
   let previousFrame = 0;
   function frame(now: number) {
-    if (now - previousFrame < 32 && !dirty) {
+    if (paused) return;
+    const reducedMotion = !animateCity || motionPreference.matches;
+    if (now - previousFrame < (quality === 'low' ? 50 : 32) && !dirty) {
       frameId = requestAnimationFrame(frame);
       return;
     }
@@ -219,14 +233,15 @@ export function createScene({ canvas, board, onArrivalFinished, onError }: Scene
         onArrivalFinished();
       }
     }
-    life.update(now / 1000, passengers, reducedMotion);
+    const seconds = (now - pausedDuration) / 1000;
+    life.update(seconds, passengers, reducedMotion);
     if (dirty || (!!model?.pop && !reducedMotion)) {
       scene.render();
       // Babylon компилирует шейдеры асинхронно: первый render ещё может быть пустым.
       // Продолжаем кадры до готовности, затем экономим GPU на неподвижном острове.
       dirty = !scene.isReady();
     }
-    overlays(now / 1000);
+    overlays(seconds);
     frameId = requestAnimationFrame(frame);
   }
   frameId = requestAnimationFrame(frame);
@@ -237,6 +252,29 @@ export function createScene({ canvas, board, onArrivalFinished, onError }: Scene
     updateCamera();
   }
   return {
+    setPaused(next: boolean) {
+      if (paused === next) return;
+      paused = next;
+      if (next) {
+        pausedAt = performance.now();
+        cancelAnimationFrame(frameId);
+        hovered = null;
+      } else {
+        const duration = performance.now() - pausedAt;
+        pausedDuration += duration;
+        if (arrival) arrival.started += duration;
+        dirty = true;
+        frameId = requestAnimationFrame(frame);
+      }
+    },
+    setSettings(settings: { quality: 'high' | 'low'; animateCity: boolean }) {
+      animateCity = settings.animateCity;
+      if (quality !== settings.quality) {
+        quality = settings.quality;
+        resize();
+      }
+      dirty = true;
+    },
     setModel(next: GameModel) {
       model = next;
       life.setModel(next);

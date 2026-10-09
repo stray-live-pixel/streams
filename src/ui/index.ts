@@ -1,6 +1,7 @@
 import type { GameModel, CommandHandler } from '../domain/index.js';
 import { LETTERS, CHAPTERS } from './letters.js';
 import art from '../../.generated/card-art.json';
+export { createMenu } from './menu.js';
 /**
  * DOM — только представление. Этот модуль сообщает о намерениях пользователя,
  * но не списывает монеты, не заселяет дома и не пишет сохранения.
@@ -25,16 +26,6 @@ export function createUI(
   listen('coach-action', () => onCommand({ type: 'continue' }));
   listen('help', () => $<HTMLDialogElement>('help-dialog').showModal());
   listen('close-help', () => $<HTMLDialogElement>('help-dialog').close());
-  listen('restart', () => {
-    $<HTMLDialogElement>('help-dialog').close();
-    $<HTMLDialogElement>('reset-dialog').showModal();
-  });
-  listen('reset-progress', () => $<HTMLDialogElement>('reset-dialog').showModal());
-  listen('cancel-reset', () => $<HTMLDialogElement>('reset-dialog').close());
-  listen('confirm-reset', () => {
-    $<HTMLDialogElement>('reset-dialog').close();
-    onCommand({ type: 'reset' });
-  });
   listen('rotate-left', () => onCamera('left'));
   listen('rotate-right', () => onCamera('right'));
   listen('home', () => onCamera('home'));

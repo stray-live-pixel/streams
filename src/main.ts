@@ -2,40 +2,74 @@ import type { Command } from './domain/index.js';
 import type { CityScene } from './scene/index.js';
 import { createGame, MAP_SIZE, isLand, shoreDirection } from './domain/index.js';
 import { createStorage } from './persistence/index.js';
-import { createUI } from './ui/index.js';
+import { createUI, createMenu } from './ui/index.js';
 import { createScene } from './scene/index.js';
 import { bindInput } from './input/index.js';
 
-/**
- * Точка сборки приложения (composition root).
- * Только здесь модули соединяются друг с другом. Они не ищут соседей через window.
- */
+/** Только координатор соединяет город, навигацию, сохранения и ленивую 3D-сцену. */
 const storage = createStorage(() => window.localStorage);
 const loaded = storage.load();
 const game = createGame(loaded.state);
+let settings = storage.loadSettings();
+let hasGame = loaded.state !== null;
 let scene: CityScene | undefined;
 let disposeInput: (() => void) | undefined;
-const ui = createUI(
-  document,
-  (command) => dispatch(command),
-  (action) => {
-    if (action === 'home') scene?.resetCamera();
-    else scene?.rotate(action === 'left' ? -1 : 1);
+let paused = true;
+const canvas = document.getElementById('world') as HTMLCanvasElement;
+const ui = createUI(document, dispatch, (action) => {
+  if (action === 'home') scene?.resetCamera();
+  else scene?.rotate(action === 'left' ? -1 : 1);
+});
+const menu = createMenu(document, settings, {
+  start() {
+    if (!ensureScene()) return false;
+    if (!hasGame) {
+      hasGame = true;
+      save();
+    }
+    return true;
   },
-);
+  restart() {
+    if (!ensureScene()) return false;
+    hasGame = true;
+    dispatch({ type: 'reset' });
+    return true;
+  },
+  pause(value) {
+    paused = value;
+    disposeInput?.();
+    disposeInput = undefined;
+    scene?.setPaused(value);
+    if (!value && scene) disposeInput = bindInput(canvas, scene, dispatch);
+    refresh();
+  },
+  settings(value) {
+    settings = value;
+    applySettings();
+    return storage.saveSettings(value);
+  },
+});
+function applySettings() {
+  document.body.dataset.hints = settings.showHints ? 'show' : 'hide';
+  scene?.setSettings(settings);
+}
 function refresh() {
   const model = game.snapshot();
-  ui.render(model);
+  menu.render(model, hasGame);
+  if (menu.inGame) ui.render(model);
   scene?.setModel(model);
 }
+function save() {
+  const error = storage.save(game.serialize());
+  ui.saveStatus(error ?? '✦ Летопись сохраняется сама');
+  menu.error(error ?? '');
+}
 function dispatch(command: Command) {
+  // При закрытой сцене горячие клавиши и клики не должны изменять город.
+  if (paused && command.type !== 'reset' && command.type !== 'arrival-finished') return;
   const result = game.dispatch(command);
-  // Сначала фиксируем экономику дня, потом запускаем необязательную анимацию.
-  // Перезагрузка во время высадки не должна повторно начислить жителей или доход.
-  if (result.changed) {
-    const error = storage.save(game.serialize());
-    if (error) ui.saveStatus(error);
-  }
+  // Фиксируем экономику до анимации; меню и перезагрузка не начислят день повторно.
+  if (result.changed) save();
   for (const event of result.events) {
     if (event.type === 'notice') ui.notify(event.text);
     if (event.type === 'arrival') scene?.playArrival(event);
@@ -43,52 +77,62 @@ function dispatch(command: Command) {
   }
   refresh();
 }
-try {
-  scene = createScene({
-    canvas: document.getElementById('world') as HTMLCanvasElement,
-    board: { size: MAP_SIZE, isLand, shoreDirection },
-    onArrivalFinished: () => dispatch({ type: 'arrival-finished' }),
-    onError: (text) => ui.notify(text),
-  });
-  refresh();
-  disposeInput = bindInput(document.getElementById('world') as HTMLCanvasElement, scene, dispatch);
-  if (loaded.error) {
-    ui.notify(loaded.error);
-    ui.saveStatus('Старое сохранение не изменено. Новая игра начнётся после вашего действия.');
+function ensureScene() {
+  if (scene) return true;
+  try {
+    scene = createScene({
+      canvas,
+      board: { size: MAP_SIZE, isLand, shoreDirection },
+      onArrivalFinished: () => dispatch({ type: 'arrival-finished' }),
+      onError: (text) => ui.notify(text),
+    });
+    applySettings();
+    scene.setModel(game.snapshot());
+    scene.setPaused(true);
+    return true;
+  } catch (error) {
+    scene?.dispose();
+    scene = undefined;
+    menu.error(
+      'Не удалось открыть остров. Для 3D включите аппаратное ускорение и WebGL 2 в браузере. Сохранение не изменено.',
+    );
+    console.error(error);
+    return false;
   }
-  // Только чтение, для диагностики и сквозных тестов. Внутреннее состояние не выдаётся.
-  window.cityDebug = Object.freeze({
-    get state() {
-      return game.serialize();
-    },
-    get stats() {
-      return game.snapshot().stats;
-    },
-    get busy() {
-      return game.snapshot().busy;
-    },
-    renderer: 'Babylon.js',
-    projectTile(x: number, z: number) {
-      return scene!.project(x + 0.5, 0, z + 0.5);
-    },
-  });
-} catch (error) {
-  ui.render(game.snapshot());
-  ui.saveStatus(
-    'Для 3D нужен современный браузер с WebGL 2. Попробуйте включить аппаратное ускорение.',
-  );
-  ui.notify('Не удалось запустить 3D-сцену. Сохранённый город не изменён.');
-  for (const button of document.querySelectorAll<HTMLButtonElement>(
-    '.build,#coach-action,#next-day',
-  ))
-    button.disabled = true;
-  console.error(error);
 }
+applySettings();
+refresh();
+if (loaded.error)
+  menu.error(`${loaded.error}. Сохранение не изменится, пока вы не начнёте новую игру.`);
+
+// Только чтение: тесты и диагностика не получают доступа к изменяемому городу.
+window.cityDebug = Object.freeze({
+  get state() {
+    return game.serialize();
+  },
+  get stats() {
+    return game.snapshot().stats;
+  },
+  get busy() {
+    return game.snapshot().busy;
+  },
+  get renderer() {
+    return scene ? 'Babylon.js' : 'not-started';
+  },
+  get paused() {
+    return paused;
+  },
+  projectTile(x: number, z: number) {
+    if (!scene) throw new Error('Сначала откройте остров из главного меню.');
+    return scene.project(x + 0.5, 0, z + 0.5);
+  },
+});
 window.addEventListener('pagehide', (event) => {
-  if (event.persisted) return; // Кэш «назад/вперёд» восстановит готовую страницу.
+  if (event.persisted) return;
   disposeInput?.();
   scene?.dispose();
   ui.dispose();
+  menu.dispose();
 });
 
 declare global {
@@ -98,6 +142,7 @@ declare global {
       readonly stats: ReturnType<typeof game.snapshot>['stats'];
       readonly busy: boolean;
       readonly renderer: string;
+      readonly paused: boolean;
       projectTile(x: number, z: number): { x: number; y: number };
     };
   }

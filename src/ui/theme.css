@@ -27,4 +27,12 @@
   --border-paper: 1px solid var(--color-border);
   --surface-paper: linear-gradient(145deg, var(--color-paper-light), var(--color-paper-shade));
   --motion-fast: 160ms;
+  --color-island: #c4ce9d;
+  --color-island-edge: #8e9f76;
+  --color-wood: #b58a5a;
+  --surface-menu: radial-gradient(
+    ellipse at 30% 40%,
+    var(--color-paper-light),
+    var(--color-paper-shade)
+  );
 }
