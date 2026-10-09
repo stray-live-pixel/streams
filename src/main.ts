@@ -3,7 +3,7 @@ import type { CityScene } from './scene/index.js';
 import { createGame, MAP_SIZE, isLand, shoreDirection } from './domain/index.js';
 import { createStorage } from './persistence/index.js';
 import { createUI, createMenu } from './ui/index.js';
-import { createScene } from './scene/index.js';
+import { createScene, createObjectPreview, previewObjects } from './scene/index.js';
 import { bindInput } from './input/index.js';
 
 /** Только координатор соединяет город, навигацию, сохранения и ленивую 3D-сцену. */
@@ -21,6 +21,7 @@ const ui = createUI(document, dispatch, (action) => {
   else scene?.rotate(action === 'left' ? -1 : 1);
 });
 const menu = createMenu(document, settings, {
+  preview: { objects: previewObjects, create: createObjectPreview },
   start() {
     if (!ensureScene()) return false;
     if (!hasGame) {

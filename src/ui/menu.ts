@@ -1,12 +1,14 @@
 import type { GameModel } from '../domain/index.js';
 import type { GameSettings } from '../persistence/index.js';
 import { createIntro } from './intro.js';
+import { createObjectBrowser, type ObjectBrowserOptions } from './object-browser.js';
 
 interface MenuActions {
   start(): boolean;
   restart(): boolean;
   pause(paused: boolean): void;
   settings(value: GameSettings): string | null;
+  preview: ObjectBrowserOptions;
 }
 
 /** Навигация не меняет город. Сценой, сохранениями и командами владеет main.ts. */
@@ -31,11 +33,17 @@ export function createMenu(document: Document, settings: GameSettings, actions: 
     element('menu-shell').hidden = open;
     updateBackground();
   });
+  let previewOpen = false;
+  const objects = createObjectBrowser(document, actions.preview, (open) => {
+    previewOpen = open;
+    element('menu-shell').hidden = open;
+    updateBackground();
+  });
 
   function updateBackground() {
     const allowMotion = animateBackground && !motionPreference.matches;
     video.hidden = !allowMotion || video.error !== null;
-    if (allowMotion && !inGame && !document.hidden && !video.error) {
+    if (allowMotion && !inGame && !previewOpen && !document.hidden && !video.error) {
       // При запрете автозапуска браузером остаётся статичный постер гавани.
       void video.play().catch(() => {});
     } else video.pause();
@@ -93,6 +101,7 @@ export function createMenu(document: Document, settings: GameSettings, actions: 
   listen('close-settings', leaveSettings);
   listen('menu-help', () => dialog('help-dialog').showModal());
   listen('menu-intro', () => intro.open());
+  listen('menu-objects', () => objects.open());
   listen('reset-progress', () => {
     dialog('settings-dialog').close();
     dialog('reset-dialog').showModal();
@@ -170,6 +179,7 @@ export function createMenu(document: Document, settings: GameSettings, actions: 
     },
     dispose() {
       intro.dispose();
+      objects.dispose();
       video.pause();
       controller.abort();
     },

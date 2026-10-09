@@ -13,7 +13,12 @@ const hash = (x: number, z: number) => {
 };
 // Одна клетка — одна единица; X/Z лежат на земле, Y направлена вверх.
 // Геометрия неподвижного острова объединяется, чтобы сократить число вызовов отрисовки.
-function builder(board: Board, completed = false) {
+export interface ModelData {
+  p: number[][];
+  f: number[][];
+  c: number[][];
+}
+function builder(board: Board, completed = false, models: Record<string, ModelData> = assets) {
   const sceneVertices: number[] = [];
   function rgb(hex: string) {
     return hex.match(/[0-9a-f]{2}/gi)!.map((v) => parseInt(v, 16));
@@ -53,7 +58,7 @@ function builder(board: Board, completed = false) {
     quad([x + 1, -0.43, z], [x, -0.43, z], [x, 0, z], [x + 1, 0, z], rgb('#b2a583'));
   }
   function model(
-    name: keyof typeof assets,
+    name: string,
     x: number,
     y: number,
     z: number,
@@ -63,7 +68,7 @@ function builder(board: Board, completed = false) {
     angle = 0,
     tint?: number[],
   ) {
-    let a = assets[name],
+    let a = models[name],
       co = Math.cos(angle),
       si = Math.sin(angle),
       points = a.p.map((p) => [
@@ -226,7 +231,13 @@ function builder(board: Board, completed = false) {
     VertexData.ComputeNormals(p, geometry.indices, geometry.normals);
     return geometry;
   }
-  return { terrain, building, model, shadow, finish };
+  function streetDecoration(x: number, z: number, fountain: boolean) {
+    if (fountain) {
+      model('fountain-round', x + 0.5, 0.065, z + 0.5, 0.18);
+      model('fountain-center', x + 0.5, 0.065, z + 0.5, 0.18);
+    } else model('lantern', x + 0.9, 0.07, z + 0.1, 0.38);
+  }
+  return { terrain, building, model, shadow, streetDecoration, finish };
 }
 /** Полностью пересобирается только при изменении списка построек. */
 export function islandGeometry(buildings: Building[], board: Board, completed = false) {
@@ -263,10 +274,9 @@ export function islandGeometry(buildings: Building[], board: Board, completed = 
       [0, -1],
     ].filter(([dx, dz]) => roads.has(`${road.x + dx},${road.z + dz}`)).length;
     if (neighbors >= 3) {
-      b.model('fountain-round', road.x + 0.5, 0.065, road.z + 0.5, 0.18);
-      b.model('fountain-center', road.x + 0.5, 0.065, road.z + 0.5, 0.18);
+      b.streetDecoration(road.x, road.z, true);
     } else if ((road.x + road.z) % 3 === 0) {
-      b.model('lantern', road.x + 0.9, 0.07, road.z + 0.1, 0.38);
+      b.streetDecoration(road.x, road.z, false);
     }
   }
   return b.finish();
@@ -275,5 +285,34 @@ export function islandGeometry(buildings: Building[], board: Board, completed = 
 export function shipGeometry() {
   const b = builder({ size: 0, isLand: () => false, shoreDirection: () => null });
   b.model('ship-small', 0, 0, 0, 0.19, 0.19, 0.19);
+  return b.finish();
+}
+
+const previewBoard: Board = {
+  size: 0,
+  isLand: () => false,
+  shoreDirection: () => [0, 1],
+};
+
+/** Просмотрщик вызывает те же сборщики, поэтому правки сразу видны и в игре, и здесь. */
+export function buildingGeometry(building: Building, completed = false) {
+  const b = builder(previewBoard, completed);
+  b.building(building);
+  return b.finish();
+}
+export function terrainGeometry() {
+  const b = builder(previewBoard);
+  b.terrain(0, 0);
+  return b.finish();
+}
+export function streetGeometry(fountain: boolean) {
+  const b = builder(previewBoard);
+  b.building({ t: 'road', x: 0, z: 0 });
+  b.streetDecoration(0, 0, fountain);
+  return b.finish();
+}
+export function modelGeometry(data: ModelData) {
+  const b = builder(previewBoard, false, { preview: data });
+  b.model('preview', 0, 0, 0);
   return b.finish();
 }

@@ -51,6 +51,7 @@
               Письмо Марты <span>Смотреть вступление</span>
             </button>
             <button id="menu-settings">Настройки</button>
+            <button id="menu-objects">Просмотр 3D-объектов</button>
             <button id="menu-help">Как играть</button>
           </nav>
           <p class="menu-footnote">Большие истории начинаются<br />с маленького причала.</p>
@@ -58,6 +59,58 @@
         </section>
       </div>
     </main>
+    <dialog id="objects-dialog" class="objects-dialog" aria-labelledby="objects-title">
+      <header class="objects-header">
+        <div>
+          <h1 id="objects-title">Мастерская объектов</h1>
+          <p>Каждый объект — со всех сторон</p>
+        </div>
+        <button id="objects-close">В меню · Esc</button>
+      </header>
+      <div class="objects-layout">
+        <aside class="objects-catalog" aria-label="Каталог 3D-объектов">
+          <label for="objects-search">Найти объект</label>
+          <input id="objects-search" type="search" placeholder="Название или путь к файлу" />
+          <label for="objects-group">Набор</label>
+          <select id="objects-group">
+            <option value="">Все объекты</option>
+          </select>
+          <p id="objects-count" role="status"></p>
+          <nav id="objects-list" aria-label="Выбрать объект"></nav>
+          <p id="objects-empty" hidden>Ничего не найдено. Измените поиск или набор.</p>
+        </aside>
+        <section class="object-preview" aria-labelledby="object-title">
+          <header>
+            <h2 id="object-title"></h2>
+            <p id="object-stats"></p>
+          </header>
+          <div class="object-stage">
+            <canvas
+              id="object-canvas"
+              tabindex="0"
+              aria-label="3D-превью: перетаскивайте для вращения, колесо или жест двумя пальцами для приближения"
+            ></canvas>
+            <p id="object-error" role="alert"></p>
+          </div>
+          <div class="object-controls" aria-label="Камера">
+            <button id="object-left" aria-label="Повернуть влево">↶</button>
+            <button id="object-right" aria-label="Повернуть вправо">↷</button>
+            <button id="object-zoom-out" aria-label="Отдалить">−</button>
+            <button id="object-zoom-in" aria-label="Приблизить">+</button>
+            <button id="object-reset">Сбросить вид</button>
+          </div>
+          <p class="object-hint">Тяните, чтобы вращать · Колесо или два пальца, чтобы приблизить</p>
+          <div class="object-pagination">
+            <button id="object-previous">← Предыдущий</button
+            ><button id="object-next">Следующий →</button>
+          </div>
+          <code id="object-source"></code>
+          <p class="object-hint">
+            После изменения исходника пересоберите игру и обновите страницу.
+          </p>
+        </section>
+      </div>
+    </dialog>
     <dialog id="intro-dialog" class="intro-dialog" aria-labelledby="intro-title">
       <h1 id="intro-title" class="visually-hidden">Письмо Марты</h1>
       <div class="intro-stage">
