@@ -1,6 +1,8 @@
 import type { GameModel, CommandHandler } from '../domain/index.js';
 import { LETTERS, CHAPTERS } from './letters.js';
 import art from '../../.generated/card-art.json';
+import cameraIcons from '../../.generated/camera-icons.json';
+import type { CameraAction } from '../scene/index.js';
 export { createMenu } from './menu.js';
 export { fitGameViewport } from './viewport.js';
 /**
@@ -10,7 +12,7 @@ export { fitGameViewport } from './viewport.js';
 export function createUI(
   document: Document,
   onCommand: CommandHandler,
-  onCamera: (action: 'left' | 'right' | 'home') => void,
+  onCamera: (action: CameraAction | 'home', pressed?: boolean) => void,
 ) {
   // Типизированные помощники отделяют обязательную разметку от необязательных данных.
   function $<T extends HTMLElement = HTMLElement>(id: string): T {
@@ -27,8 +29,70 @@ export function createUI(
   listen('coach-action', () => onCommand({ type: 'continue' }));
   listen('help', () => $<HTMLDialogElement>('help-dialog').showModal());
   listen('close-help', () => $<HTMLDialogElement>('help-dialog').close());
-  listen('rotate-left', () => onCamera('left'));
-  listen('rotate-right', () => onCamera('right'));
+  const cameraButtons = [
+    ['rotate-left', 'left'],
+    ['rotate-right', 'right'],
+    ['zoom-in', 'zoomIn'],
+    ['zoom-out', 'zoomOut'],
+  ] as const;
+  for (const [id, action] of cameraButtons) {
+    const button = $<HTMLButtonElement>(id);
+    button.innerHTML = cameraIcons[action];
+    const hold = () => {
+      button.dataset.pressed = 'true';
+      onCamera(action, true);
+    };
+    const release = () => {
+      delete button.dataset.pressed;
+      onCamera(action, false);
+    };
+    button.addEventListener(
+      'pointerdown',
+      (event) => {
+        if (event.button !== 0) return;
+        event.preventDefault();
+        button.focus({ preventScroll: true });
+        button.setPointerCapture(event.pointerId);
+        hold();
+      },
+      { signal: controller.signal },
+    );
+    for (const event of ['pointerup', 'pointercancel', 'lostpointercapture'])
+      button.addEventListener(event, release, { signal: controller.signal });
+    button.addEventListener(
+      'keydown',
+      (event) => {
+        if (!['Space', 'Enter'].includes(event.code)) return;
+        event.preventDefault();
+        if (!event.repeat) hold();
+      },
+      { signal: controller.signal },
+    );
+    button.addEventListener(
+      'keyup',
+      (event) => {
+        if (['Space', 'Enter'].includes(event.code)) {
+          event.preventDefault();
+          release();
+        }
+      },
+      { signal: controller.signal },
+    );
+    // Синтетический click от вспомогательных технологий тоже даёт плавный шаг.
+    button.addEventListener(
+      'click',
+      (event) => {
+        if (event.detail === 0) {
+          hold();
+          release();
+        }
+      },
+      { signal: controller.signal },
+    );
+    button.addEventListener('blur', release, { signal: controller.signal });
+    window.addEventListener('blur', release, { signal: controller.signal });
+  }
+  $('home').innerHTML = cameraIcons.home;
   listen('home', () => onCamera('home'));
   listen('light-beacon', () => onCommand({ type: 'light-beacon' }));
   listen('read-ending', () => $<HTMLDialogElement>('ending-dialog').showModal());

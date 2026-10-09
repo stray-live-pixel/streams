@@ -2,7 +2,19 @@ import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import path from 'node:path';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { ChevronLeft, ChevronRight, House, Pause, Play, RotateCcw, X } from 'lucide-react';
+import {
+  ChevronLeft,
+  ChevronRight,
+  House,
+  Pause,
+  Play,
+  RotateCcw,
+  RotateCw,
+  Scan,
+  ZoomIn,
+  ZoomOut,
+  X,
+} from 'lucide-react';
 
 /** Голос и субтитры собираются вместе; готовой игре не нужны отдельные MP3 или сеть. */
 export async function packIntro(root) {
@@ -55,4 +67,24 @@ export async function packIntro(root) {
     ]),
   );
   await writeFile(path.join(root, '.generated/intro-icons.json'), JSON.stringify(icons));
+  const cameraIcons = Object.fromEntries(
+    Object.entries({
+      left: RotateCcw,
+      right: RotateCw,
+      home: Scan,
+      zoomIn: ZoomIn,
+      zoomOut: ZoomOut,
+    }).map(([name, component]) => [
+      name,
+      renderToStaticMarkup(
+        createElement(component, {
+          size: 20,
+          strokeWidth: 1.75,
+          'aria-hidden': true,
+          focusable: false,
+        }),
+      ),
+    ]),
+  );
+  await writeFile(path.join(root, '.generated/camera-icons.json'), JSON.stringify(cameraIcons));
 }

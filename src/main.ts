@@ -18,9 +18,9 @@ let scene: CityScene | undefined;
 let disposeInput: (() => void) | undefined;
 let paused = true;
 const canvas = document.getElementById('world') as HTMLCanvasElement;
-const ui = createUI(document, dispatch, (action) => {
+const ui = createUI(document, dispatch, (action, pressed) => {
   if (action === 'home') scene?.resetCamera();
-  else scene?.rotate(action === 'left' ? -1 : 1);
+  else scene?.setCameraInput(`toolbar:${action}`, pressed ? action : null);
 });
 const menu = createMenu(document, settings, {
   start() {
@@ -124,6 +124,9 @@ window.cityDebug = Object.freeze({
   get paused() {
     return paused;
   },
+  get camera() {
+    return scene?.cameraState ?? null;
+  },
   projectTile(x: number, z: number) {
     if (!scene) throw new Error('Сначала откройте остров из главного меню.');
     const point = scene.project(x + 0.5, 0, z + 0.5);
@@ -151,6 +154,7 @@ declare global {
       readonly busy: boolean;
       readonly renderer: string;
       readonly paused: boolean;
+      readonly camera: CityScene['cameraState'] | null;
       projectTile(x: number, z: number): { x: number; y: number };
     };
   }

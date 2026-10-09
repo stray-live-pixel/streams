@@ -57,6 +57,7 @@
   --shadow-lifted-page: 8px 15px 26px color-mix(in srgb, var(--color-shadow) 22%, transparent);
   --shadow-control: 0 2px 5px color-mix(in srgb, var(--color-shadow) 9%, transparent);
   --surface-control: color-mix(in srgb, var(--color-paper-light) 65%, transparent);
+  --surface-camera: color-mix(in srgb, var(--color-paper) 94%, transparent);
   --surface-control-hover: color-mix(
     in srgb,
     var(--color-paper-shade) 65%,

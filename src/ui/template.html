@@ -131,8 +131,8 @@
       <div id="game-screen" hidden>
         <canvas
           id="world"
-          tabindex="-1"
-          aria-label="Карта острова: выберите постройку и нажмите на участок"
+          tabindex="0"
+          aria-label="Карта острова: Q и E — поворот, стрелки вверх и вниз — наклон, WASD — перемещение"
         ></canvas>
         <header class="header">
           <div class="brand">Тихая Гавань<small>Остров · маленькие начала</small></div>
@@ -177,14 +177,38 @@
             <span></span><span></span><span></span><span></span><span></span>
           </div>
         </aside>
-        <div class="camera">
-          <button id="rotate-left" aria-label="Повернуть карту влево" title="Повернуть карту">
-            ↶</button
-          ><button id="rotate-right" aria-label="Повернуть карту вправо" title="Повернуть карту">
-            ↷</button
-          ><button id="home" aria-label="Вернуть карту в центр" title="Вернуть карту в центр">
-            ⌖
-          </button>
+        <div class="camera" role="group" aria-label="Управление камерой">
+          <span class="camera-label">Камера</span>
+          <div class="camera-toolbar">
+            <button
+              id="rotate-left"
+              aria-label="Повернуть карту влево"
+              title="Поворот влево · Q / ← · удерживайте"
+            ></button>
+            <button
+              id="rotate-right"
+              aria-label="Повернуть карту вправо"
+              title="Поворот вправо · E / → · удерживайте"
+            ></button>
+            <span class="camera-divider" aria-hidden="true"></span>
+            <button
+              id="home"
+              aria-label="Вернуть карту в центр"
+              title="Исходный ракурс · Home"
+            ></button>
+            <span class="camera-divider" aria-hidden="true"></span>
+            <button
+              id="zoom-out"
+              aria-label="Отдалить карту"
+              title="Отдалить · − · удерживайте"
+            ></button>
+            <button
+              id="zoom-in"
+              aria-label="Приблизить карту"
+              title="Приблизить · + · удерживайте"
+            ></button>
+          </div>
+          <span class="camera-hint">Q / E — поворот · ПКМ — обзор</span>
         </div>
         <div class="dock">
           <div class="dock-hint" id="hint"></div>
@@ -275,8 +299,13 @@
           Финал истории — зажечь маяк. Для этого нужны 50 жителей, неотрицательный дневной баланс
           еды и 300 монет. Нажмите «Зажечь маяк» в письме Марты: 300 монет будут потрачены на башню.
           После финала можно продолжить свободную игру. Меню открывается клавишей <b>Escape</b> или
-          кнопкой «Меню». Карту можно перетаскивать и поворачивать стрелками, масштаб — колесом
-          мыши.
+          кнопкой «Меню».
+        </p>
+        <p>
+          <b>Камера:</b> удерживайте Q/E или ←/→ для плавного поворота, ↑/↓ — для наклона. WASD
+          перемещают обзор; Shift ускоряет движение. Перетаскивайте карту левой кнопкой мыши,
+          вращайте правой. Колесо или +/− меняют масштаб, Home возвращает исходный ракурс. Кнопки на
+          панели «Камера» также можно удерживать.
         </p>
         <p class="credits">
           3D-модели:
