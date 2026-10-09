@@ -36,7 +36,7 @@
       >
         <source src="__MENU_VIDEO__" type="video/mp4" />
       </video>
-      <div class="menu-shell">
+      <div id="menu-shell" class="menu-shell">
         <section class="menu-card" aria-labelledby="menu-greeting">
           <header class="menu-heading">
             <h1 id="menu-title">Тихая Гавань</h1>
@@ -47,6 +47,9 @@
           <div id="menu-progress" class="menu-progress"></div>
           <nav class="menu-actions" aria-label="Главное меню">
             <button id="menu-start" class="primary">Новая игра</button>
+            <button id="menu-intro" class="menu-intro">
+              Письмо Марты <span>Смотреть вступление</span>
+            </button>
             <button id="menu-settings">Настройки</button>
             <button id="menu-help">Как играть</button>
           </nav>
@@ -55,6 +58,65 @@
         </section>
       </div>
     </main>
+    <dialog
+      id="intro-dialog"
+      class="intro-dialog"
+      aria-labelledby="intro-title"
+      aria-describedby="intro-help"
+    >
+      <header class="intro-header">
+        <div>
+          <div class="eyebrow">Тихая Гавань</div>
+          <h1 id="intro-title">Письмо с острова</h1>
+        </div>
+        <button id="intro-close" class="intro-exit">Выйти <span aria-hidden="true">×</span></button>
+      </header>
+      <div class="intro-stage">
+        <figure class="intro-character">
+          <img
+            src="__MARTA_PORTRAIT__"
+            width="1024"
+            height="1024"
+            alt="Марта — добродушная смотрительница гавани с седеющими волосами и зелёной шалью"
+          />
+          <figcaption><strong>Марта</strong><span>смотрительница гавани</span></figcaption>
+        </figure>
+        <section class="intro-letter" aria-label="Рассказ Марты">
+          <div class="intro-chapter">
+            <span id="intro-frame-title"></span>
+            <span id="intro-counter"></span>
+          </div>
+          <p id="intro-subtitle" class="intro-subtitle" aria-live="polite" aria-atomic="true"></p>
+          <progress
+            id="intro-progress"
+            max="11"
+            value="1"
+            aria-label="Прочитанные кадры"
+          ></progress>
+          <div class="intro-controls">
+            <div class="intro-voice-controls">
+              <button id="intro-play">Пауза</button>
+              <button
+                id="intro-replay"
+                aria-label="Повторить озвучку кадра"
+                title="Повторить озвучку"
+              >
+                ↻
+              </button>
+            </div>
+            <div class="intro-navigation">
+              <button id="intro-previous">← Назад</button>
+              <button id="intro-next" class="primary">Далее →</button>
+            </div>
+          </div>
+          <p id="intro-audio-status" class="intro-audio-status" role="status"></p>
+          <p id="intro-help" class="intro-help">
+            История не торопит: переключайте кадры сами. ← → — листать · Esc — выйти
+          </p>
+        </section>
+      </div>
+      <audio id="intro-audio" preload="auto"></audio>
+    </dialog>
     <div id="game-screen" hidden>
       <canvas
         id="world"

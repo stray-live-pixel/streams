@@ -40,4 +40,12 @@
     transparent 78%,
     color-mix(in srgb, var(--color-paper-light) 75%, transparent)
   );
+  --intro-backdrop: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--color-shadow) 18%, transparent),
+    transparent 30%,
+    color-mix(in srgb, var(--color-shadow) 40%, transparent)
+  );
+  --intro-caption-background: color-mix(in srgb, var(--color-paper-light) 94%, transparent);
+  --shadow-character: 0 14px 30px color-mix(in srgb, var(--color-shadow) 28%, transparent);
 }

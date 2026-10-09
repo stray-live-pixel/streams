@@ -1,5 +1,6 @@
 import type { GameModel } from '../domain/index.js';
 import type { GameSettings } from '../persistence/index.js';
+import { createIntro } from './intro.js';
 
 interface MenuActions {
   start(): boolean;
@@ -26,6 +27,10 @@ export function createMenu(document: Document, settings: GameSettings, actions: 
   const video = element<HTMLVideoElement>('menu-video');
   const motionPreference = window.matchMedia('(prefers-reduced-motion: reduce)');
   video.muted = true;
+  const intro = createIntro(document, (open) => {
+    element('menu-shell').hidden = open;
+    updateBackground();
+  });
 
   function updateBackground() {
     const allowMotion = animateBackground && !motionPreference.matches;
@@ -87,6 +92,7 @@ export function createMenu(document: Document, settings: GameSettings, actions: 
   listen('pause-settings', () => openSettings('pause'));
   listen('close-settings', leaveSettings);
   listen('menu-help', () => dialog('help-dialog').showModal());
+  listen('menu-intro', () => intro.open());
   listen('reset-progress', () => {
     dialog('settings-dialog').close();
     dialog('reset-dialog').showModal();
@@ -163,6 +169,7 @@ export function createMenu(document: Document, settings: GameSettings, actions: 
       element('menu-status').textContent = message;
     },
     dispose() {
+      intro.dispose();
       video.pause();
       controller.abort();
     },

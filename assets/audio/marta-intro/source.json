@@ -1,0 +1,127 @@
+{
+  "model": "elevenlabs/eleven-v4",
+  "voice": "matilda",
+  "characters": 1603,
+  "duration_seconds": 92.92,
+  "pause_seconds": 1,
+  "segments": [
+    {
+      "index": 1,
+      "text": "[warm, inviting storytelling voice, unhurried] Вы наверняка уже видите остров. Сначала из-за мыса покажется старая башня, потом — бухта. Нам сюда.",
+      "instructions": "",
+      "duration_seconds": 7.76,
+      "generation_id": "gen-tts-1791567333-HQq7DZgCUaKNuivr2Ex0",
+      "attempts": 1,
+      "pcm_sha256": "b6ce1d32d56d64c5b6c664e478e2b61bbba28cfc82dc949769fce4f94330f040",
+      "start_seconds": 0.0
+    },
+    {
+      "index": 2,
+      "text": "[warm, nostalgic storytelling voice, unhurried] Когда я была маленькой, у нашего причала стояло столько лодок, что отец узнавал свою только по кривой мачте. По утрам пахло хлебом, рыбой и свежими досками. А новости мы узнавали раньше, чем успевали разгрузить корабль.",
+      "instructions": "",
+      "duration_seconds": 14.8,
+      "generation_id": "gen-tts-1791567333-hoKzlqjiqERGIAkzCP8F",
+      "attempts": 1,
+      "pcm_sha256": "a3dfe71bf811a1073fc2f9e95a44808700805167b5eb21255611c641432ed15d",
+      "start_seconds": 8.76
+    },
+    {
+      "index": 3,
+      "text": "[gentle, reflective storytelling voice, unhurried] Потом торговые суда нашли более короткий путь. Люди стали уезжать вслед за работой. Последнюю пекарню закрыли лет двадцать назад. Я до сих пор храню её ключ — всё собиралась вернуть хозяину.",
+      "instructions": "",
+      "duration_seconds": 12.8,
+      "generation_id": "gen-tts-1791567333-TewE0vza5FsnDxdIK6Ol",
+      "attempts": 1,
+      "pcm_sha256": "cff4d43737b16071411ec75bb027375750daf068e8bf867e273810d6d68cd24f",
+      "start_seconds": 24.560000000000002
+    },
+    {
+      "index": 4,
+      "text": "[warm, quietly hopeful storytelling voice, unhurried] Недавно я получила от него письмо. Оказывается, его дочь тоже печёт хлеб. Хочет открыть свою пекарню, только в большом городе ей пока не по карману даже маленькая лавка.",
+      "instructions": "",
+      "duration_seconds": 11.36,
+      "generation_id": "gen-tts-1791567333-wPy4PK1kYedsHDAlCIqr",
+      "attempts": 1,
+      "pcm_sha256": "895e469a7d40a3bd7bfe92ccffc83c9e29e6103ba2aacdbdf010da74a726c130",
+      "start_seconds": 38.36
+    },
+    {
+      "index": 5,
+      "text": "[thoughtful, with a gentle smile in the voice] Вот я и подумала: у нас ведь места хватает.",
+      "instructions": "",
+      "duration_seconds": 3.6,
+      "generation_id": "gen-tts-1791567336-5OQ8IhsxxnRnrtNexqrT",
+      "attempts": 1,
+      "pcm_sha256": "c6f569c93c1a1daf670686c2ca8c195afe48d1f0afae85b38d428385420af570",
+      "start_seconds": 50.72
+    },
+    {
+      "index": 6,
+      "text": "[warm, personal, quietly hopeful] Я написала ещё нескольким знакомым. И вам.",
+      "instructions": "",
+      "duration_seconds": 3.44,
+      "generation_id": "gen-tts-1791567336-EQ6F8owbmJMvVOzJGg6m",
+      "attempts": 1,
+      "pcm_sha256": "152b81f20513c5cef50f94dbcb568c08067fea3836dfebe8bb13fd6beb5f8991",
+      "start_seconds": 55.32
+    },
+    {
+      "index": 7,
+      "text": "[calm, reassuring storytelling voice, unhurried] Первые семьи прибудут совсем скоро. Пока здесь нет ни домов для них, ни хорошего причала. Зато есть земля, немного сбережений и бухта, где почти всегда спокойно.",
+      "instructions": "",
+      "duration_seconds": 11.44,
+      "generation_id": "gen-tts-1791567337-Wcrpr3B15gODhFgTduTi",
+      "attempts": 1,
+      "pcm_sha256": "67a90ef18524a1845eb02a0f2f9c5eac64cc4fa27743edae93bf98bf4b94b135",
+      "start_seconds": 59.76
+    },
+    {
+      "index": 8,
+      "text": "[warm, reassuring, with quiet confidence] Начнём с причала. Потом построим дома, посадим что-нибудь съедобное. С остальным разберёмся по дороге.",
+      "instructions": "",
+      "duration_seconds": 6.96,
+      "generation_id": "gen-tts-1791567338-LF6dpqrs6XdfQYBGjYZL",
+      "attempts": 1,
+      "pcm_sha256": "92124ab9a31c06ef7a94f58d9104e682273ecd058909cbf824a997cad212aed2",
+      "start_seconds": 72.2
+    },
+    {
+      "index": 9,
+      "text": "[hopeful, inviting storytelling voice, unhurried] А когда здесь снова зажжётся маяк, капитаны будут знать: в Тихую Гавань можно заходить.",
+      "instructions": "",
+      "duration_seconds": 6.48,
+      "generation_id": "gen-tts-1791567338-A1u7bxVOaC7XR2HLYI3x",
+      "attempts": 1,
+      "pcm_sha256": "f4b9886357615903993f604b68769271e9d1d45c20bc74cd7b5f387c238d1d16",
+      "start_seconds": 80.16
+    },
+    {
+      "index": 10,
+      "text": "[warm, intimate, inviting] Буду ждать на берегу.",
+      "instructions": "",
+      "duration_seconds": 2.0,
+      "generation_id": "gen-tts-1791567338-Ag0lV462dApEzmZMmT3F",
+      "attempts": 1,
+      "pcm_sha256": "1ffc1159953cdf5a7bcc0ac6d3731e2f1b2e774cc13ad6180f4514fd49abcb4f",
+      "start_seconds": 87.64
+    },
+    {
+      "index": 11,
+      "text": "[warm, gentle] Марта.",
+      "instructions": "",
+      "duration_seconds": 1.28,
+      "generation_id": "gen-tts-1791567340-hdZQJCIMzytClpUIGexa",
+      "attempts": 1,
+      "pcm_sha256": "bb8f387ca056ad007b0f854256546ce52bc9eca0c7873dade611f17c10a553a5",
+      "start_seconds": 90.64
+    }
+  ],
+  "streams": [
+    {
+      "codec_name": "mp3",
+      "sample_rate": "24000",
+      "channels": 1
+    }
+  ],
+  "output": "full.mp3"
+}
