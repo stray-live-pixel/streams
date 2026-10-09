@@ -1,5 +1,23 @@
 import type { CommandHandler, BuildingType } from '../domain/index.js';
-import type { CityScene } from '../scene/index.js';
+import type { CameraAction, CityScene } from '../scene/index.js';
+const cameraKeys: Record<string, CameraAction> = {
+  KeyQ: 'left',
+  ArrowLeft: 'left',
+  KeyE: 'right',
+  ArrowRight: 'right',
+  ArrowUp: 'tiltUp',
+  ArrowDown: 'tiltDown',
+  KeyW: 'panUp',
+  KeyS: 'panDown',
+  KeyA: 'panLeft',
+  KeyD: 'panRight',
+  Equal: 'zoomIn',
+  NumpadAdd: 'zoomIn',
+  Minus: 'zoomOut',
+  NumpadSubtract: 'zoomOut',
+  ShiftLeft: 'boost',
+  ShiftRight: 'boost',
+};
 /** Преобразует физические жесты в команды. Здесь нет правил строительства. */
 export function bindInput(canvas: HTMLCanvasElement, scene: CityScene, onCommand: CommandHandler) {
   const events = new AbortController();
@@ -12,12 +30,23 @@ export function bindInput(canvas: HTMLCanvasElement, scene: CityScene, onCommand
       y: ((event.clientY - bounds.top) / bounds.height) * canvas.clientHeight,
     };
   }
-  let pointer: { id: number; x: number; y: number; moved: boolean } | null = null;
+  let pointer: { id: number; x: number; y: number; moved: boolean; orbit: boolean } | null = null;
+  const blocked = (target: EventTarget | null) =>
+    !!document.querySelector('dialog[open]') ||
+    (target instanceof Element &&
+      !!target.closest('input,select,textarea,[contenteditable="true"]'));
+  function stop() {
+    if (pointer && canvas.hasPointerCapture(pointer.id)) canvas.releasePointerCapture(pointer.id);
+    pointer = null;
+    scene.stopCamera();
+  }
   canvas.addEventListener(
     'pointerdown',
     (event) => {
-      if (!event.isPrimary || event.button !== 0) return;
-      pointer = { id: event.pointerId, ...point(event), moved: false };
+      if (!event.isPrimary || ![0, 2].includes(event.button) || blocked(event.target)) return;
+      event.preventDefault();
+      canvas.focus({ preventScroll: true });
+      pointer = { id: event.pointerId, ...point(event), moved: false, orbit: event.button === 2 };
       canvas.setPointerCapture(event.pointerId);
     },
     options,
@@ -30,7 +59,8 @@ export function bindInput(canvas: HTMLCanvasElement, scene: CityScene, onCommand
         const dx = position.x - pointer.x,
           dy = position.y - pointer.y;
         if (Math.hypot(dx, dy) > 5 || pointer.moved) {
-          scene.pan(dx, dy);
+          if (pointer.orbit) scene.orbit(dx, dy);
+          else scene.pan(dx, dy);
           pointer.x = position.x;
           pointer.y = position.y;
           pointer.moved = true;
@@ -46,12 +76,13 @@ export function bindInput(canvas: HTMLCanvasElement, scene: CityScene, onCommand
     'pointerup',
     (event) => {
       if (pointer?.id !== event.pointerId) return;
-      if (!pointer.moved) {
+      if (!pointer.moved && !pointer.orbit) {
         const position = point(event);
         const tile = scene.pick(position.x, position.y);
         if (tile) onCommand({ type: 'build', ...tile });
       }
       pointer = null;
+      if (canvas.hasPointerCapture(event.pointerId)) canvas.releasePointerCapture(event.pointerId);
     },
     options,
   );
@@ -62,6 +93,14 @@ export function bindInput(canvas: HTMLCanvasElement, scene: CityScene, onCommand
     },
     options,
   );
+  canvas.addEventListener(
+    'lostpointercapture',
+    () => {
+      pointer = null;
+    },
+    options,
+  );
+  canvas.addEventListener('contextmenu', (event) => event.preventDefault(), options);
   canvas.addEventListener(
     'pointerleave',
     () => {
@@ -80,12 +119,20 @@ export function bindInput(canvas: HTMLCanvasElement, scene: CityScene, onCommand
   document.addEventListener(
     'keydown',
     (e) => {
-      if (
-        document.querySelector('dialog[open]') ||
-        (e.target instanceof Element && e.target.matches('button,input,select,textarea')) ||
-        e.repeat
-      )
+      if (blocked(e.target) || e.ctrlKey || e.metaKey || e.altKey) return;
+      const action = cameraKeys[e.code];
+      if (action) {
+        e.preventDefault();
+        scene.setCameraInput(`key:${e.code}`, action);
+        scene.hover(null);
         return;
+      }
+      if (e.code === 'Home') {
+        e.preventDefault();
+        if (!e.repeat) scene.resetCamera();
+        return;
+      }
+      if ((e.target instanceof Element && e.target.closest('button')) || e.repeat) return;
       if (e.code === 'Space') {
         e.preventDefault();
         onCommand({ type: 'next-day' });
@@ -101,5 +148,28 @@ export function bindInput(canvas: HTMLCanvasElement, scene: CityScene, onCommand
     },
     options,
   );
-  return () => events.abort();
+  document.addEventListener(
+    'keyup',
+    (event) => scene.setCameraInput(`key:${event.code}`, null),
+    options,
+  );
+  window.addEventListener('blur', stop, options);
+  document.addEventListener(
+    'visibilitychange',
+    () => {
+      if (document.hidden) stop();
+    },
+    options,
+  );
+  document.addEventListener(
+    'focusin',
+    (event) => {
+      if (blocked(event.target)) stop();
+    },
+    options,
+  );
+  return () => {
+    stop();
+    events.abort();
+  };
 }

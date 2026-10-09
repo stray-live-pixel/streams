@@ -452,17 +452,70 @@ dialog {
 .camera {
   position: fixed;
   right: 25px;
-  bottom: 260px;
+  top: 104px;
+  z-index: 2;
+  padding: 11px 12px 9px;
+  border: var(--border-letter);
+  border-radius: 12px;
+  background: var(--surface-camera);
+  box-shadow: var(--shadow-letter);
+  user-select: none;
+}
+.camera-label {
+  display: block;
+  margin: 0 0 7px 3px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-ink-muted);
+}
+.camera-toolbar {
   display: flex;
-  gap: 7px;
+  align-items: center;
+  gap: 4px;
 }
 .camera button {
-  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  border: 1px solid transparent;
+  border-radius: 7px;
   width: 34px;
   height: 34px;
   padding: 0;
-  font-size: 17px;
-  background: color-mix(in srgb, var(--color-paper) 75%, transparent);
+  background: var(--surface-control);
+  touch-action: none;
+  transition:
+    background var(--motion-fast),
+    color var(--motion-fast);
+}
+.camera button:hover {
+  background: var(--surface-control-hover);
+  border-color: var(--color-border);
+}
+.camera button[data-pressed='true'] {
+  background: var(--color-primary);
+  color: var(--color-paper-light);
+}
+.camera button:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+.camera button svg {
+  width: 20px;
+  height: 20px;
+}
+.camera-divider {
+  width: 1px;
+  height: 18px;
+  margin: 0 3px;
+  background: var(--color-paper-shade);
+}
+.camera-hint {
+  display: block;
+  margin-top: 8px;
+  font-size: 9px;
+  color: var(--color-ink-muted);
 }
 .save-note {
   position: fixed;
@@ -779,14 +832,6 @@ dialog a,
   .next small {
     font-size: 9px;
   }
-  .camera {
-    bottom: 250px;
-    right: 14px;
-  }
-  .camera button {
-    width: 29px;
-    height: 29px;
-  }
   .toast {
     top: auto;
     bottom: 230px;
@@ -828,9 +873,6 @@ dialog a,
   }
   .card-art.house img:last-child {
     height: 60px;
-  }
-  .camera {
-    bottom: 213px;
   }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -1533,219 +1575,6 @@ body[data-hints='hide'] .coach.freeplay .mission {
 @media (prefers-reduced-motion: reduce) {
   .intro-control {
     transition: none;
-  }
-}
-
-/* Изолированная мастерская: каталог остаётся доступен рядом с живым 3D. */
-dialog.objects-dialog {
-  width: min(1440px, calc(var(--game-width) * 0.96));
-  max-width: none;
-  height: calc(var(--game-height) * 0.94);
-  max-height: none;
-  padding: 24px;
-  overflow: hidden;
-  background: var(--surface-paper);
-}
-.objects-header,
-.object-pagination,
-.object-controls {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-.objects-header {
-  margin-bottom: 18px;
-}
-.objects-header h1 {
-  margin: 0;
-  font: 28px var(--font-story);
-}
-.objects-header p {
-  margin: 6px 0 0;
-  color: var(--color-ink-muted);
-}
-.objects-layout {
-  display: grid;
-  grid-template-columns: 290px minmax(0, 1fr);
-  gap: 24px;
-  height: calc(100% - 80px);
-}
-.objects-catalog {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  min-height: 0;
-}
-.objects-catalog input,
-.objects-catalog select {
-  width: 100%;
-  padding: 10px;
-  border: var(--border-paper);
-  border-radius: var(--radius-card);
-  font: inherit;
-  color: var(--color-ink);
-  background: var(--color-paper-light);
-}
-#objects-count {
-  margin: 4px 0;
-  color: var(--color-ink-muted);
-}
-#objects-list {
-  overflow-y: auto;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-  padding: 2px 6px 2px 2px;
-}
-#objects-list button {
-  text-align: left;
-  overflow-wrap: anywhere;
-  flex-shrink: 0;
-}
-#objects-list button[aria-pressed='true'] {
-  background: var(--color-primary);
-  color: var(--color-paper-light);
-}
-.object-preview {
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  min-width: 0;
-  gap: 10px;
-}
-.object-preview h2 {
-  margin: 0;
-  font: 24px var(--font-story);
-}
-#object-stats {
-  margin: 5px 0 0;
-  color: var(--color-ink-muted);
-  font-size: 13px;
-}
-.object-stage {
-  position: relative;
-  flex: 1;
-  min-height: 160px;
-  overflow: hidden;
-  background: var(--color-sea);
-  border-radius: var(--radius-card);
-}
-#object-canvas {
-  display: block;
-  width: 100%;
-  height: 100%;
-  touch-action: none;
-  outline-offset: -4px;
-}
-#object-error {
-  position: absolute;
-  left: 20px;
-  right: 20px;
-  top: 20px;
-  color: var(--color-accent);
-  background: var(--color-paper-light);
-}
-#object-error:empty {
-  display: none;
-}
-.object-controls {
-  justify-content: center;
-  flex-wrap: wrap;
-}
-.object-hint {
-  margin: 0;
-  text-align: center;
-  font-size: 12px;
-  color: var(--color-ink-muted);
-}
-#object-source {
-  font-size: 12px;
-  overflow-wrap: anywhere;
-  padding: 8px;
-  background: var(--color-paper-shade);
-  border-radius: var(--radius-paper);
-}
-@container game (max-width: 760px) {
-  dialog.objects-dialog {
-    padding: 12px;
-    width: var(--game-width);
-    height: var(--game-height);
-    border: 0;
-    border-radius: 0;
-  }
-  .objects-header {
-    gap: 8px;
-    margin-bottom: 12px;
-  }
-  .objects-header h1 {
-    font-size: 21px;
-  }
-  .objects-header p {
-    font-size: 12px;
-  }
-  .objects-header button {
-    padding: 8px;
-    flex-shrink: 0;
-  }
-  .objects-layout {
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: minmax(180px, 30%) minmax(0, 1fr);
-    gap: 12px;
-    height: calc(100% - 66px);
-  }
-  .objects-catalog {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    grid-template-rows: auto auto auto minmax(0, 1fr);
-    gap: 4px 8px;
-  }
-  .objects-catalog label {
-    font-size: 12px;
-  }
-  .objects-catalog label[for='objects-group'] {
-    grid-row: 1;
-    grid-column: 2;
-  }
-  #objects-search,
-  #objects-group {
-    grid-row: 2;
-    padding: 7px;
-    font-size: 13px;
-  }
-  #objects-count {
-    grid-column: 1 / -1;
-    font-size: 12px;
-    margin: 0;
-  }
-  #objects-list {
-    grid-column: 1 / -1;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    align-content: start;
-  }
-  #objects-list button {
-    font-size: 12px;
-    padding: 7px;
-  }
-  #objects-empty {
-    grid-column: 1 / -1;
-    margin: 0;
-  }
-  .object-preview {
-    gap: 6px;
-  }
-  .object-preview h2 {
-    font-size: 19px;
-  }
-  .object-controls button,
-  .object-pagination button {
-    padding: 7px 10px;
-    font-size: 12px;
-  }
-  .object-stage {
-    min-height: 100px;
   }
 }
 

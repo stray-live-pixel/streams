@@ -6,6 +6,7 @@ export interface Tile {
 }
 export interface Building extends Tile {
   t: BuildingType;
+  footprint?: Tile[];
 }
 export interface CityState {
   version: number;

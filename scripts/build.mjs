@@ -26,7 +26,15 @@ export async function build() {
     legalComments: 'inline',
     charset: 'utf8',
     logLevel: 'warning',
+    metafile: true,
   });
+  const editorInputs = Object.keys(result.metafile.inputs).filter(
+    (name) =>
+      name.startsWith('src/editor/') ||
+      name.includes('library-models.json') ||
+      name.includes('Gizmos/'),
+  );
+  if (editorInputs.length) throw new Error(`Редактор попал в игру: ${editorInputs.join(', ')}`);
   const template = await readFile(path.join(root, 'src/ui/template.html'), 'utf8');
   // Иллюстрация путешествует вместе с HTML: меню также работает офлайн и через file://.
   const menuArt = await readFile(path.join(root, 'assets/art/main-menu.webp'));

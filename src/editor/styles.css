@@ -1,0 +1,547 @@
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  font-family: var(--font-body);
+  color: var(--color-ink);
+  background: var(--color-paper);
+}
+button {
+  color: var(--color-ink);
+  border: var(--border-paper);
+  background: var(--color-paper);
+  cursor: pointer;
+}
+button:hover {
+  background: var(--color-paper-shade);
+}
+[hidden] {
+  display: none !important;
+}
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+/* Мастерская: библиотека, рабочая область и свойства видны одновременно. */
+main.objects-dialog {
+  width: 100%;
+  height: 100dvh;
+  min-height: 640px;
+  padding: 0;
+  overflow: hidden;
+  background: var(--color-paper);
+  font-size: 13px;
+}
+.objects-dialog button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 8px 10px;
+  font: inherit;
+  border-radius: 6px;
+}
+.objects-dialog button svg,
+.objects-dialog [data-icon] svg {
+  display: block;
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+}
+.objects-dialog button:disabled {
+  opacity: 0.38;
+  cursor: default;
+}
+.objects-dialog button[aria-pressed='true'],
+.objects-dialog .workshop-primary {
+  color: var(--color-paper-light);
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+}
+.objects-dialog button:focus-visible,
+.objects-dialog input:focus-visible,
+.objects-dialog select:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+.objects-layout {
+  height: 100%;
+  display: grid;
+  grid-template-columns: 246px minmax(0, 1fr) 284px;
+}
+.objects-catalog,
+.object-properties {
+  padding: 16px 14px;
+  min-height: 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.objects-catalog {
+  border-right: var(--border-paper);
+}
+.object-properties {
+  border-left: var(--border-paper);
+  overflow-y: auto;
+}
+.panel-caption {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+.panel-caption > span {
+  color: var(--color-ink-muted);
+  font-size: 10px;
+  letter-spacing: 0.5px;
+}
+.objects-dialog input,
+.objects-dialog select {
+  min-width: 0;
+  border: var(--border-paper);
+  border-radius: 6px;
+  padding: 8px;
+  color: var(--color-ink);
+  font: inherit;
+  background: var(--color-paper-light);
+}
+.workshop-search {
+  position: relative;
+}
+.workshop-search > span {
+  position: absolute;
+  top: 9px;
+  left: 10px;
+  color: var(--color-ink-muted);
+}
+#objects-search {
+  width: 100%;
+  padding-left: 35px;
+}
+#objects-group {
+  width: 100%;
+}
+#objects-count {
+  margin: 0;
+  color: var(--color-ink-muted);
+  font-size: 11px;
+}
+#objects-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  scrollbar-width: thin;
+}
+#objects-list button {
+  width: 100%;
+  flex-shrink: 0;
+  justify-content: flex-start;
+  text-align: left;
+  padding: 9px 8px;
+  border: 1px solid transparent;
+  background: transparent;
+  overflow-wrap: anywhere;
+}
+#objects-list button > span:first-child {
+  opacity: 0.7;
+}
+#objects-list button:hover {
+  background: var(--color-paper-shade);
+}
+#objects-list button[aria-pressed='true'] {
+  background: var(--color-primary);
+}
+.catalog-save {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 10px;
+  border-top: var(--border-paper);
+  color: var(--color-ink-muted);
+  font-size: 11px;
+  line-height: 1.5;
+}
+.catalog-save p {
+  margin: 0;
+}
+.save-shortcut {
+  text-align: center;
+}
+#object-save-status {
+  color: var(--color-primary);
+  overflow-wrap: anywhere;
+  max-height: 110px;
+  overflow-y: auto;
+}
+.object-preview {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  background: var(--color-paper-light);
+}
+.workshop-toolbar {
+  position: absolute;
+  z-index: 2;
+  top: 12px;
+  left: 12px;
+  right: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  pointer-events: none;
+}
+.transform-tools,
+.toolbar-options {
+  display: flex;
+  align-items: center;
+  padding: 4px;
+  background: var(--color-paper);
+  border-radius: 8px;
+  box-shadow: var(--shadow-control);
+  pointer-events: auto;
+}
+.toolbar-options {
+  gap: 10px;
+}
+.transform-tools,
+.history-tools {
+  display: flex;
+  gap: 3px;
+}
+.transform-tools button {
+  padding: 7px 8px;
+  font-size: 12px;
+}
+.snap-toggle {
+  padding-left: 5px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  white-space: nowrap;
+}
+.snap-toggle input {
+  accent-color: var(--color-primary);
+}
+.history-tools button {
+  padding: 7px;
+}
+.object-stage {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  margin: 8px;
+  overflow: hidden;
+  background: var(--surface-workshop);
+  border-radius: 8px;
+}
+#object-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+  outline-offset: -3px;
+}
+.stage-caption {
+  position: absolute;
+  left: 18px;
+  top: 72px;
+  right: 250px;
+  pointer-events: none;
+  color: var(--color-paper-light);
+  z-index: 1;
+}
+.stage-caption h2 {
+  margin: 0;
+  font: 20px var(--font-story);
+}
+#object-stats {
+  color: inherit;
+  margin: 5px 0 0;
+  opacity: 0.7;
+  font-size: 11px;
+}
+.stage-help {
+  position: absolute;
+  bottom: 16px;
+  left: 16px;
+  color: var(--color-paper-light);
+  pointer-events: none;
+}
+.stage-label {
+  opacity: 0.65;
+  font-size: 9px;
+  letter-spacing: 1px;
+}
+.stage-help p {
+  margin: 8px 0 0;
+  font-size: 11px;
+  opacity: 0.85;
+}
+.object-controls {
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  display: flex;
+  gap: 3px;
+  padding: 4px;
+  background: var(--color-paper);
+  border-radius: 8px;
+  box-shadow: var(--shadow-control);
+}
+.object-controls button {
+  padding: 6px;
+  border: 0;
+  background: transparent;
+}
+#object-error {
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  top: 130px;
+  padding: 12px;
+  background: var(--color-paper-light);
+  color: var(--color-accent);
+}
+#object-error:empty {
+  display: none;
+}
+#object-inspector {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1 0 auto;
+}
+.object-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-bottom: 12px;
+  border-bottom: var(--border-paper);
+}
+.object-scale-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+}
+.object-scale-label input {
+  width: 72px;
+  padding: 5px;
+}
+.footprint-presets {
+  display: flex;
+  gap: 3px;
+  margin-bottom: 8px;
+}
+.footprint-presets button {
+  flex: 1;
+  padding: 5px 3px;
+  font-size: 11px;
+}
+.footprint-layout {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+.footprint-layout p {
+  margin: 0;
+  font-size: 10px;
+  line-height: 1.5;
+  color: var(--color-ink-muted);
+}
+#object-footprint-cells {
+  display: grid;
+  grid-template-columns: repeat(4, 23px);
+  gap: 3px;
+  flex-shrink: 0;
+}
+#object-footprint-cells button {
+  width: 23px;
+  height: 23px;
+  padding: 0;
+  border-radius: 3px;
+}
+#object-footprint-cells button:disabled {
+  opacity: 1;
+}
+#object-inspector[hidden],
+#object-asset-actions[hidden] {
+  display: none;
+}
+.add-part-button {
+  width: 100%;
+}
+#object-parts {
+  min-height: 80px;
+  height: 185px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  scrollbar-width: thin;
+}
+#object-parts button {
+  justify-content: flex-start;
+  text-align: left;
+  border: 0;
+  background: transparent;
+  padding: 6px 8px;
+  flex-shrink: 0;
+  font-size: 12px;
+}
+#object-parts button span:last-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+#object-parts button[aria-pressed='true'] {
+  background: var(--color-primary);
+}
+.property-heading {
+  padding-top: 12px;
+  border-top: var(--border-paper);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.property-heading > div {
+  display: flex;
+  gap: 2px;
+}
+.property-heading button {
+  border: 0;
+  padding: 5px;
+}
+#object-transform-empty {
+  margin: 0;
+  color: var(--color-ink-muted);
+  font-size: 12px;
+}
+#object-transform {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+}
+#object-transform:disabled {
+  opacity: 0.4;
+}
+.transform-group legend {
+  padding: 0;
+  margin-bottom: 6px;
+  font-size: 11px;
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+}
+.transform-group legend span {
+  color: var(--color-ink-muted);
+}
+.transform-inputs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 5px;
+}
+.transform-inputs label {
+  position: relative;
+}
+.transform-inputs label > span {
+  position: absolute;
+  left: 6px;
+  top: 8px;
+  font-size: 10px;
+  color: var(--color-ink-muted);
+  pointer-events: none;
+}
+.transform-inputs input {
+  width: 100%;
+  padding: 6px 4px 6px 19px;
+  font-size: 12px;
+}
+.transform-inputs input::-webkit-inner-spin-button {
+  width: 8px;
+}
+.original-button {
+  margin-top: auto;
+  font-size: 11px !important;
+  border: 0 !important;
+  color: var(--color-ink-muted);
+}
+.object-source-details {
+  font-size: 11px;
+  color: var(--color-ink-muted);
+  padding-top: 8px;
+  border-top: var(--border-paper);
+}
+.object-source-details summary {
+  cursor: pointer;
+}
+#object-source {
+  display: block;
+  overflow-wrap: anywhere;
+  padding-top: 8px;
+  font-size: 10px;
+}
+#object-asset-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1;
+}
+#object-asset-actions p {
+  color: var(--color-ink-muted);
+  line-height: 1.6;
+}
+.bounds-status {
+  position: absolute;
+  top: 72px;
+  right: 16px;
+  max-width: 240px;
+  padding: 7px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  color: var(--color-paper-light);
+  background: var(--color-primary);
+}
+.bounds-status[data-outside='true'] {
+  background: var(--color-accent);
+}
+@media (max-width: 1100px) {
+  .objects-layout {
+    grid-template-columns: 210px minmax(300px, 1fr) 255px;
+  }
+  .transform-tools button span:not([data-icon]) {
+    display: none;
+  }
+}
+@media (max-width: 800px) {
+  main.objects-dialog {
+    min-width: 740px;
+  }
+  .workshop-toolbar {
+    flex-wrap: wrap;
+  }
+  .stage-caption {
+    top: 115px;
+    right: 16px;
+  }
+  .bounds-status {
+    top: 185px;
+  }
+  .stage-help {
+    bottom: 70px;
+  }
+}

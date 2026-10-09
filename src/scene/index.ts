@@ -1,3 +1,4 @@
+import { objectTemplateRevision } from '../objects/index.js';
 import { Engine } from '@babylonjs/core/Engines/engine.js';
 import { Scene } from '@babylonjs/core/scene.js';
 import { FreeCamera } from '@babylonjs/core/Cameras/freeCamera.js';
@@ -9,12 +10,26 @@ import { Color3, Color4 } from '@babylonjs/core/Maths/math.color.js';
 import { Plane } from '@babylonjs/core/Maths/math.plane.js';
 import '@babylonjs/core/Culling/ray.js';
 import type { Arrival, GameModel, Tile } from '../domain/index.js';
+import { buildingCells, proposedBuilding, placementIssue } from '../domain/index.js';
 import type { SceneOptions, Passenger } from './types.js';
 import { islandGeometry, shipGeometry } from './geometry.js';
 import { createCityLife } from './life.js';
 import { harborLayout } from './harbor.js';
 import { voyageFrame } from './voyage.js';
-export { createObjectPreview, previewObjects } from './preview.js';
+import { createCameraMotion } from './camera.js';
+import type { CameraAction } from './camera.js';
+export type { CameraAction, CameraState } from './camera.js';
+export {
+  defaultObjectParts,
+  buildingGeometry,
+  objectPartGeometry,
+  modelGeometry,
+  shipGeometry,
+  streetGeometry,
+  terrainGeometry,
+  registerObjectAssets,
+} from './geometry.js';
+export { createPerson, createSmoke, lifeColors } from './life.js';
 
 /**
  * Публичный адаптер 3D. Получает снимки и события, никогда не изменяет город.
@@ -65,12 +80,9 @@ export function createScene({ canvas, board, onArrivalFinished, onError }: Scene
   let model: GameModel | null = null;
   let hovered: Tile | null = null;
   let arrival: { event: Arrival; started: number } | null = null;
+  const motion = createCameraMotion();
   let width = 0,
     height = 0,
-    yaw = -0.68,
-    zoom = 1,
-    panX = 0,
-    panY = 0,
     scale = 1,
     dirty = true,
     frameId = 0;
@@ -92,8 +104,9 @@ export function createScene({ canvas, board, onArrivalFinished, onError }: Scene
     { signal: signal.signal },
   );
   function updateCamera() {
-    const cx = width * (width < 760 ? 0.5 : 0.6) + panX,
-      cy = height * (width < 760 ? 0.55 : 0.51) + panY;
+    const { x, z, yaw, pitch, zoom } = motion.state;
+    const cx = width * (width < 760 ? 0.5 : 0.6),
+      cy = height * (width < 760 ? 0.55 : 0.51);
     scale = Math.min(width / 20, height / 18) * zoom;
     camera.orthoLeft = -cx / scale;
     camera.orthoRight = (width - cx) / scale;
@@ -101,11 +114,11 @@ export function createScene({ canvas, board, onArrivalFinished, onError }: Scene
     camera.orthoBottom = -(height - cy) / scale;
     // Изометрический вид сохраняет размер домов при перемещении по острову.
     camera.position.set(
-      5.5 + Math.sin(yaw) * 0.86 * 40,
-      0.52 * 40,
-      5.5 + Math.cos(yaw) * 0.86 * 40,
+      x + Math.sin(yaw) * Math.cos(pitch) * 40,
+      Math.sin(pitch) * 40,
+      z + Math.cos(yaw) * Math.cos(pitch) * 40,
     );
-    camera.setTarget(new Vector3(5.5, 0, 5.5));
+    camera.setTarget(new Vector3(x, 0, z));
     camera.getViewMatrix(true);
     camera.getProjectionMatrix(true);
     scene.updateTransformMatrix(true);
@@ -170,16 +183,21 @@ export function createScene({ canvas, board, onArrivalFinished, onError }: Scene
     if (model.selected === 'port')
       for (let x = 0; x < board.size; x++)
         for (let z = 0; z < board.size; z++) {
-          if (board.shoreDirection(x, z) && !model.buildings.some((b) => b.x === x && b.z === z))
+          if (
+            board.shoreDirection(x, z) &&
+            !placementIssue(proposedBuilding('port', x, z, model.footprints), model.buildings)
+          )
             outline(x, z, '#f6deb633');
         }
     const tile = hovered;
-    if (
-      tile &&
-      model.selected &&
-      !model.buildings.some((b) => b.x === tile.x && b.z === tile.z && b.t !== 'road')
-    )
-      outline(tile.x, tile.z, '#ebf9c344');
+    if (tile && model.selected) {
+      const candidate = proposedBuilding(model.selected, tile.x, tile.z, model.footprints);
+      const allowed =
+        !placementIssue(candidate, model.buildings) &&
+        (model.selected !== 'port' || board.shoreDirection(tile.x, tile.z));
+      for (const cell of buildingCells(candidate))
+        outline(cell.x, cell.z, allowed ? '#ebf9c344' : '#e8a08b77');
+    }
     // Тонкие блики остаются только на воде. Это декоративный слой, не клетки карты.
     context.strokeStyle = '#e4f0dd66';
     context.lineWidth = 1;
@@ -212,8 +230,15 @@ export function createScene({ canvas, board, onArrivalFinished, onError }: Scene
   }
 
   let previousFrame = 0;
+  let previousMotion = 0;
   function frame(now: number) {
     if (paused) return;
+    const elapsed = previousMotion ? (now - previousMotion) / 1000 : 1 / 60;
+    previousMotion = now;
+    if (motion.tick(elapsed)) {
+      updateCamera();
+      hovered = null;
+    }
     const reducedMotion = !animateCity || motionPreference.matches;
     if (now - previousFrame < (quality === 'low' ? 50 : 32) && !dirty) {
       frameId = requestAnimationFrame(frame);
@@ -251,16 +276,15 @@ export function createScene({ canvas, board, onArrivalFinished, onError }: Scene
   }
   frameId = requestAnimationFrame(frame);
   function resetCamera() {
-    yaw = -0.68;
-    zoom = 1;
-    panX = panY = 0;
-    updateCamera();
+    motion.reset();
   }
   return {
     setPaused(next: boolean) {
       if (paused === next) return;
       paused = next;
       if (next) {
+        motion.stop();
+        previousMotion = 0;
         pausedAt = performance.now();
         cancelAnimationFrame(frameId);
         hovered = null;
@@ -283,11 +307,12 @@ export function createScene({ canvas, board, onArrivalFinished, onError }: Scene
     setModel(next: GameModel) {
       model = next;
       life.setModel(next);
-      const key = JSON.stringify([next.buildings, next.won]);
+      const key = JSON.stringify([next.buildings, next.won, objectTemplateRevision()]);
       if (key !== signature) {
         if (island) {
           island.dispose();
         }
+        shipGeometry().applyToMesh(ship);
         island = new Mesh('island', scene);
         islandGeometry(next.buildings, board, next.won).applyToMesh(island);
         island.material = material;
@@ -298,7 +323,6 @@ export function createScene({ canvas, board, onArrivalFinished, onError }: Scene
     playArrival(event: Arrival) {
       arrival = { event, started: performance.now() };
       ship.setEnabled(true);
-      resetCamera();
     },
     reset() {
       arrival = null;
@@ -306,18 +330,26 @@ export function createScene({ canvas, board, onArrivalFinished, onError }: Scene
       hovered = null;
       resetCamera();
     },
-    rotate(direction: number) {
-      yaw += (direction * Math.PI) / 4;
-      updateCamera();
+    get cameraState() {
+      return motion.state;
+    },
+    setCameraInput(source: string, action: CameraAction | null) {
+      motion.input(source, action);
+    },
+    clearCameraInput(prefix = '') {
+      motion.clear(prefix);
+    },
+    stopCamera() {
+      motion.stop();
+    },
+    orbit(dx: number, dy: number) {
+      motion.orbit(dx, dy);
     },
     pan(dx: number, dy: number) {
-      panX += dx;
-      panY += dy;
-      updateCamera();
+      motion.pan(dx, dy, scale);
     },
     zoom(delta: number) {
-      zoom = Math.max(0.65, Math.min(2, zoom + delta));
-      updateCamera();
+      motion.zoom(delta);
     },
     hover(tile: Tile | null) {
       hovered = tile;

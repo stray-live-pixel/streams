@@ -5,6 +5,13 @@ import { storyProgress, BEACON_COST } from './story.js';
 import { calculate } from './economy.js';
 import { isLand, shoreDirection } from './world.js';
 import {
+  buildingCells,
+  occupies,
+  placementIssue,
+  proposedBuilding,
+  type FootprintCatalog,
+} from './footprint.js';
+import {
   STEP,
   requiredBuilding,
   tutorialProgress,
@@ -18,13 +25,17 @@ import {
  * Команды — обычные объекты. Событие arrival просит сцену показать рейс,
  * но сама экономика ничего не знает о кадрах, DOM и графической библиотеке.
  */
-export function createGame(saved: CityState | null = null) {
+export function createGame(saved: CityState | null = null, footprints: FootprintCatalog = {}) {
+  footprints = structuredClone(footprints);
   let state = saved ? restoreState(saved) : initialState();
+  if (!saved)
+    state.buildings = state.buildings.map((b) => proposedBuilding(b.t, b.x, b.z, footprints));
   let selected: BuildingType | null = null;
   let busy = false;
   function snapshot() {
     return {
       ...structuredClone(state),
+      footprints: structuredClone(footprints),
       stats: calculate(state),
       story: storyProgress(state),
       selected,
@@ -49,6 +60,7 @@ export function createGame(saved: CityState | null = null) {
     const say = (text: string) => events.push({ type: 'notice', text });
     if (command.type === 'reset') {
       state = initialState();
+      state.buildings = state.buildings.map((b) => proposedBuilding(b.t, b.x, b.z, footprints));
       selected = null;
       busy = false;
       changed = true;
@@ -93,16 +105,31 @@ export function createGame(saved: CityState | null = null) {
       const { x, z } = command;
       if (!selected) say('Сначала выберите постройку внизу.');
       else if (isLand(x, z) && isChoiceAllowed(selected, state, busy)) {
-        const old = state.buildings.find((b) => b.x === x && b.z === z);
+        const old = state.buildings.find((b) => occupies(b, x, z));
+        const building = proposedBuilding(selected, x, z, footprints);
+        // Удаление уже построенной дороги не зависит от нового рецепта её участка.
+        const issue =
+          selected === 'road' && old?.t === 'road'
+            ? null
+            : placementIssue(building, state.buildings);
         const definition = BUILDINGS[selected];
         if (selected === 'port' && !shoreDirection(x, z))
           say('Порту нужен выход к морю. Выберите подсвеченный участок.');
-        else if (old && old.t !== 'road') say('Здесь уже есть здание. Выберите другое место.');
+        else if (issue === 'occupied')
+          say('Часть участка уже занята зданием. Выберите другое место.');
+        else if (issue === 'water') say('Весь участок здания должен находиться на суше.');
         else if (state.money < definition.cost)
           say('Недостаточно монет. Перейдите к следующему дню.');
         else {
-          if (old) state.buildings.splice(state.buildings.indexOf(old), 1);
-          if (!(selected === 'road' && old)) state.buildings.push({ x, z, t: selected });
+          if (selected === 'road' && old?.t === 'road') {
+            state.buildings.splice(state.buildings.indexOf(old), 1);
+          } else {
+            const cells = buildingCells(building);
+            state.buildings = state.buildings.filter(
+              (b) => !cells.some((cell) => occupies(b, cell.x, cell.z)),
+            );
+            state.buildings.push(building);
+          }
           state.money -= definition.cost;
           changed = true;
           // Дорога остаётся выбранной: игрок обычно кладёт несколько участков подряд.

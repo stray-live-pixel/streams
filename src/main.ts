@@ -3,26 +3,26 @@ import type { CityScene } from './scene/index.js';
 import { createGame, MAP_SIZE, isLand, shoreDirection } from './domain/index.js';
 import { createStorage } from './persistence/index.js';
 import { createUI, createMenu, fitGameViewport } from './ui/index.js';
-import { createScene, createObjectPreview, previewObjects } from './scene/index.js';
+import { createScene } from './scene/index.js';
 import { bindInput } from './input/index.js';
+import { objectFootprints } from './objects/index.js';
 
 /** Только координатор соединяет город, навигацию, сохранения и ленивую 3D-сцену. */
 const disposeViewport = fitGameViewport(document.getElementById('game-viewport')!);
 const storage = createStorage(() => window.localStorage);
 const loaded = storage.load();
-const game = createGame(loaded.state);
+const game = createGame(loaded.state, objectFootprints());
 let settings = storage.loadSettings();
 let hasGame = loaded.state !== null;
 let scene: CityScene | undefined;
 let disposeInput: (() => void) | undefined;
 let paused = true;
 const canvas = document.getElementById('world') as HTMLCanvasElement;
-const ui = createUI(document, dispatch, (action) => {
+const ui = createUI(document, dispatch, (action, pressed) => {
   if (action === 'home') scene?.resetCamera();
-  else scene?.rotate(action === 'left' ? -1 : 1);
+  else scene?.setCameraInput(`toolbar:${action}`, pressed ? action : null);
 });
 const menu = createMenu(document, settings, {
-  preview: { objects: previewObjects, create: createObjectPreview },
   start() {
     if (!ensureScene()) return false;
     if (!hasGame) {
@@ -124,6 +124,9 @@ window.cityDebug = Object.freeze({
   get paused() {
     return paused;
   },
+  get camera() {
+    return scene?.cameraState ?? null;
+  },
   projectTile(x: number, z: number) {
     if (!scene) throw new Error('Сначала откройте остров из главного меню.');
     const point = scene.project(x + 0.5, 0, z + 0.5);
@@ -151,6 +154,7 @@ declare global {
       readonly busy: boolean;
       readonly renderer: string;
       readonly paused: boolean;
+      readonly camera: CityScene['cameraState'] | null;
       projectTile(x: number, z: number): { x: number; y: number };
     };
   }

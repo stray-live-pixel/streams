@@ -89,9 +89,7 @@ try {
     await page.click('#intro-close');
   }
 
-  await page.click('#menu-objects');
-  await inside('#objects-dialog', await checkFrame(844, 390));
-  await page.click('#objects-close');
+  assert.equal(await page.locator('#menu-objects').count(), 0);
   await page.click('#menu-start');
   await page.click('#coach-action');
   await page.click('[data-type="port"]');
@@ -110,9 +108,7 @@ try {
   await inside('#pause-dialog', frame);
   await checkFrame(390, 844);
   assert.deepEqual(errors, []);
-  console.log(
-    '16:9: fit, black bars, resize, menu, dialogs, intro, objects and scaled building input PASS',
-  );
+  console.log('16:9: fit, black bars, resize, menu, dialogs, intro and scaled building input PASS');
 } finally {
   await browser.close();
 }

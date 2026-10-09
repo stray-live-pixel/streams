@@ -1,8 +1,37 @@
+import { Matrix, Quaternion, Vector3 } from '@babylonjs/core/Maths/math.vector.js';
+import {
+  objectTemplate,
+  type ObjectPart,
+  setObjectTemplates,
+  parseObjectTemplates,
+  builtInObjectTemplates,
+  objectSettings,
+  scaleObjectParts,
+} from '../objects/index.js';
+import templateModels from '../../.generated/template-models.json';
+import modelIds from '../../.generated/model-ids.json';
 import { VertexData } from '@babylonjs/core/Meshes/mesh.vertexData.js';
-import type { Building } from '../domain/index.js';
+import { buildingObjectId, buildingCells, type Building } from '../domain/index.js';
 import type { Board } from './types.js';
 import { harborLayout } from './harbor.js';
 import assets from '../../.generated/models.json';
+
+// В игре только используемые ассеты; полную библиотеку подключает редактор.
+let objectAssets: Record<string, ModelData> = {
+  ...Object.fromEntries(
+    Object.entries(assets).map(([name, data]) => [
+      (modelIds as Record<string, string>)[name],
+      data,
+    ]),
+  ),
+  ...templateModels,
+};
+setObjectTemplates(
+  parseObjectTemplates(builtInObjectTemplates, new Set(Object.keys(objectAssets))),
+);
+export function registerObjectAssets(models: Record<string, ModelData>) {
+  objectAssets = models;
+}
 
 // Композиции состоят из исходных деталей Kenney. Параметры — координаты,
 // масштаб и поворот; стоимость и правила зданий этому модулю неизвестны.
@@ -15,15 +44,22 @@ const hash = (x: number, z: number) => {
 // Геометрия неподвижного острова объединяется, чтобы сократить число вызовов отрисовки.
 export interface ModelData {
   p: number[][];
+  // Три индекса позиций, затем три индекса цветов UV-углов треугольника.
   f: number[][];
   c: number[][];
 }
-function builder(board: Board, completed = false, models: Record<string, ModelData> = assets) {
+function builder(
+  board: Board,
+  completed = false,
+  models: Record<string, ModelData> = assets,
+  capture?: ObjectPart[],
+  overrides = true,
+) {
   const sceneVertices: number[] = [];
   function rgb(hex: string) {
     return hex.match(/[0-9a-f]{2}/gi)!.map((v) => parseInt(v, 16));
   }
-  function triangle(a: number[], b: number[], c: number[], color: number[], lit = true) {
+  function triangle(a: number[], b: number[], c: number[], colors: number[][], lit = true) {
     let u = b.map((v, i) => v - a[i]),
       v = c.map((x, i) => x - a[i]),
       n = [u[1] * v[2] - u[2] * v[1], u[2] * v[0] - u[0] * v[2], u[0] * v[1] - u[1] * v[0]],
@@ -31,11 +67,18 @@ function builder(board: Board, completed = false, models: Record<string, ModelDa
     let light = lit
       ? 0.67 + 0.33 * Math.max(0, (-n[0] * 0.45 + n[1] * 0.82 + n[2] * 0.35) / len)
       : 1;
-    for (let p of [a, b, c]) sceneVertices.push(...p, ...color.map((v) => (v / 255) * light));
+    for (const [i, p] of [a, b, c].entries())
+      sceneVertices.push(...p, ...colors[i].map((v) => (v / 255) * light));
   }
   function quad(a: number[], b: number[], c: number[], d: number[], color: number[]) {
-    triangle(a, b, c, color, false);
-    triangle(a, c, d, color, false);
+    triangle(a, b, c, [color, color, color], false);
+    triangle(a, c, d, [color, color, color], false);
+  }
+  function faceColors(data: ModelData, face: number[], tint?: number[]) {
+    return face.slice(3, 6).map((index) => {
+      const original = data.c[index];
+      return tint ? tint.map((v) => v * (0.7 + Math.max(...original) / 850)) : original;
+    });
   }
   function terrain(x: number, z: number) {
     let top = rgb(hash(x, z) > 0.5 ? '#9db58c' : '#a1b890');
@@ -68,6 +111,15 @@ function builder(board: Board, completed = false, models: Record<string, ModelDa
     angle = 0,
     tint?: number[],
   ) {
+    if (capture)
+      capture.push({
+        id: `part-${capture.length + 1}`,
+        asset: (modelIds as Record<string, string>)[name],
+        position: [x, y, z],
+        rotation: [0, -angle, 0],
+        scale: [sx, sy, sz],
+        ...(tint ? { tint: [...tint] as [number, number, number] } : {}),
+      });
     let a = models[name],
       co = Math.cos(angle),
       si = Math.sin(angle),
@@ -77,9 +129,24 @@ function builder(board: Board, completed = false, models: Record<string, ModelDa
         z + p[0] * sx * si + p[2] * sz * co,
       ]);
     for (let f of a.f) {
-      const original = a.c[f[3]];
-      const color = tint ? tint.map((v) => v * (0.7 + Math.max(...original) / 850)) : original;
-      triangle(points[f[0]], points[f[1]], points[f[2]], color);
+      triangle(points[f[0]], points[f[1]], points[f[2]], faceColors(a, f, tint));
+    }
+  }
+  function parts(items: ObjectPart[], x = 0, z = 0) {
+    for (const part of items) {
+      const data = objectAssets[part.asset];
+      const matrix = Matrix.Compose(
+        Vector3.FromArray(part.scale),
+        Quaternion.FromEulerAngles(...part.rotation),
+        Vector3.FromArray(part.position),
+      );
+      const points = data.p.map((p) => {
+        const v = Vector3.TransformCoordinates(Vector3.FromArray(p), matrix);
+        return [v.x + x, v.y, v.z + z];
+      });
+      for (const f of data.f) {
+        triangle(points[f[0]], points[f[1]], points[f[2]], faceColors(data, f, part.tint));
+      }
     }
   }
   function shadow(x: number, z: number, rx: number, rz: number) {
@@ -90,7 +157,7 @@ function builder(board: Board, completed = false, models: Record<string, ModelDa
         [x, 0.012, z],
         [x + Math.cos(a) * rx, 0.012, z + Math.sin(a) * rz],
         [x + Math.cos(b) * rx, 0.012, z + Math.sin(b) * rz],
-        rgb('#869f79'),
+        [rgb('#869f79'), rgb('#869f79'), rgb('#869f79')],
         false,
       );
     }
@@ -176,6 +243,44 @@ function builder(board: Board, completed = false, models: Record<string, ModelDa
     const x = b.x + 0.5,
       z = b.z + 0.5;
     const variant = (b.x * 3 + b.z) % 4;
+    const id = b.t === 'port' && completed ? 'game/beacon' : buildingObjectId(b);
+    const custom = overrides ? gameObjectParts(id) : undefined;
+    if (custom) {
+      if (b.t !== 'road' && b.t !== 'port')
+        shadow(
+          x + 0.03,
+          z + 0.06,
+          0.52 * objectSettings(id).scale,
+          0.45 * objectSettings(id).scale,
+        );
+      if (b.t === 'port') {
+        const layout = harborLayout(b, board);
+        const [dx, dz] = layout.direction;
+        const shore = Quaternion.FromEulerAngles(0, Math.atan2(dx, dz), 0);
+        parts(
+          custom.map((part) => {
+            const position = [...part.position] as [number, number, number];
+            // Базовый пирс вынесен на 1,8; у вырезанных берегов удлиняем морскую часть.
+            if (position[2] >= 0.9) position[2] += layout.distance - 1.8;
+            return {
+              ...part,
+              position: [
+                dz * position[0] + dx * position[2],
+                position[1],
+                -dx * position[0] + dz * position[2],
+              ],
+              rotation: shore
+                .multiply(Quaternion.FromEulerAngles(...part.rotation))
+                .toEulerAngles()
+                .asArray() as [number, number, number],
+            };
+          }),
+          x,
+          z,
+        );
+      } else parts(custom, x, z);
+      return;
+    }
     if (b.t === 'road') {
       model('planks', x, 0.018, z, 0.96, 0.6, 0.96);
       return;
@@ -237,12 +342,12 @@ function builder(board: Board, completed = false, models: Record<string, ModelDa
       model('fountain-center', x + 0.5, 0.065, z + 0.5, 0.18);
     } else model('lantern', x + 0.9, 0.07, z + 0.1, 0.38);
   }
-  return { terrain, building, model, shadow, streetDecoration, finish };
+  return { terrain, building, model, parts, shadow, streetDecoration, finish };
 }
 /** Полностью пересобирается только при изменении списка построек. */
 export function islandGeometry(buildings: Building[], board: Board, completed = false) {
   const b = builder(board, completed),
-    occupied = new Set(buildings.map((p) => p.x + ',' + p.z));
+    occupied = new Set(buildings.flatMap(buildingCells).map((p) => p.x + ',' + p.z));
   for (let x = 0; x < board.size; x++)
     for (let z = 0; z < board.size; z++) {
       if (!board.isLand(x, z)) continue;
@@ -262,18 +367,33 @@ export function islandGeometry(buildings: Building[], board: Board, completed = 
         );
       }
     }
-  for (const building of buildings) b.building(building);
-  // Маленькая площадь возникает на перекрёстке: декор использует уже построенную улицу,
-  // не захватывает свободные клетки и не меняет правила движения/экономики.
+  // Маленькая площадь использует построенную улицу, не захватывая свободные клетки.
   const roads = new Set(buildings.filter((p) => p.t === 'road').map((p) => `${p.x},${p.z}`));
-  for (const road of buildings.filter((p) => p.t === 'road')) {
-    const neighbors = [
+  const roadNeighbors = (road: Building) =>
+    [
       [0, 1],
       [1, 0],
       [-1, 0],
       [0, -1],
     ].filter(([dx, dz]) => roads.has(`${road.x + dx},${road.z + dz}`)).length;
-    if (neighbors >= 3) {
+  const roadTemplate = (road: Building) => {
+    const neighbors = roadNeighbors(road);
+    return neighbors >= 3
+      ? gameObjectParts('game/fountain')
+      : (road.x + road.z) % 3 === 0
+        ? gameObjectParts('game/lantern')
+        : undefined;
+  };
+  for (const building of buildings) {
+    // Композиция дороги с декором уже содержит настил: второй дал бы мерцание.
+    if (building.t !== 'road' || !roadTemplate(building)) b.building(building);
+  }
+  for (const road of buildings.filter((p) => p.t === 'road')) {
+    const neighbors = roadNeighbors(road);
+    const decoration = roadTemplate(road);
+    if (decoration && (neighbors >= 3 || (road.x + road.z) % 3 === 0)) {
+      b.parts(decoration, road.x + 0.5, road.z + 0.5);
+    } else if (neighbors >= 3) {
       b.streetDecoration(road.x, road.z, true);
     } else if ((road.x + road.z) % 3 === 0) {
       b.streetDecoration(road.x, road.z, false);
@@ -284,7 +404,9 @@ export function islandGeometry(buildings: Building[], board: Board, completed = 
 /** Корабль — отдельный объект; анимация не пересоздаёт геометрию острова. */
 export function shipGeometry() {
   const b = builder({ size: 0, isLand: () => false, shoreDirection: () => null });
-  b.model('ship-small', 0, 0, 0, 0.19, 0.19, 0.19);
+  const custom = gameObjectParts('game/ship');
+  if (custom) b.parts(custom);
+  else b.model('ship-small', 0, 0, 0, 0.19, 0.19, 0.19);
   return b.finish();
 }
 
@@ -307,12 +429,58 @@ export function terrainGeometry() {
 }
 export function streetGeometry(fountain: boolean) {
   const b = builder(previewBoard);
-  b.building({ t: 'road', x: 0, z: 0 });
-  b.streetDecoration(0, 0, fountain);
+  const custom = gameObjectParts(fountain ? 'game/fountain' : 'game/lantern');
+  if (custom) b.parts(custom, 0.5, 0.5);
+  else {
+    b.building({ t: 'road', x: 0, z: 0 });
+    b.streetDecoration(0, 0, fountain);
+  }
   return b.finish();
 }
 export function modelGeometry(data: ModelData) {
   const b = builder(previewBoard, false, { preview: data });
   b.model('preview', 0, 0, 0);
   return b.finish();
+}
+
+/** Исходная сборка переводится в детали без копирования рецептов зданий в редактор. */
+export function defaultObjectParts(id: string): ObjectPart[] {
+  const result: ObjectPart[] = [];
+  const b = builder(previewBoard, id === 'game/beacon', assets, result, false);
+  let center = 0.5;
+  if (id === 'game/ship') {
+    b.model('ship-small', 0, 0, 0, 0.19);
+    center = 0;
+  } else if (id === 'game/fountain' || id === 'game/lantern') {
+    b.building({ t: 'road', x: 0, z: 0 });
+    b.streetDecoration(0, 0, id === 'game/fountain');
+  } else {
+    const [, type, variant] = id.split('/');
+    const t = type === 'beacon' ? 'port' : type;
+    if (!['house', 'shop', 'farm', 'hall', 'road', 'port'].includes(t)) return [];
+    const z = Number(variant ?? 0);
+    b.building({ t: t as Building['t'], x: 0, z });
+    for (const part of result) part.position[2] -= z;
+  }
+  for (const part of result) {
+    part.position[0] -= center;
+    part.position[2] -= center;
+  }
+  return result;
+}
+function gameObjectParts(id: string) {
+  const scale = objectSettings(id).scale;
+  const parts = objectTemplate(id) ?? (scale !== 1 ? defaultObjectParts(id) : undefined);
+  return parts && scaleObjectParts(parts, scale);
+}
+export function objectPartGeometry(part: ObjectPart) {
+  const b = builder(previewBoard);
+  b.parts([part]);
+  const transform = Matrix.Compose(
+    Vector3.FromArray(part.scale),
+    Quaternion.FromEulerAngles(...part.rotation),
+    Vector3.FromArray(part.position),
+  );
+  // Запекаем свет в мировой ориентации, но оставляем локальные вершины для манипулятора.
+  return b.finish().transform(transform.invert());
 }
