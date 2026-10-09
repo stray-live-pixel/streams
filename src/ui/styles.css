@@ -972,52 +972,36 @@ dialog .credits {
 .menu-shell {
   position: relative;
   z-index: 2;
-  max-width: 1320px;
-  min-height: 100%;
-  margin: auto;
-  padding: 50px 50px 30px;
+  min-height: 100dvh;
+  padding: 40px 24px;
   display: grid;
-  grid-template-columns: minmax(0, 1.25fr) minmax(300px, 0.85fr);
-  column-gap: 65px;
-  grid-template-rows: 1fr auto;
-  align-items: center;
+  place-items: center;
 }
-.menu-intro {
-  position: relative;
-  align-self: start;
-  /* Контур следует за буквами и оставляет детали иллюстрации открытыми. */
-  text-shadow: var(--menu-text-outline);
+.menu-heading {
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--color-border);
 }
-.menu-kicker,
-.menu-footer {
+.menu-kicker {
   font-size: 10px;
   letter-spacing: 2px;
   text-transform: uppercase;
-  color: var(--color-ink);
+  color: var(--color-ink-muted);
 }
-.menu-kicker span {
-  color: var(--color-accent);
-  font-size: 23px;
-  vertical-align: middle;
-  margin-right: 10px;
-}
-.menu-intro h1 {
-  font: 72px/1.05 var(--font-story);
-  letter-spacing: -4px;
-  margin: 22px 0 18px;
-}
-.menu-intro h1 em {
-  color: var(--color-primary);
-  font-weight: normal;
+.menu-heading h1 {
+  font: 50px/1.1 var(--font-story);
+  letter-spacing: -1.5px;
+  margin: 0 0 12px;
 }
 .menu-card {
   position: relative;
-  padding: 44px 34px 30px;
+  width: min(100%, 540px);
+  min-width: 0;
+  padding: 40px 44px 32px;
   background: var(--surface-paper);
   border: var(--border-paper);
   box-shadow: var(--shadow-menu);
   border-radius: var(--radius-paper);
-  transform: rotate(0.5deg);
+  text-align: center;
 }
 .menu-card::before {
   content: '';
@@ -1029,31 +1013,9 @@ dialog .credits {
   background: color-mix(in srgb, var(--color-paper-shade) 75%, transparent);
   transform: rotate(-4deg);
 }
-.menu-stamp {
-  position: absolute;
-  right: 24px;
-  top: 19px;
-  border: 2px double var(--color-accent);
-  border-radius: 50%;
-  width: 67px;
-  height: 67px;
-  display: grid;
-  align-content: center;
-  text-align: center;
-  color: var(--color-accent);
-  font-size: 7px;
-  line-height: 1.4;
-  letter-spacing: 1px;
-  opacity: 0.65;
-  transform: rotate(14deg);
-}
-.menu-stamp span {
-  font-size: 19px;
-}
 .menu-card h2 {
-  font: 30px/1.1 var(--font-story);
-  max-width: 240px;
-  margin: 25px 0 16px;
+  font: 28px/1.2 var(--font-story);
+  margin: 24px 0 12px;
 }
 .menu-card > p {
   font-size: 14px;
@@ -1091,17 +1053,6 @@ dialog .credits {
 .menu-card .menu-status {
   font-size: 12px;
   color: var(--color-accent);
-}
-.menu-footer {
-  grid-column: 1 / -1;
-  display: flex;
-  justify-content: space-between;
-  gap: 20px;
-  border-top: 1px solid color-mix(in srgb, var(--color-border) 50%, transparent);
-  padding-top: 20px;
-  margin-top: 50px;
-  letter-spacing: 1.5px;
-  font-size: 8px;
 }
 .pause-menu {
   text-align: center;
@@ -1202,49 +1153,27 @@ body[data-hints='hide'] .coach.freeplay .mission {
   border-top: 0;
   padding-top: 0;
 }
-@media (max-width: 900px) {
-  .menu-shell {
-    padding: 40px 28px 25px;
-    column-gap: 25px;
-  }
-  .menu-intro h1 {
-    font-size: 59px;
-  }
-  .menu-card {
-    padding: 38px 25px 25px;
-  }
-}
 @media (max-width: 650px) {
   .menu-shell {
-    grid-template-columns: 1fr;
-    grid-template-rows: auto 1fr auto;
-    padding: 28px 22px 20px;
-    row-gap: 22px;
+    padding: 28px 18px;
   }
   .menu-background {
     object-position: 35% center;
-  }
-  .menu-intro {
-    text-align: center;
   }
   .menu-kicker {
     font-size: 8px;
     letter-spacing: 1.5px;
   }
-  .menu-intro h1 {
-    font-size: clamp(40px, 13vw, 58px);
-    margin: 17px 0 12px;
-    letter-spacing: -2px;
+  .menu-heading h1 {
+    font-size: clamp(30px, 9vw, 44px);
+    letter-spacing: -1px;
   }
   .menu-card {
     padding: 29px 24px 22px;
-    max-width: 430px;
-    width: 100%;
-    margin: 160px auto 0;
   }
   .menu-card h2 {
     font-size: 26px;
-    margin: 23px 0 10px;
+    margin: 22px 0 10px;
   }
   .menu-card > p {
     font-size: 12px;
@@ -1258,17 +1187,6 @@ body[data-hints='hide'] .coach.freeplay .mission {
   .menu-card .menu-footnote {
     margin-top: 17px;
     font-size: 12px;
-  }
-  .menu-stamp {
-    top: 12px;
-    right: 17px;
-    width: 57px;
-    height: 57px;
-  }
-  .menu-footer {
-    margin-top: 30px;
-    font-size: 7px;
-    letter-spacing: 1px;
   }
   .setting-row {
     gap: 12px;
