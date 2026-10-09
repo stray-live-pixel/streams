@@ -945,29 +945,48 @@ dialog .credits {
   stroke-width: 2;
 }
 
-/* Главное меню — морская открытка. Остров здесь нарисован без запуска 3D. */
+/* Сгенерированная гавань задаёт настроение меню; WebGL до входа в игру не нужен. */
 .main-menu {
   position: fixed;
   inset: 0;
   overflow: auto;
   background: var(--surface-menu);
 }
+.menu-background {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  pointer-events: none;
+}
+.main-menu::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: var(--menu-art-overlay);
+  pointer-events: none;
+  z-index: 1;
+}
 .menu-shell {
-  max-width: 1240px;
+  position: relative;
+  z-index: 2;
+  max-width: 1320px;
   min-height: 100%;
   margin: auto;
-  padding: 65px 65px 35px;
+  padding: 50px 50px 30px;
   display: grid;
   grid-template-columns: minmax(0, 1.25fr) minmax(300px, 0.85fr);
   column-gap: 65px;
-  align-content: center;
+  grid-template-rows: 1fr auto;
   align-items: center;
 }
 .menu-intro {
   position: relative;
+  align-self: start;
 }
 .menu-kicker,
-.menu-coordinate,
 .menu-footer {
   font-size: 10px;
   letter-spacing: 2px;
@@ -981,9 +1000,9 @@ dialog .credits {
   margin-right: 10px;
 }
 .menu-intro h1 {
-  font: 90px/0.95 var(--font-story);
+  font: 72px/1.05 var(--font-story);
   letter-spacing: -4px;
-  margin: 28px 0 22px;
+  margin: 22px 0 18px;
 }
 .menu-intro h1 em {
   color: var(--color-primary);
@@ -992,68 +1011,6 @@ dialog .credits {
 .menu-motto {
   font: 19px/1.6 var(--font-story);
   color: var(--color-ink-muted);
-}
-.menu-illustration {
-  display: block;
-  width: 113%;
-  max-height: 350px;
-  margin: -20px 0 0 -30px;
-}
-.map-lines {
-  stroke: var(--color-border);
-  opacity: 0.45;
-}
-.menu-island {
-  fill: var(--color-island);
-}
-.menu-island-edge,
-.menu-tree {
-  fill: var(--color-island-edge);
-}
-.menu-path {
-  fill: none;
-  stroke: var(--color-paper-shade);
-  stroke-width: 12px;
-}
-.menu-pier,
-.menu-boat {
-  fill: var(--color-wood);
-}
-.menu-pier-lines {
-  fill: none;
-  stroke: var(--color-ink-muted);
-  stroke-width: 2px;
-}
-.menu-house,
-.menu-tower,
-.menu-sail {
-  fill: var(--color-paper-light);
-}
-.menu-roof,
-.menu-stripe {
-  fill: var(--color-accent);
-}
-.menu-window {
-  fill: var(--color-primary);
-}
-.menu-lantern,
-.menu-rays {
-  fill: var(--color-gold);
-}
-.menu-rays {
-  opacity: 0.4;
-}
-.menu-wave {
-  fill: none;
-  stroke: var(--color-sea);
-  stroke-width: 3px;
-  stroke-linecap: round;
-}
-.menu-coordinate {
-  display: block;
-  text-align: center;
-  font-size: 8px;
-  letter-spacing: 3px;
 }
 .menu-card {
   position: relative;
@@ -1253,19 +1210,21 @@ body[data-hints='hide'] .coach.freeplay .mission {
     column-gap: 25px;
   }
   .menu-intro h1 {
-    font-size: 72px;
+    font-size: 59px;
   }
   .menu-card {
     padding: 38px 25px 25px;
-  }
-  .menu-illustration {
-    margin-left: -15px;
   }
 }
 @media (max-width: 650px) {
   .menu-shell {
     grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr auto;
     padding: 28px 22px 20px;
+    row-gap: 22px;
+  }
+  .menu-background {
+    object-position: 35% center;
   }
   .menu-intro {
     text-align: center;
@@ -1275,15 +1234,9 @@ body[data-hints='hide'] .coach.freeplay .mission {
     letter-spacing: 1.5px;
   }
   .menu-intro h1 {
-    font-size: 58px;
+    font-size: clamp(40px, 13vw, 58px);
     margin: 17px 0 12px;
     letter-spacing: -2px;
-  }
-  .menu-intro h1 br {
-    display: none;
-  }
-  .menu-intro h1 em {
-    margin-left: 9px;
   }
   .menu-motto {
     font-size: 15px;
@@ -1292,19 +1245,11 @@ body[data-hints='hide'] .coach.freeplay .mission {
   .menu-motto br {
     display: none;
   }
-  .menu-illustration {
-    width: 100%;
-    height: 165px;
-    margin: 0 auto -2px;
-  }
-  .menu-coordinate {
-    display: none;
-  }
   .menu-card {
     padding: 29px 24px 22px;
     max-width: 430px;
     width: 100%;
-    margin: 15px auto 0;
+    margin: 160px auto 0;
   }
   .menu-card h2 {
     font-size: 26px;

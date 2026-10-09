@@ -30,6 +30,15 @@ try {
     assert.equal(await page.evaluate(() => cityDebug.renderer), 'not-started');
     assert.equal(await page.locator('#scene').count(), 0);
     assert.equal(await page.locator('#game-screen').isVisible(), false);
+    const background = page.locator('.menu-background');
+    await background.evaluate((image) => image.decode());
+    assert.equal(await background.evaluate((image) => image.naturalWidth), 1536);
+    assert.match(await background.getAttribute('src'), /^data:image\/webp;base64,/);
+    assert.equal(await page.locator('#main-menu svg').count(), 0);
+    assert.equal(
+      await page.locator('#main-menu').evaluate((menu) => menu.scrollWidth > menu.clientWidth),
+      false,
+    );
     assert.equal(await page.locator('#menu-start').textContent(), 'Новая игра');
     assert.equal(await page.evaluate(() => localStorage.getItem('ostrov-simple-v2')), null);
     await page.screenshot({ path: path.join(screenshots, `menu-${width}.png`) });
