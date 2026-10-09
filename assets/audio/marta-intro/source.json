@@ -1,119 +1,119 @@
 {
   "model": "elevenlabs/eleven-v4",
-  "voice": "matilda",
-  "characters": 1603,
-  "duration_seconds": 92.92,
+  "voice": "lily",
+  "characters": 1703,
+  "duration_seconds": 97.72,
   "pause_seconds": 1,
   "segments": [
     {
       "index": 1,
-      "text": "[warm, inviting storytelling voice, unhurried] Вы наверняка уже видите остров. Сначала из-за мыса покажется старая башня, потом — бухта. Нам сюда.",
+      "text": "[mature, soft-spoken, slow storytelling, inviting] Вы наверняка уже видите остров. Сначала из-за мыса покажется старая башня, потом — бухта. Нам сюда.",
       "instructions": "",
-      "duration_seconds": 7.76,
-      "generation_id": "gen-tts-1791567333-HQq7DZgCUaKNuivr2Ex0",
+      "duration_seconds": 8.8,
+      "generation_id": "gen-tts-1791568907-0sOFITdy5rPhycjyh20F",
       "attempts": 1,
-      "pcm_sha256": "b6ce1d32d56d64c5b6c664e478e2b61bbba28cfc82dc949769fce4f94330f040",
+      "pcm_sha256": "1191098cc53d9ecdc4de7876ea8382470f4cb6d2586ebd647a14ff3b08ef78df",
       "start_seconds": 0.0
     },
     {
       "index": 2,
-      "text": "[warm, nostalgic storytelling voice, unhurried] Когда я была маленькой, у нашего причала стояло столько лодок, что отец узнавал свою только по кривой мачте. По утрам пахло хлебом, рыбой и свежими досками. А новости мы узнавали раньше, чем успевали разгрузить корабль.",
+      "text": "[mature, soft-spoken, slow storytelling, nostalgic] Когда я была маленькой, у нашего причала стояло столько лодок, что отец узнавал свою только по кривой мачте. По утрам пахло хлебом, рыбой и свежими досками. А новости мы узнавали раньше, чем успевали разгрузить корабль.",
       "instructions": "",
-      "duration_seconds": 14.8,
-      "generation_id": "gen-tts-1791567333-hoKzlqjiqERGIAkzCP8F",
+      "duration_seconds": 15.44,
+      "generation_id": "gen-tts-1791568907-SGO931mzqk87twmoqrLs",
       "attempts": 1,
-      "pcm_sha256": "a3dfe71bf811a1073fc2f9e95a44808700805167b5eb21255611c641432ed15d",
-      "start_seconds": 8.76
+      "pcm_sha256": "8daba3a78f4e8ff7fc8853b662c73ee315e8078d2993742193035d366cd672d0",
+      "start_seconds": 9.8
     },
     {
       "index": 3,
-      "text": "[gentle, reflective storytelling voice, unhurried] Потом торговые суда нашли более короткий путь. Люди стали уезжать вслед за работой. Последнюю пекарню закрыли лет двадцать назад. Я до сих пор храню её ключ — всё собиралась вернуть хозяину.",
+      "text": "[mature, soft-spoken, slow storytelling, reflective] Потом торговые суда нашли более короткий путь. Люди стали уезжать вслед за работой. Последнюю пекарню закрыли лет двадцать назад. Я до сих пор храню её ключ — всё собиралась вернуть хозяину.",
       "instructions": "",
-      "duration_seconds": 12.8,
-      "generation_id": "gen-tts-1791567333-TewE0vza5FsnDxdIK6Ol",
+      "duration_seconds": 13.28,
+      "generation_id": "gen-tts-1791568906-Bx1uAsBr6cKG7lOTR3uP",
       "attempts": 1,
-      "pcm_sha256": "cff4d43737b16071411ec75bb027375750daf068e8bf867e273810d6d68cd24f",
-      "start_seconds": 24.560000000000002
+      "pcm_sha256": "a9c06fdc15e92b2fa7a320ed4c6720734971355998bbd51c0b54ce54c424191e",
+      "start_seconds": 26.24
     },
     {
       "index": 4,
-      "text": "[warm, quietly hopeful storytelling voice, unhurried] Недавно я получила от него письмо. Оказывается, его дочь тоже печёт хлеб. Хочет открыть свою пекарню, только в большом городе ей пока не по карману даже маленькая лавка.",
+      "text": "[mature, soft-spoken, slow storytelling, hopeful] Недавно я получила от него письмо. Оказывается, его дочь тоже печёт хлеб. Хочет открыть свою пекарню, только в большом городе ей пока не по карману даже маленькая лавка.",
       "instructions": "",
-      "duration_seconds": 11.36,
-      "generation_id": "gen-tts-1791567333-wPy4PK1kYedsHDAlCIqr",
+      "duration_seconds": 10.96,
+      "generation_id": "gen-tts-1791568906-vr6dHb8Nib8wKFsThwL9",
       "attempts": 1,
-      "pcm_sha256": "895e469a7d40a3bd7bfe92ccffc83c9e29e6103ba2aacdbdf010da74a726c130",
-      "start_seconds": 38.36
+      "pcm_sha256": "82f3277a7691216c0d7630de04ba6b5c51cb849b8ebf9942c6bad3ed1e555c98",
+      "start_seconds": 40.519999999999996
     },
     {
       "index": 5,
-      "text": "[thoughtful, with a gentle smile in the voice] Вот я и подумала: у нас ведь места хватает.",
+      "text": "[mature, soft-spoken, slow storytelling, thoughtful] Вот я и подумала: у нас ведь места хватает.",
       "instructions": "",
-      "duration_seconds": 3.6,
-      "generation_id": "gen-tts-1791567336-5OQ8IhsxxnRnrtNexqrT",
+      "duration_seconds": 4.0,
+      "generation_id": "gen-tts-1791568910-Dy0fS9sBcNyhvFfYlV6w",
       "attempts": 1,
-      "pcm_sha256": "c6f569c93c1a1daf670686c2ca8c195afe48d1f0afae85b38d428385420af570",
-      "start_seconds": 50.72
+      "pcm_sha256": "eec71f865c47c2f2075cbcdb038f22328ddb2ee2ba141ef05fec0c97003969d2",
+      "start_seconds": 52.48
     },
     {
       "index": 6,
-      "text": "[warm, personal, quietly hopeful] Я написала ещё нескольким знакомым. И вам.",
+      "text": "[mature, soft-spoken, slow storytelling, personal] Я написала ещё нескольким знакомым. И вам.",
       "instructions": "",
-      "duration_seconds": 3.44,
-      "generation_id": "gen-tts-1791567336-EQ6F8owbmJMvVOzJGg6m",
+      "duration_seconds": 4.0,
+      "generation_id": "gen-tts-1791568911-5CcDeF2BV9YEwqTHVk2y",
       "attempts": 1,
-      "pcm_sha256": "152b81f20513c5cef50f94dbcb568c08067fea3836dfebe8bb13fd6beb5f8991",
-      "start_seconds": 55.32
+      "pcm_sha256": "989e6554d2f855acfdceca7a2cbb0b2a57e52dad8642a34115e8f9546a341b63",
+      "start_seconds": 57.48
     },
     {
       "index": 7,
-      "text": "[calm, reassuring storytelling voice, unhurried] Первые семьи прибудут совсем скоро. Пока здесь нет ни домов для них, ни хорошего причала. Зато есть земля, немного сбережений и бухта, где почти всегда спокойно.",
+      "text": "[mature, soft-spoken, slow storytelling, reassuring] Первые семьи прибудут совсем скоро. Пока здесь нет ни домов для них, ни хорошего причала. Зато есть земля, немного сбережений и бухта, где почти всегда спокойно.",
       "instructions": "",
-      "duration_seconds": 11.44,
-      "generation_id": "gen-tts-1791567337-Wcrpr3B15gODhFgTduTi",
+      "duration_seconds": 12.0,
+      "generation_id": "gen-tts-1791568910-p33KxWH7ZUg5QdxMPs4Y",
       "attempts": 1,
-      "pcm_sha256": "67a90ef18524a1845eb02a0f2f9c5eac64cc4fa27743edae93bf98bf4b94b135",
-      "start_seconds": 59.76
+      "pcm_sha256": "3cfee83a7cd472a1b7edc7fd3d6518e874e911be88352c97eac43c9d3f3a52d2",
+      "start_seconds": 62.48
     },
     {
       "index": 8,
-      "text": "[warm, reassuring, with quiet confidence] Начнём с причала. Потом построим дома, посадим что-нибудь съедобное. С остальным разберёмся по дороге.",
+      "text": "[mature, soft-spoken, slow storytelling, reassuring] Начнём с причала. Потом построим дома, посадим что-нибудь съедобное. С остальным разберёмся по дороге.",
       "instructions": "",
-      "duration_seconds": 6.96,
-      "generation_id": "gen-tts-1791567338-LF6dpqrs6XdfQYBGjYZL",
+      "duration_seconds": 8.0,
+      "generation_id": "gen-tts-1791568911-mT9PI01lDuIzQ7U1CmRk",
       "attempts": 1,
-      "pcm_sha256": "92124ab9a31c06ef7a94f58d9104e682273ecd058909cbf824a997cad212aed2",
-      "start_seconds": 72.2
+      "pcm_sha256": "bd9555bf33e34c966fcec96ec9dc937dc85ced149953ba014c8dc93cad5954bd",
+      "start_seconds": 75.47999999999999
     },
     {
       "index": 9,
-      "text": "[hopeful, inviting storytelling voice, unhurried] А когда здесь снова зажжётся маяк, капитаны будут знать: в Тихую Гавань можно заходить.",
+      "text": "[mature, soft-spoken, slow storytelling, hopeful] А когда здесь снова зажжётся маяк, капитаны будут знать: в Тихую Гавань можно заходить.",
       "instructions": "",
-      "duration_seconds": 6.48,
-      "generation_id": "gen-tts-1791567338-A1u7bxVOaC7XR2HLYI3x",
+      "duration_seconds": 6.8,
+      "generation_id": "gen-tts-1791568912-2G6yChOPbnRPXczWuFff",
       "attempts": 1,
-      "pcm_sha256": "f4b9886357615903993f604b68769271e9d1d45c20bc74cd7b5f387c238d1d16",
-      "start_seconds": 80.16
+      "pcm_sha256": "04e127cfd4db81a3068f9aa0bf196e93e5843c05ed02536ea7d1a4d4383fbe61",
+      "start_seconds": 84.47999999999999
     },
     {
       "index": 10,
-      "text": "[warm, intimate, inviting] Буду ждать на берегу.",
+      "text": "[mature, soft-spoken, slow storytelling, tender] Буду ждать на берегу.",
       "instructions": "",
-      "duration_seconds": 2.0,
-      "generation_id": "gen-tts-1791567338-Ag0lV462dApEzmZMmT3F",
+      "duration_seconds": 2.24,
+      "generation_id": "gen-tts-1791568912-maJpUosiWHSMT3RGrgoA",
       "attempts": 1,
-      "pcm_sha256": "1ffc1159953cdf5a7bcc0ac6d3731e2f1b2e774cc13ad6180f4514fd49abcb4f",
-      "start_seconds": 87.64
+      "pcm_sha256": "df866f33232d5422089c94641635679731ef7d01a38b679747fae0ad6f3efcae",
+      "start_seconds": 92.27999999999999
     },
     {
       "index": 11,
-      "text": "[warm, gentle] Марта.",
+      "text": "[mature, soft-spoken, slow storytelling, gentle] Марта.",
       "instructions": "",
-      "duration_seconds": 1.28,
-      "generation_id": "gen-tts-1791567340-hdZQJCIMzytClpUIGexa",
+      "duration_seconds": 1.2,
+      "generation_id": "gen-tts-1791568913-HjFpgdySHU43YtNdtHb7",
       "attempts": 1,
-      "pcm_sha256": "bb8f387ca056ad007b0f854256546ce52bc9eca0c7873dade611f17c10a553a5",
-      "start_seconds": 90.64
+      "pcm_sha256": "9868aaeb54f2e2abe2cd363dc38a63dddfc817f2acc74cf4e010b311b548ff85",
+      "start_seconds": 95.51999999999998
     }
   ],
   "streams": [
@@ -123,5 +123,59 @@
       "channels": 1
     }
   ],
-  "output": "full.mp3"
+  "output": "/Users/kirilleremin/Desktop/stream/marta-voice-lily-20261009/narration.mp3",
+  "render": {
+    "tempo": 0.9,
+    "filter": "atempo=0.9",
+    "pitch_preserved": true,
+    "pause_seconds": 1,
+    "speech_duration_seconds": 96.26708333333333,
+    "duration_seconds": 107.26708333333333,
+    "frames": [
+      {
+        "file": "frame-01.mp3",
+        "duration_seconds": 9.768791666666667
+      },
+      {
+        "file": "frame-02.mp3",
+        "duration_seconds": 17.14825
+      },
+      {
+        "file": "frame-03.mp3",
+        "duration_seconds": 14.749333333333333
+      },
+      {
+        "file": "frame-04.mp3",
+        "duration_seconds": 12.171833333333334
+      },
+      {
+        "file": "frame-05.mp3",
+        "duration_seconds": 4.434583333333333
+      },
+      {
+        "file": "frame-06.mp3",
+        "duration_seconds": 4.4355
+      },
+      {
+        "file": "frame-07.mp3",
+        "duration_seconds": 13.324583333333333
+      },
+      {
+        "file": "frame-08.mp3",
+        "duration_seconds": 8.882208333333333
+      },
+      {
+        "file": "frame-09.mp3",
+        "duration_seconds": 7.548583333333333
+      },
+      {
+        "file": "frame-10.mp3",
+        "duration_seconds": 2.480916666666667
+      },
+      {
+        "file": "frame-11.mp3",
+        "duration_seconds": 1.3225
+      }
+    ]
+  }
 }

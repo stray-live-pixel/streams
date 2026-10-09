@@ -16,7 +16,6 @@ export function createIntro(document: Document, onOpenChange: (open: boolean) =>
   const previous = element<HTMLButtonElement>('intro-previous');
   const next = element<HTMLButtonElement>('intro-next');
   const sheet = element('intro-sheet');
-  const pages = element('intro-pages');
   let index = 0;
   let finished = false;
   let generation = 0;
@@ -80,22 +79,6 @@ export function createIntro(document: Document, onOpenChange: (open: boolean) =>
       .catch(() => {});
   }
 
-  for (let pageIndex = 0; pageIndex < frames.length; pageIndex++) {
-    const button = document.createElement('button');
-    button.className = 'intro-page';
-    button.type = 'button';
-    button.setAttribute('aria-label', `Страница ${pageIndex + 1}`);
-    button.title = `Страница ${pageIndex + 1}`;
-    button.addEventListener(
-      'click',
-      () => {
-        if (index !== pageIndex) showFrame(pageIndex);
-      },
-      { signal },
-    );
-    pages.append(button);
-  }
-
   function clearStatus() {
     element('intro-audio-status').hidden = true;
     element('intro-audio-status').textContent = '';
@@ -144,10 +127,11 @@ export function createIntro(document: Document, onOpenChange: (open: boolean) =>
     finished = false;
     const frame = frames[index]!;
     element('intro-subtitle').textContent = frame.text;
-    [...pages.children].forEach((page, pageIndex) => {
-      if (pageIndex === index) page.setAttribute('aria-current', 'page');
-      else page.removeAttribute('aria-current');
-    });
+    element('intro-page-count').textContent = `${index + 1}/${frames.length}`;
+    element('intro-page-count').setAttribute(
+      'aria-label',
+      `Страница ${index + 1} из ${frames.length}`,
+    );
     const focusWasPrevious = document.activeElement === previous;
     previous.disabled = index === 0;
     // Отключённая кнопка «Назад» не должна уводить клавиатурный фокус из диалога.

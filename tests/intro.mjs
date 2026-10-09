@@ -53,12 +53,18 @@ try {
     assert.equal(
       await page
         .locator(
-          '#intro-counter, #intro-frame-title, #intro-progress, #intro-help, .intro-character figcaption',
+          '#intro-pages, #intro-frame-title, #intro-progress, #intro-help, .intro-character figcaption',
         )
         .count(),
       0,
     );
-    assert.equal(await page.locator('#intro-pages button').count(), frames.length);
+    assert.equal(await page.locator('#intro-page-count').textContent(), `1/${frames.length}`);
+    const countBox = await page.locator('#intro-page-count').boundingBox();
+    const controlsBox = await page.locator('.intro-controls').boundingBox();
+    assert(Math.abs(countBox.x + countBox.width / 2 - controlsBox.x - controlsBox.width / 2) < 2);
+    assert(Math.abs(countBox.y + countBox.height / 2 - controlsBox.y - controlsBox.height / 2) < 2);
+    const sheetBox = await page.locator('#intro-sheet').boundingBox();
+    if (width === 1440) assert(sheetBox.height < 300, 'short page leaves the harbor visible');
     assert.equal(
       await page
         .locator(
@@ -70,7 +76,7 @@ try {
     assert(
       (await page
         .locator('#intro-subtitle')
-        .evaluate((text) => parseFloat(getComputedStyle(text).fontSize))) <= 20,
+        .evaluate((text) => parseFloat(getComputedStyle(text).fontSize))) <= 18,
     );
 
     await page.waitForFunction(() => {
@@ -87,10 +93,7 @@ try {
       audio.currentTime = audio.duration - 0.15;
     });
     await page.waitForFunction(() => document.querySelector('#intro-audio').ended);
-    assert.equal(
-      await page.locator('#intro-pages [aria-current="page"]').getAttribute('aria-label'),
-      'Страница 1',
-    );
+    assert.equal(await page.locator('#intro-page-count').textContent(), '1/11');
     assert.equal(await page.locator('#intro-subtitle').textContent(), frames[0].text);
     assert.equal(await page.locator('#intro-audio-status').isVisible(), false);
     assert.equal(await page.locator('#menu-video').evaluate((video) => video.paused), false);
@@ -118,33 +121,24 @@ try {
     await page.locator('.intro-sheet-copy').waitFor({ state: 'detached' });
     await page.screenshot({ path: path.join(screenshots, `intro-${width}.png`) });
     if (width === 1440) {
-      await page.click('#intro-pages button:nth-child(5)');
-      assert.equal(await page.locator('#intro-subtitle').textContent(), frames[4].text);
+      await page.keyboard.press('ArrowRight');
+      assert.equal(await page.locator('#intro-subtitle').textContent(), frames[2].text);
       assert.equal(await page.locator('.intro-sheet-copy').count(), 1);
       assert.equal(await page.locator('.intro-sheet-copy [id]').count(), 0);
       await page.keyboard.press('ArrowRight');
       await page.keyboard.press('ArrowLeft');
-      assert.equal(await page.locator('#intro-subtitle').textContent(), frames[4].text);
+      assert.equal(await page.locator('#intro-subtitle').textContent(), frames[2].text);
       assert((await page.locator('.intro-sheet-copy').count()) <= 1);
-      await page.click('#intro-pages button:nth-child(2)');
+      await page.keyboard.press('ArrowLeft');
       await page.locator('.intro-sheet-copy').waitFor({ state: 'detached' });
     }
     await page.click('#intro-previous');
-    assert.equal(
-      await page.locator('#intro-pages [aria-current="page"]').getAttribute('aria-label'),
-      'Страница 1',
-    );
+    assert.equal(await page.locator('#intro-page-count').textContent(), '1/11');
     assert((await page.locator('#intro-audio').evaluate((audio) => audio.currentTime)) < 2);
     await page.keyboard.press('ArrowRight');
-    assert.equal(
-      await page.locator('#intro-pages [aria-current="page"]').getAttribute('aria-label'),
-      'Страница 2',
-    );
+    assert.equal(await page.locator('#intro-page-count').textContent(), '2/11');
     await page.keyboard.press('ArrowLeft');
-    assert.equal(
-      await page.locator('#intro-pages [aria-current="page"]').getAttribute('aria-label'),
-      'Страница 1',
-    );
+    assert.equal(await page.locator('#intro-page-count').textContent(), '1/11');
 
     // Скрытие вкладки останавливает голос; возврат не возобновляет его неожиданно.
     await page.evaluate(() => {
@@ -169,10 +163,7 @@ try {
 
     // Повторный просмотр начинается сначала и заканчивается меню, а не новой игрой.
     await page.click('#menu-intro');
-    assert.equal(
-      await page.locator('#intro-pages [aria-current="page"]').getAttribute('aria-label'),
-      'Страница 1',
-    );
+    assert.equal(await page.locator('#intro-page-count').textContent(), '1/11');
     for (let i = 1; i < frames.length; i++) {
       await page.click('#intro-next');
       assert.equal(await page.locator('#intro-subtitle').textContent(), frames[i].text);
