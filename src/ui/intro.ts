@@ -1,4 +1,5 @@
 import frames from '../../.generated/intro.json';
+import icons from '../../.generated/intro-icons.json';
 
 /** Каждый кадр — отдельная запись: окончание голоса никогда не переключает текст. */
 export function createIntro(document: Document, onOpenChange: (open: boolean) => void) {
@@ -14,22 +15,106 @@ export function createIntro(document: Document, onOpenChange: (open: boolean) =>
   const play = element<HTMLButtonElement>('intro-play');
   const previous = element<HTMLButtonElement>('intro-previous');
   const next = element<HTMLButtonElement>('intro-next');
+  const sheet = element('intro-sheet');
+  const pages = element('intro-pages');
   let index = 0;
   let finished = false;
   let generation = 0;
   let opened = false;
+  let rendered = false;
+  let pageCopy: HTMLElement | undefined;
+  let pageAnimations: Animation[] = [];
+
+  function setIcon(id: string, name: keyof typeof icons) {
+    // Источник — только SVG из установленного lucide-react, подготовленные при сборке.
+    element(id).innerHTML = icons[name]!;
+  }
+  setIcon('intro-close-icon', 'close');
+  setIcon('intro-replay-icon', 'replay');
+  setIcon('intro-previous-icon', 'previous');
+
+  function stopPageTurn() {
+    for (const animation of pageAnimations) animation.cancel();
+    pageAnimations = [];
+    pageCopy?.remove();
+    pageCopy = undefined;
+  }
+
+  function turnPage(copy: HTMLElement, direction: number) {
+    copy.removeAttribute('id');
+    for (const node of copy.querySelectorAll('[id]')) node.removeAttribute('id');
+    for (const node of copy.querySelectorAll('[aria-live]')) node.removeAttribute('aria-live');
+    copy.classList.add('intro-sheet-copy');
+    copy.setAttribute('aria-hidden', 'true');
+    copy.inert = true;
+    sheet.parentElement!.append(copy);
+    pageCopy = copy;
+    const outgoing = copy.animate(
+      [
+        { transform: 'translate(0, 0) rotate(0deg)', opacity: 1 },
+        {
+          transform: `translate(${direction * 70}px, -32px) rotate(${direction * 5}deg)`,
+          opacity: 0,
+        },
+      ],
+      { duration: 420, easing: 'cubic-bezier(0.22, 0.61, 0.36, 1)', fill: 'forwards' },
+    );
+    const incoming = sheet.animate(
+      [
+        {
+          transform: `translateX(${-direction * 12}px) rotate(${-direction * 0.6}deg)`,
+          opacity: 0.65,
+        },
+        { transform: 'translateX(0) rotate(0deg)', opacity: 1 },
+      ],
+      { duration: 420, easing: 'ease-out' },
+    );
+    pageAnimations = [outgoing, incoming];
+    void outgoing.finished
+      .then(() => {
+        if (pageCopy === copy) {
+          copy.remove();
+          pageCopy = undefined;
+        }
+      })
+      .catch(() => {});
+  }
+
+  for (let pageIndex = 0; pageIndex < frames.length; pageIndex++) {
+    const button = document.createElement('button');
+    button.className = 'intro-page';
+    button.type = 'button';
+    button.setAttribute('aria-label', `Страница ${pageIndex + 1}`);
+    button.title = `Страница ${pageIndex + 1}`;
+    button.addEventListener(
+      'click',
+      () => {
+        if (index !== pageIndex) showFrame(pageIndex);
+      },
+      { signal },
+    );
+    pages.append(button);
+  }
+
+  function clearStatus() {
+    element('intro-audio-status').hidden = true;
+    element('intro-audio-status').textContent = '';
+  }
+
+  function audioError(text: string) {
+    element('intro-audio-status').textContent = text;
+    element('intro-audio-status').hidden = false;
+  }
 
   function updatePlayback() {
-    play.textContent = finished ? 'Слушать ещё раз' : audio.paused ? 'Слушать' : 'Пауза';
-    play.setAttribute('aria-label', finished ? 'Повторить озвучку кадра' : play.textContent);
-    element('intro-audio-status').textContent = finished
-      ? 'Можно задержаться здесь или перейти дальше.'
-      : audio.paused
-        ? 'Читайте в своём темпе. Озвучку можно включить.'
-        : 'Марта рассказывает…';
+    const label = finished ? 'Повторить' : audio.paused ? 'Слушать' : 'Пауза';
+    element('intro-play-label').textContent = label;
+    play.setAttribute('aria-label', finished ? 'Повторить озвучку страницы' : label);
+    setIcon('intro-play-icon', finished || audio.paused ? 'play' : 'pause');
   }
 
   function startAudio() {
+    clearStatus();
     const request = generation;
     if (finished) {
       audio.currentTime = 0;
@@ -40,29 +125,44 @@ export function createIntro(document: Document, onOpenChange: (open: boolean) =>
       updatePlayback();
       // Быстрое переключение кадров штатно прерывает предыдущий play().
       if (error instanceof DOMException && error.name === 'AbortError') return;
-      element('intro-audio-status').textContent =
-        'Звук не запустился. Нажмите «Слушать» или продолжайте читать.';
+      audioError('Звук не запустился. Нажмите «Слушать» или продолжайте читать.');
     });
   }
 
   function showFrame(nextIndex: number) {
+    stopPageTurn();
+    const oldIndex = index;
+    const copy =
+      rendered &&
+      nextIndex !== index &&
+      !window.matchMedia('(prefers-reduced-motion: reduce)').matches
+        ? (sheet.cloneNode(true) as HTMLElement)
+        : undefined;
     generation++;
     audio.pause();
     index = nextIndex;
     finished = false;
     const frame = frames[index]!;
-    element('intro-frame-title').textContent = frame.title;
     element('intro-subtitle').textContent = frame.text;
-    element('intro-counter').textContent = `Кадр ${index + 1} из ${frames.length}`;
-    element<HTMLProgressElement>('intro-progress').value = index + 1;
+    [...pages.children].forEach((page, pageIndex) => {
+      if (pageIndex === index) page.setAttribute('aria-current', 'page');
+      else page.removeAttribute('aria-current');
+    });
     const focusWasPrevious = document.activeElement === previous;
     previous.disabled = index === 0;
     // Отключённая кнопка «Назад» не должна уводить клавиатурный фокус из диалога.
     if (previous.disabled && focusWasPrevious) next.focus();
-    next.textContent = index === frames.length - 1 ? 'В главное меню' : 'Далее →';
+    element('intro-next-label').textContent = index === frames.length - 1 ? 'Завершить' : 'Далее';
+    next.setAttribute(
+      'aria-label',
+      index === frames.length - 1 ? 'Завершить письмо и вернуться в меню' : 'Следующая страница',
+    );
+    setIcon('intro-next-icon', index === frames.length - 1 ? 'home' : 'next');
     audio.src = frame.audio;
     updatePlayback();
     startAudio();
+    rendered = true;
+    if (copy) turnPage(copy, nextIndex > oldIndex ? 1 : -1);
   }
 
   function close() {
@@ -74,6 +174,8 @@ export function createIntro(document: Document, onOpenChange: (open: boolean) =>
   function finishClose() {
     if (!opened) return;
     opened = false;
+    rendered = false;
+    stopPageTurn();
     generation++;
     audio.pause();
     audio.removeAttribute('src');
@@ -118,15 +220,17 @@ export function createIntro(document: Document, onOpenChange: (open: boolean) =>
     'error',
     () => {
       if (!dialog.open || !audio.hasAttribute('src')) return;
-      element('intro-audio-status').textContent =
-        'Не удалось воспроизвести запись. Историю можно прочитать и листать дальше.';
+      audioError('Не удалось воспроизвести запись. Историю можно прочитать и листать дальше.');
     },
     { signal },
   );
   document.addEventListener(
     'visibilitychange',
     () => {
-      if (document.hidden) audio.pause();
+      if (document.hidden) {
+        audio.pause();
+        stopPageTurn();
+      }
     },
     { signal },
   );
@@ -172,6 +276,7 @@ export function createIntro(document: Document, onOpenChange: (open: boolean) =>
     dispose() {
       generation++;
       audio.pause();
+      stopPageTurn();
       controller.abort();
     },
   };

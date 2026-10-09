@@ -2,6 +2,8 @@
 
 Игра использует Babylon.js под лицензией Apache-2.0. Полный текст берётся из `node_modules/@babylonjs/core/license.md` вместе с NOTICE.md пакета и включается сборщиком в готовый HTML. Зависимости сборки не нужны игроку.
 
+Иконки вступления — Lucide из пакета `lucide-react` (ISC, часть унаследованных иконок — MIT). Полный текст `node_modules/lucide-react/LICENSE` включается в HTML. React и React DOM нужны только при сборке SVG и не входят в приложение.
+
 Исходные модели и иллюстрации:
 
 - Kenney Fantasy Town Kit: https://kenney.nl/assets/fantasy-town-kit — CC0, `assets/kenney-fantasy-town/License.txt`.

@@ -44,7 +44,8 @@ export async function build() {
     'utf8',
   );
   const notice = await readFile(path.join(root, 'node_modules/@babylonjs/core/NOTICE.md'), 'utf8');
-  const notices = `Babylon.js\n${license}\n${notice}\nKenney Fantasy Town Kit / Pirate Kit: CC0\nhttps://kenney.nl/assets/fantasy-town-kit\nhttps://kenney.nl/assets/pirate-kit`;
+  const iconLicense = await readFile(path.join(root, 'node_modules/lucide-react/LICENSE'), 'utf8');
+  const notices = `Babylon.js\n${license}\n${notice}\nLucide icons\n${iconLicense}\nKenney Fantasy Town Kit / Pirate Kit: CC0\nhttps://kenney.nl/assets/fantasy-town-kit\nhttps://kenney.nl/assets/pirate-kit`;
   const html = template
     .replaceAll('__MENU_BACKGROUND__', () => `data:image/webp;base64,${menuArt.toString('base64')}`)
     .replace('__MENU_VIDEO__', () => `data:video/mp4;base64,${menuVideo.toString('base64')}`)

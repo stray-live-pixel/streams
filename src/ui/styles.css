@@ -1210,7 +1210,18 @@ body[data-hints='hide'] .coach.freeplay .mission {
   }
 }
 
-/* Вступление оставляет гавань видимой; текст и навигация не зависят от таймера. */
+/* Письмо лежит поверх гавани. Марта всегда упирается нижним краем в экран. */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
 .intro-dialog {
   position: fixed;
   inset: 0;
@@ -1219,214 +1230,310 @@ body[data-hints='hide'] .coach.freeplay .mission {
   max-width: none;
   height: 100dvh;
   max-height: none;
-  padding: clamp(18px, 4vw, 52px);
+  padding: 0;
   border: 0;
   border-radius: 0;
   box-shadow: none;
   background: transparent;
-}
-.intro-dialog[open] {
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  gap: 40px;
+  overflow-x: hidden;
 }
 .intro-dialog::backdrop {
   background: var(--intro-backdrop);
   backdrop-filter: none;
 }
-.intro-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-}
-.intro-header > div,
-.intro-exit {
-  background: var(--intro-caption-background);
-  border: var(--border-paper);
-  border-radius: var(--radius-paper);
-  box-shadow: var(--shadow-paper);
-}
-.intro-header > div {
-  padding: 13px 21px;
-}
-.intro-header .eyebrow {
-  margin: 0 0 4px;
-}
-.intro-header h1 {
-  margin: 0;
-  font: 24px/1.2 var(--font-story);
-}
-.intro-exit {
-  min-height: 46px;
-  white-space: nowrap;
-}
-.intro-exit span {
-  margin-left: 14px;
-  font-size: 21px;
-}
 .intro-stage {
-  width: min(1150px, 100%);
-  margin: auto auto 0;
+  position: relative;
   display: grid;
   grid-template-columns: minmax(220px, 0.8fr) minmax(0, 1.65fr);
   align-items: end;
-  gap: clamp(16px, 3vw, 44px);
+  gap: clamp(20px, 3vw, 44px);
+  width: min(1240px, 100%);
+  min-height: 100%;
+  margin: 0 auto;
+  padding: 24px clamp(18px, 3vw, 42px) 0;
 }
 .intro-character {
+  position: fixed;
+  z-index: 1;
+  bottom: -2px;
+  left: max(14px, calc((100vw - 1240px) / 2 + 14px));
+  width: min(34vw, 400px);
   margin: 0;
-  text-align: center;
-  min-width: 0;
+  pointer-events: none;
 }
 .intro-character img {
   display: block;
   width: 100%;
   height: auto;
+  max-height: 80dvh;
+  object-fit: contain;
+  object-position: bottom;
   filter: drop-shadow(var(--shadow-character));
 }
-.intro-character figcaption {
-  display: inline-flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 12px 25px;
-  background: var(--intro-caption-background);
-  border: var(--border-paper);
-  border-radius: var(--radius-paper);
-  box-shadow: var(--shadow-paper);
-}
-.intro-character strong {
-  font: 26px/1.1 var(--font-story);
-}
-.intro-character span {
-  font-size: 11px;
-  color: var(--color-ink-muted);
-}
 .intro-letter {
+  grid-column: 2;
+  position: relative;
+  isolation: isolate;
+  z-index: 2;
   min-width: 0;
-  padding: clamp(22px, 3vw, 38px);
-  background: var(--surface-paper);
-  border: var(--border-paper);
-  border-radius: var(--radius-paper);
-  box-shadow: var(--shadow-menu);
+  margin-bottom: clamp(26px, 4.5vh, 54px);
+  filter: drop-shadow(var(--shadow-letter));
+  perspective: 1200px;
 }
-.intro-chapter {
+.intro-letter::before,
+.intro-letter::after {
+  content: '';
+  position: absolute;
+  inset: 4px -3px -4px;
+  background: var(--color-paper-shade);
+  border: var(--border-letter);
+  border-radius: 3px 5px 2px 4px;
+  z-index: -1;
+  transform: rotate(-1.05deg);
+}
+.intro-letter::after {
+  inset: 8px 2px -8px -3px;
+  background: var(--color-paper);
+  transform: rotate(0.8deg);
+  z-index: -2;
+}
+.intro-sheet {
+  position: relative;
+  min-width: 0;
+  padding: clamp(22px, 3vw, 36px);
+  color: var(--color-ink);
+  background: var(--surface-letter);
+  border: var(--border-letter);
+  border-radius: 3px 5px 2px 4px;
+  transform-origin: 10% 12%;
+}
+.intro-sheet-copy {
+  position: absolute;
+  inset: 0 0 auto;
+  z-index: 4;
+  pointer-events: none;
+  box-shadow: var(--shadow-lifted-page);
+}
+.intro-letter-header {
   display: flex;
+  align-items: center;
   justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 8px 18px;
+  gap: 14px;
+}
+.intro-author {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.intro-author strong {
+  font: 25px/1.1 var(--font-story);
+  color: var(--color-ink);
+}
+.intro-author span {
   font-size: 11px;
   color: var(--color-ink-muted);
 }
-#intro-frame-title {
-  color: var(--color-accent);
-  letter-spacing: 1px;
-  text-transform: uppercase;
+.intro-exit {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  align-self: flex-start;
+  padding: 9px 10px;
+  min-height: 40px;
+  border-color: transparent;
+  border-radius: 8px;
+  font-size: 12px;
+  color: var(--color-ink-muted);
+}
+.intro-exit:hover {
+  color: var(--color-ink);
+  background: var(--surface-control-hover);
 }
 .intro-subtitle {
-  min-height: 170px;
-  margin: 22px 0 25px;
-  font: clamp(21px, 2.1vw, 28px)/1.55 var(--font-story);
+  min-height: 155px;
+  margin: 26px 0 25px;
+  font: 20px/1.65 var(--font-story);
+  color: var(--color-ink);
   text-wrap: pretty;
 }
-#intro-progress {
-  display: block;
-  appearance: none;
-  width: 100%;
-  height: 3px;
-  margin-bottom: 22px;
+.intro-pages {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  margin: 0 0 19px;
+}
+.intro-page {
+  position: relative;
+  flex: 0 0 24px;
+  width: 24px;
+  height: 34px;
+  padding: 0;
   border: 0;
-  color: var(--color-primary);
+  background: transparent;
+  transition: transform var(--motion-fast);
+}
+.intro-page::before {
+  content: '';
+  position: absolute;
+  inset: 6px 4px;
+  background: var(--color-paper-light);
+  border: 1px solid var(--color-border);
+  border-radius: 1px;
+  box-shadow: 1px 2px 0 var(--color-paper-shade);
+}
+.intro-page::after {
+  content: '';
+  position: absolute;
+  top: 6px;
+  right: 4px;
+  width: 5px;
+  height: 5px;
   background: var(--color-paper-shade);
+  border-left: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
 }
-#intro-progress::-webkit-progress-bar {
-  background: var(--color-paper-shade);
+.intro-page[aria-current='page'] {
+  transform: translateY(-3px);
 }
-#intro-progress::-webkit-progress-value {
+.intro-page[aria-current='page']::before {
   background: var(--color-primary);
+  border-color: var(--color-primary);
+  box-shadow: 1px 3px 0 var(--color-paper-shade);
 }
-#intro-progress::-moz-progress-bar {
-  background: var(--color-primary);
+.intro-page:hover {
+  transform: translateY(-3px);
 }
 .intro-controls,
 .intro-voice-controls,
 .intro-navigation {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 .intro-controls {
   justify-content: space-between;
   flex-wrap: wrap;
-  gap: 16px;
+  gap: 12px;
 }
-.intro-controls button {
-  min-height: 45px;
+.intro-icon {
+  display: inline-flex;
+  flex: 0 0 auto;
+  line-height: 1;
+}
+.intro-icon svg {
+  width: 19px;
+  height: 19px;
+}
+.intro-control {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  min-height: 44px;
+  padding: 11px 14px;
+  border: var(--border-letter);
+  border-radius: 9px;
+  background: var(--surface-control);
   font-size: 13px;
+  transition:
+    background var(--motion-fast),
+    box-shadow var(--motion-fast);
+}
+.intro-control:hover:not(:disabled) {
+  background: var(--surface-control-hover);
+  box-shadow: var(--shadow-control);
+}
+.intro-control:active:not(:disabled) {
+  transform: translateY(1px);
+}
+.intro-icon-only {
+  width: 44px;
+  padding: 10px;
+}
+.intro-next {
+  background: var(--color-primary);
+  color: var(--color-paper-light);
+  border-color: var(--color-primary-hover);
+  padding-inline: 18px 13px;
+}
+.intro-next:hover:not(:disabled) {
+  background: var(--color-primary-hover);
 }
 .intro-audio-status {
-  margin: 18px 0 0;
+  margin: 14px 0 0;
   font-size: 12px;
-  color: var(--color-ink-muted);
-}
-.intro-help {
-  margin: 8px 0 0;
-  font-size: 11px;
-  line-height: 1.5;
-  color: var(--color-ink-muted);
+  color: var(--color-accent);
 }
 @media (max-width: 650px) {
-  .intro-dialog[open] {
-    gap: 22px;
-  }
-  .intro-header h1 {
-    font-size: 19px;
-  }
-  .intro-header > div {
-    padding: 10px 14px;
-  }
   .intro-stage {
     display: flex;
-    flex-direction: column;
-    align-items: stretch;
-    gap: 14px;
+    align-items: flex-end;
+    padding: 22px 16px 0;
   }
   .intro-character {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 4px;
-  }
-  .intro-character img {
-    width: 132px;
-  }
-  .intro-character figcaption {
-    padding: 10px 14px;
-  }
-  .intro-character strong {
-    font-size: 23px;
+    left: 2px;
+    width: min(57vw, 235px);
   }
   .intro-letter {
-    padding: 22px 19px;
+    width: 100%;
+    margin-bottom: min(57vw, 235px);
+  }
+  .intro-sheet {
+    padding: 23px 21px 22px;
+  }
+  .intro-author strong {
+    font-size: 23px;
   }
   .intro-subtitle {
-    min-height: 0;
-    margin: 18px 0 22px;
-    font-size: 21px;
-    line-height: 1.5;
+    min-height: 155px;
+    margin-block: 24px 17px;
+    font-size: 18px;
+    line-height: 1.6;
   }
-  .intro-controls {
-    align-items: stretch;
-    flex-direction: column;
-    gap: 12px;
+  .intro-pages {
+    gap: 1px;
+    margin-bottom: 14px;
   }
+  .intro-control {
+    gap: 7px;
+    padding-inline: 11px;
+  }
+  .intro-voice-controls,
   .intro-navigation {
-    justify-content: space-between;
+    gap: 6px;
   }
-  .intro-navigation button {
-    flex: 1;
+  .intro-next {
+    padding-inline: 13px 10px;
   }
-  .intro-audio-status {
+  .intro-exit {
+    gap: 5px;
+    padding-inline: 5px;
+  }
+}
+@media (max-height: 500px) and (min-width: 651px) {
+  .intro-stage {
+    padding-top: 15px;
+  }
+  .intro-letter {
+    margin-bottom: 20px;
+  }
+  .intro-sheet {
+    padding: 19px 24px;
+  }
+  .intro-subtitle {
+    min-height: 110px;
+    font-size: 18px;
     line-height: 1.5;
+    margin-block: 18px 12px;
+  }
+  .intro-pages {
+    margin-bottom: 11px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .intro-page,
+  .intro-control {
+    transition: none;
   }
 }

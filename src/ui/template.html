@@ -58,19 +58,8 @@
         </section>
       </div>
     </main>
-    <dialog
-      id="intro-dialog"
-      class="intro-dialog"
-      aria-labelledby="intro-title"
-      aria-describedby="intro-help"
-    >
-      <header class="intro-header">
-        <div>
-          <div class="eyebrow">Тихая Гавань</div>
-          <h1 id="intro-title">Письмо с острова</h1>
-        </div>
-        <button id="intro-close" class="intro-exit">Выйти <span aria-hidden="true">×</span></button>
-      </header>
+    <dialog id="intro-dialog" class="intro-dialog" aria-labelledby="intro-title">
+      <h1 id="intro-title" class="visually-hidden">Письмо Марты</h1>
       <div class="intro-stage">
         <figure class="intro-character">
           <img
@@ -79,40 +68,51 @@
             height="1024"
             alt="Марта — добродушная смотрительница гавани с седеющими волосами и зелёной шалью"
           />
-          <figcaption><strong>Марта</strong><span>смотрительница гавани</span></figcaption>
         </figure>
         <section class="intro-letter" aria-label="Рассказ Марты">
-          <div class="intro-chapter">
-            <span id="intro-frame-title"></span>
-            <span id="intro-counter"></span>
-          </div>
-          <p id="intro-subtitle" class="intro-subtitle" aria-live="polite" aria-atomic="true"></p>
-          <progress
-            id="intro-progress"
-            max="11"
-            value="1"
-            aria-label="Прочитанные кадры"
-          ></progress>
-          <div class="intro-controls">
-            <div class="intro-voice-controls">
-              <button id="intro-play">Пауза</button>
-              <button
-                id="intro-replay"
-                aria-label="Повторить озвучку кадра"
-                title="Повторить озвучку"
-              >
-                ↻
+          <div id="intro-sheet" class="intro-sheet">
+            <header class="intro-letter-header">
+              <div class="intro-author">
+                <strong>Марта</strong><span>смотрительница гавани</span>
+              </div>
+              <button id="intro-close" class="intro-exit" title="Выйти в главное меню">
+                <span>Выйти</span><span id="intro-close-icon" class="intro-icon"></span>
               </button>
+            </header>
+            <p id="intro-subtitle" class="intro-subtitle" aria-live="polite" aria-atomic="true"></p>
+            <nav id="intro-pages" class="intro-pages" aria-label="Страницы письма"></nav>
+            <div class="intro-controls">
+              <div class="intro-voice-controls">
+                <button id="intro-play" class="intro-control">
+                  <span id="intro-play-icon" class="intro-icon"></span
+                  ><span id="intro-play-label">Пауза</span>
+                </button>
+                <button
+                  id="intro-replay"
+                  class="intro-control intro-icon-only"
+                  aria-label="Повторить озвучку страницы"
+                  title="Повторить озвучку"
+                >
+                  <span id="intro-replay-icon" class="intro-icon"></span>
+                </button>
+              </div>
+              <div class="intro-navigation">
+                <button
+                  id="intro-previous"
+                  class="intro-control intro-icon-only"
+                  aria-label="Предыдущая страница"
+                  title="Предыдущая страница"
+                >
+                  <span id="intro-previous-icon" class="intro-icon"></span>
+                </button>
+                <button id="intro-next" class="intro-control intro-next">
+                  <span id="intro-next-label">Далее</span
+                  ><span id="intro-next-icon" class="intro-icon"></span>
+                </button>
+              </div>
             </div>
-            <div class="intro-navigation">
-              <button id="intro-previous">← Назад</button>
-              <button id="intro-next" class="primary">Далее →</button>
-            </div>
+            <p id="intro-audio-status" class="intro-audio-status" role="status" hidden></p>
           </div>
-          <p id="intro-audio-status" class="intro-audio-status" role="status"></p>
-          <p id="intro-help" class="intro-help">
-            История не торопит: переключайте кадры сами. ← → — листать · Esc — выйти
-          </p>
         </section>
       </div>
       <audio id="intro-audio" preload="auto"></audio>

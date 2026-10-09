@@ -46,6 +46,22 @@
     transparent 30%,
     color-mix(in srgb, var(--color-shadow) 40%, transparent)
   );
-  --intro-caption-background: color-mix(in srgb, var(--color-paper-light) 94%, transparent);
   --shadow-character: 0 14px 30px color-mix(in srgb, var(--color-shadow) 28%, transparent);
+  --border-letter: 1px solid color-mix(in srgb, var(--color-border) 55%, var(--color-paper-light));
+  --shadow-letter: 0 10px 22px color-mix(in srgb, var(--color-shadow) 23%, transparent);
+  --shadow-lifted-page: 8px 15px 26px color-mix(in srgb, var(--color-shadow) 22%, transparent);
+  --shadow-control: 0 2px 5px color-mix(in srgb, var(--color-shadow) 9%, transparent);
+  --surface-control: color-mix(in srgb, var(--color-paper-light) 65%, transparent);
+  --surface-control-hover: color-mix(
+    in srgb,
+    var(--color-paper-shade) 65%,
+    var(--color-paper-light)
+  );
+  --surface-letter:
+    repeating-linear-gradient(
+      2deg,
+      transparent 0 3px,
+      color-mix(in srgb, var(--color-border) 3%, transparent) 3px 4px
+    ),
+    radial-gradient(ellipse at 15% 10%, var(--color-paper-light), var(--color-paper));
 }
