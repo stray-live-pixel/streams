@@ -978,7 +978,7 @@ dialog .credits {
   place-items: center;
 }
 .menu-heading {
-  padding-bottom: 24px;
+  padding-bottom: 18px;
   border-bottom: 1px solid var(--color-border);
 }
 .menu-kicker {
@@ -994,9 +994,9 @@ dialog .credits {
 }
 .menu-card {
   position: relative;
-  width: min(100%, 540px);
+  width: min(100%, 480px);
   min-width: 0;
-  padding: 40px 44px 32px;
+  padding: 30px 32px 26px;
   background: var(--surface-paper);
   border: var(--border-paper);
   box-shadow: var(--shadow-menu);
@@ -1015,7 +1015,7 @@ dialog .credits {
 }
 .menu-card h2 {
   font: 28px/1.2 var(--font-story);
-  margin: 24px 0 12px;
+  margin: 20px 0 10px;
 }
 .menu-card > p {
   font-size: 14px;
@@ -1023,9 +1023,8 @@ dialog .credits {
   color: var(--color-ink-muted);
 }
 .menu-progress {
-  padding: 13px 0 18px;
-  margin-bottom: 20px;
-  border-bottom: 1px dashed var(--color-border);
+  padding: 8px 0;
+  margin-bottom: 16px;
   color: var(--color-ink-muted);
   font-size: 11px;
 }
@@ -1046,6 +1045,9 @@ dialog .credits {
   font: italic 13px/1.6 var(--font-story);
   color: var(--color-ink-muted);
   margin: 24px 0 0;
+}
+.menu-card .menu-footnote {
+  margin-top: 18px;
 }
 .menu-status:empty {
   display: none;
@@ -1169,11 +1171,11 @@ body[data-hints='hide'] .coach.freeplay .mission {
     letter-spacing: -1px;
   }
   .menu-card {
-    padding: 29px 24px 22px;
+    padding: 24px 20px 20px;
   }
   .menu-card h2 {
     font-size: 26px;
-    margin: 22px 0 10px;
+    margin: 18px 0 10px;
   }
   .menu-card > p {
     font-size: 12px;
@@ -1181,11 +1183,11 @@ body[data-hints='hide'] .coach.freeplay .mission {
   }
   .menu-progress {
     font-size: 10px;
-    padding: 8px 0 14px;
-    margin-bottom: 15px;
+    padding: 6px 0;
+    margin-bottom: 12px;
   }
   .menu-card .menu-footnote {
-    margin-top: 17px;
+    margin-top: 15px;
     font-size: 12px;
   }
   .setting-row {
