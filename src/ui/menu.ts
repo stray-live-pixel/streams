@@ -1,6 +1,7 @@
 import type { GameModel } from '../domain/index.js';
 import type { GameSettings } from '../persistence/index.js';
 import { createIntro } from './intro.js';
+import { createMenuBackground } from './menu-background.js';
 import { createObjectBrowser, type ObjectBrowserOptions } from './object-browser.js';
 
 interface MenuActions {
@@ -25,13 +26,11 @@ export function createMenu(document: Document, settings: GameSettings, actions: 
     element(id).addEventListener('click', action, { signal });
   let inGame = false;
   let settingsOrigin: 'main' | 'pause' = 'main';
-  let animateBackground = settings.animateCity;
-  const video = element<HTMLVideoElement>('menu-video');
-  const motionPreference = window.matchMedia('(prefers-reduced-motion: reduce)');
-  video.muted = true;
-  // Замедляем при показе: файл хранит один 45-секундный облёт без растянутых кадров.
-  video.defaultPlaybackRate = 0.5;
-  video.playbackRate = 0.5;
+  const background = createMenuBackground(
+    element('main-menu'),
+    element<HTMLVideoElement>('menu-video'),
+    settings.animateCity,
+  );
   const intro = createIntro(document, (open) => {
     element('menu-shell').hidden = open;
     updateBackground();
@@ -44,16 +43,8 @@ export function createMenu(document: Document, settings: GameSettings, actions: 
   });
 
   function updateBackground() {
-    const allowMotion = animateBackground && !motionPreference.matches;
-    video.hidden = !allowMotion || video.error !== null;
-    if (allowMotion && !inGame && !previewOpen && !document.hidden && !video.error) {
-      // При запрете автозапуска браузером остаётся статичный постер гавани.
-      void video.play().catch(() => {});
-    } else video.pause();
+    background.setActive(!inGame && !previewOpen);
   }
-  motionPreference.addEventListener('change', updateBackground, { signal });
-  document.addEventListener('visibilitychange', updateBackground, { signal });
-  video.addEventListener('error', updateBackground, { signal });
 
   function closeMenus() {
     for (const id of ['pause-dialog', 'settings-dialog', 'reset-dialog']) dialog(id).close();
@@ -155,8 +146,7 @@ export function createMenu(document: Document, settings: GameSettings, actions: 
         };
         element('settings-status').textContent =
           actions.settings(next) ?? 'Настройки сохранены и применены.';
-        animateBackground = next.animateCity;
-        updateBackground();
+        background.setAnimated(next.animateCity);
       },
       { signal },
     );
@@ -183,7 +173,7 @@ export function createMenu(document: Document, settings: GameSettings, actions: 
     dispose() {
       intro.dispose();
       objects.dispose();
-      video.pause();
+      background.dispose();
       controller.abort();
     },
   };

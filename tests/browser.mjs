@@ -265,7 +265,7 @@ try {
     loop: v.loop,
     playbackRate: v.playbackRate,
   }));
-  assert(Math.abs(media.duration - 45) < 0.1);
+  assert(Math.abs(media.duration - 15) < 0.1);
   assert.equal(media.muted, true);
   assert.equal(media.loop, true);
   assert.equal(media.playbackRate, 0.5);
@@ -277,7 +277,39 @@ try {
     const background = document.querySelector('#menu-video');
     return !background.paused && background.currentTime < 1;
   });
+  // Тянем открытый фон, а не меню: оба направления и переход через границу круга.
+  await video.evaluate((v) => {
+    v.currentTime = 6;
+  });
+  await videoPage.mouse.move(50, 100);
+  await videoPage.mouse.down();
+  const dragStart = await video.evaluate((v) => v.currentTime);
+  const viewportWidth = await videoPage.locator('#main-menu').evaluate((el) => el.clientWidth);
+  const expectedTime = (x) => (((dragStart - ((x - 50) / viewportWidth) * 15) % 15) + 15) % 15;
+  await videoPage.mouse.move(250, 100);
+  assert.equal(await video.evaluate((v) => v.paused), true);
+  assert(Math.abs((await video.evaluate((v) => v.currentTime)) - expectedTime(250)) < 0.1);
+  await videoPage.mouse.move(20, 100);
+  assert(Math.abs((await video.evaluate((v) => v.currentTime)) - expectedTime(20)) < 0.1);
+  await videoPage.mouse.move(650, 100);
+  assert(Math.abs((await video.evaluate((v) => v.currentTime)) - expectedTime(650)) < 0.1);
+  await videoPage.waitForFunction(() => !document.querySelector('#menu-video').seeking);
+  await videoPage.screenshot({ path: path.join(screenshots, 'menu-dragged.png') });
+  await videoPage.waitForTimeout(5100);
+  assert.equal(await video.evaluate((v) => v.paused), true, 'Не играть, пока мышь зажата');
+  await videoPage.mouse.up();
+  const selectedTime = await video.evaluate((v) => v.currentTime);
+  await videoPage.waitForTimeout(4000);
+  assert.equal(await video.evaluate((v) => v.paused), true, 'Ждать 5 секунд после отпускания');
+  await waitForPlayback();
+  assert(Math.abs((await video.evaluate((v) => v.currentTime)) - selectedTime) < 0.7);
+  // Таймер после ручного обзора не должен запускать фон в самой игре.
+  await videoPage.mouse.move(50, 100);
+  await videoPage.mouse.down();
+  await videoPage.mouse.up();
   await videoPage.click('#menu-start');
+  assert.equal(await video.evaluate((v) => v.paused), true);
+  await videoPage.waitForTimeout(5100);
   assert.equal(await video.evaluate((v) => v.paused), true);
   await videoPage.keyboard.press('Escape');
   await videoPage.click('#main-menu-button');
@@ -294,7 +326,7 @@ try {
   });
   await videoContext.close();
   console.log(
-    'Menu video: decoding, 45s loop at half speed, mute, pause, settings and reduced motion PASS',
+    'Menu video: 15s orbit at half speed, two-way scrubbing, wrap, 5s idle, pause, settings and reduced motion PASS',
   );
 } finally {
   await browser.close();

@@ -14,10 +14,11 @@
       "metadata": "orbit/segment-03.json"
     }
   ],
+  "active_source": "orbit/segment-03-source.mp4",
   "original_generation": "main-menu-original.json",
   "playback": {
     "file": "main-menu-loop.mp4",
-    "sha256": "b3cae633b680a94762e0bd3dcab1ba0dc405174ca904c1985b3057ac480c265d",
+    "sha256": "69ce9ec47196fc074ec8a627da9b719193b2cae2a2e57ea667f163b714384abb",
     "programs": [],
     "stream_groups": [],
     "streams": [
@@ -27,15 +28,15 @@
         "width": 1080,
         "height": 720,
         "r_frame_rate": "48/1",
-        "nb_frames": "2160"
+        "nb_frames": "720"
       }
     ],
     "format": {
-      "duration": "45.000000",
-      "size": "7998879"
+      "duration": "15.000000",
+      "size": "3933944"
     },
     "playback_rate": 0.5,
-    "presentation_duration": 90,
-    "loop_processing": "Three 15-second clips in sequence; final half-second dissolves to the first frame. Motion interpolation to 48 fps, no time stretching. Browser playback at 0.5 gives 24 presented fps."
+    "presentation_duration": 30,
+    "loop_processing": "One continuous 15-second orbit from segment 03, without segments 01 and 02; final 0.4 seconds dissolve to its own first frame. Keyframes every 0.5 seconds for scrubbing. Motion interpolation to 48 fps, no time stretching. Browser playback at 0.5 gives 24 presented fps."
   }
 }

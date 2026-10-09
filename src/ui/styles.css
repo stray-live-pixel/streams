@@ -961,6 +961,17 @@ dialog .credits {
   object-position: center;
   pointer-events: none;
 }
+.can-drag-orbit .menu-shell {
+  cursor: grab;
+  touch-action: pan-y;
+}
+.is-dragging .menu-shell {
+  cursor: grabbing;
+  user-select: none;
+}
+.can-drag-orbit .menu-card {
+  cursor: auto;
+}
 #menu-video {
   filter: blur(var(--menu-art-blur));
   transform: scale(1.005);
