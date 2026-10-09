@@ -992,6 +992,12 @@ dialog .credits {
   display: grid;
   place-items: center;
 }
+@media (min-width: 1000px) {
+  .menu-shell {
+    justify-items: end;
+    padding-inline: clamp(32px, 5vw, 96px);
+  }
+}
 .menu-heading {
   padding-bottom: 18px;
   border-bottom: 1px solid var(--color-border);
