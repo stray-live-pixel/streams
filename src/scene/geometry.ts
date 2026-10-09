@@ -44,6 +44,7 @@ const hash = (x: number, z: number) => {
 // Геометрия неподвижного острова объединяется, чтобы сократить число вызовов отрисовки.
 export interface ModelData {
   p: number[][];
+  // Три индекса позиций, затем три индекса цветов UV-углов треугольника.
   f: number[][];
   c: number[][];
 }
@@ -58,7 +59,7 @@ function builder(
   function rgb(hex: string) {
     return hex.match(/[0-9a-f]{2}/gi)!.map((v) => parseInt(v, 16));
   }
-  function triangle(a: number[], b: number[], c: number[], color: number[], lit = true) {
+  function triangle(a: number[], b: number[], c: number[], colors: number[][], lit = true) {
     let u = b.map((v, i) => v - a[i]),
       v = c.map((x, i) => x - a[i]),
       n = [u[1] * v[2] - u[2] * v[1], u[2] * v[0] - u[0] * v[2], u[0] * v[1] - u[1] * v[0]],
@@ -66,11 +67,18 @@ function builder(
     let light = lit
       ? 0.67 + 0.33 * Math.max(0, (-n[0] * 0.45 + n[1] * 0.82 + n[2] * 0.35) / len)
       : 1;
-    for (let p of [a, b, c]) sceneVertices.push(...p, ...color.map((v) => (v / 255) * light));
+    for (const [i, p] of [a, b, c].entries())
+      sceneVertices.push(...p, ...colors[i].map((v) => (v / 255) * light));
   }
   function quad(a: number[], b: number[], c: number[], d: number[], color: number[]) {
-    triangle(a, b, c, color, false);
-    triangle(a, c, d, color, false);
+    triangle(a, b, c, [color, color, color], false);
+    triangle(a, c, d, [color, color, color], false);
+  }
+  function faceColors(data: ModelData, face: number[], tint?: number[]) {
+    return face.slice(3, 6).map((index) => {
+      const original = data.c[index];
+      return tint ? tint.map((v) => v * (0.7 + Math.max(...original) / 850)) : original;
+    });
   }
   function terrain(x: number, z: number) {
     let top = rgb(hash(x, z) > 0.5 ? '#9db58c' : '#a1b890');
@@ -121,9 +129,7 @@ function builder(
         z + p[0] * sx * si + p[2] * sz * co,
       ]);
     for (let f of a.f) {
-      const original = a.c[f[3]];
-      const color = tint ? tint.map((v) => v * (0.7 + Math.max(...original) / 850)) : original;
-      triangle(points[f[0]], points[f[1]], points[f[2]], color);
+      triangle(points[f[0]], points[f[1]], points[f[2]], faceColors(a, f, tint));
     }
   }
   function parts(items: ObjectPart[], x = 0, z = 0) {
@@ -139,11 +145,7 @@ function builder(
         return [v.x + x, v.y, v.z + z];
       });
       for (const f of data.f) {
-        const original = data.c[f[3]];
-        const color = part.tint
-          ? part.tint.map((v) => v * (0.7 + Math.max(...original) / 850))
-          : original;
-        triangle(points[f[0]], points[f[1]], points[f[2]], color);
+        triangle(points[f[0]], points[f[1]], points[f[2]], faceColors(data, f, part.tint));
       }
     }
   }
@@ -155,7 +157,7 @@ function builder(
         [x, 0.012, z],
         [x + Math.cos(a) * rx, 0.012, z + Math.sin(a) * rz],
         [x + Math.cos(b) * rx, 0.012, z + Math.sin(b) * rz],
-        rgb('#869f79'),
+        [rgb('#869f79'), rgb('#869f79'), rgb('#869f79')],
         false,
       );
     }

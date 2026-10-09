@@ -241,6 +241,11 @@ try {
   await visible();
   await page.locator('#object-parts button').nth(4).click();
   await page.screenshot({ path: path.join(screenshots, 'editor-1440.png') });
+  await choose('kenney-fantasy-town/wall-window-glass');
+  await visible();
+  await page
+    .locator('#object-canvas')
+    .screenshot({ path: path.join(screenshots, 'wall-gradient.png') });
   assert.deepEqual(errors, []);
   assert.deepEqual(external, []);
   console.log(
