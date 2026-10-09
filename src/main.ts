@@ -2,11 +2,12 @@ import type { Command } from './domain/index.js';
 import type { CityScene } from './scene/index.js';
 import { createGame, MAP_SIZE, isLand, shoreDirection } from './domain/index.js';
 import { createStorage } from './persistence/index.js';
-import { createUI, createMenu } from './ui/index.js';
+import { createUI, createMenu, fitGameViewport } from './ui/index.js';
 import { createScene, createObjectPreview, previewObjects } from './scene/index.js';
 import { bindInput } from './input/index.js';
 
 /** Только координатор соединяет город, навигацию, сохранения и ленивую 3D-сцену. */
+const disposeViewport = fitGameViewport(document.getElementById('game-viewport')!);
 const storage = createStorage(() => window.localStorage);
 const loaded = storage.load();
 const game = createGame(loaded.state);
@@ -125,12 +126,18 @@ window.cityDebug = Object.freeze({
   },
   projectTile(x: number, z: number) {
     if (!scene) throw new Error('Сначала откройте остров из главного меню.');
-    return scene.project(x + 0.5, 0, z + 0.5);
+    const point = scene.project(x + 0.5, 0, z + 0.5);
+    const bounds = canvas.getBoundingClientRect();
+    return {
+      x: bounds.left + (point.x / canvas.clientWidth) * bounds.width,
+      y: bounds.top + (point.y / canvas.clientHeight) * bounds.height,
+    };
   },
 });
 window.addEventListener('pagehide', (event) => {
   if (event.persisted) return;
   disposeInput?.();
+  disposeViewport();
   scene?.dispose();
   ui.dispose();
   menu.dispose();

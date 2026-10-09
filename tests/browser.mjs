@@ -63,7 +63,7 @@ try {
     assert.equal(await page.evaluate(() => cityDebug.renderer), 'Babylon.js');
     assert.equal(await page.evaluate(() => cityDebug.paused), false);
     assert.equal(await page.locator('#coach-title').isVisible(), true);
-    assert.equal(await page.locator('#scene').evaluate((c) => c.width), width);
+    assert.equal(await page.locator('#scene').evaluate((c) => c.width), 1440);
     const requestReset = async () => {
       await page.click('#open-menu');
       await page.click('#pause-settings');
@@ -289,23 +289,25 @@ try {
   await videoPage.mouse.move(50, 100);
   await videoPage.mouse.down();
   const dragStart = await viewProgress();
-  const viewportWidth = await videoPage.locator('#main-menu').evaluate((el) => el.clientWidth);
-  const expectedProgress = (x) => Math.max(0, Math.min(1, dragStart - (x - 50) / viewportWidth));
+  const viewportWidth = await videoPage
+    .locator('#main-menu')
+    .evaluate((el) => el.getBoundingClientRect().width);
+  const expectedProgress = (x) => Math.max(0, Math.min(1, dragStart + (x - 50) / viewportWidth));
   await videoPage.mouse.move(250, 100);
   assert.equal(await video.evaluate((v) => v.paused), true);
   assert(Math.abs((await viewProgress()) - expectedProgress(250)) < 0.01);
   assert(
-    await video.evaluate((v) => v.currentTime > v.duration / 2),
-    'Продолжить в обратной половине',
+    await video.evaluate((v) => v.currentTime < v.duration / 2),
+    'После жеста вправо продолжить в прямой половине',
   );
   await videoPage.mouse.move(20, 100);
   assert(Math.abs((await viewProgress()) - expectedProgress(20)) < 0.01);
   assert(
-    await video.evaluate((v) => v.currentTime < v.duration / 2),
-    'Продолжить в прямой половине',
+    await video.evaluate((v) => v.currentTime > v.duration / 2),
+    'После жеста влево продолжить в обратной половине',
   );
   await videoPage.mouse.move(1200, 100);
-  assert((await viewProgress()) < 0.001, 'Остановиться у края, не перескочить на другой ракурс');
+  assert((await viewProgress()) > 0.999, 'Остановиться у края, не перескочить на другой ракурс');
   await videoPage.mouse.move(20, 100);
   await videoPage.waitForFunction(() => !document.querySelector('#menu-video').seeking);
   await videoPage.screenshot({ path: path.join(screenshots, 'menu-dragged.png') });

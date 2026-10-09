@@ -4,12 +4,28 @@
 }
 body {
   margin: 0;
-  background: var(--color-sea);
+  background: var(--color-letterbox);
   color: var(--color-ink);
   font: 15px var(--font-body);
   overflow: hidden;
 }
-body::after {
+/* Единый холст масштабируется целиком, включая закреплённые панели. */
+#game-viewport {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  width: var(--game-width);
+  height: var(--game-height);
+  transform: translate(-50%, -50%) scale(var(--game-scale, 1));
+  overflow: hidden;
+  background: var(--color-sea);
+  container: game / size;
+}
+#game-screen {
+  width: 100%;
+  height: 100%;
+}
+#game-viewport::after {
   content: '';
   position: fixed;
   inset: 0;
@@ -21,8 +37,8 @@ body::after {
   display: none !important;
 }
 canvas {
-  width: 100vw;
-  height: 100dvh;
+  width: var(--game-width);
+  height: var(--game-height);
   display: block;
   touch-action: none;
 }
@@ -499,11 +515,11 @@ dialog {
 }
 dialog {
   padding: 28px;
-  width: min(480px, calc(100% - 28px));
+  width: min(480px, calc(var(--game-width) - 28px));
 }
 dialog::backdrop {
-  background: color-mix(in srgb, var(--color-shadow) 40%, transparent);
-  backdrop-filter: blur(4px);
+  background: transparent;
+  backdrop-filter: none;
 }
 dialog h2 {
   margin-top: 0;
@@ -525,7 +541,7 @@ dialog a,
   color: var(--color-accent);
 }
 /* Адаптация меняет расположение и размер, но не тему. */
-@media (min-width: 761px) and (max-width: 1100px) {
+@container game (min-width: 761px) and (max-width: 1100px) {
   .brand {
     font-size: 26px;
   }
@@ -573,7 +589,7 @@ dialog a,
     display: none;
   }
 }
-@media (max-width: 760px) {
+@container game (max-width: 760px) {
   .header {
     top: 10px;
     left: 13px;
@@ -703,8 +719,8 @@ dialog a,
     justify-content: center;
   }
   .build {
-    width: calc((100vw - 42px) / 4);
-    flex: 0 0 calc((100vw - 42px) / 4);
+    width: calc((var(--game-width) - 42px) / 4);
+    flex: 0 0 calc((var(--game-width) - 42px) / 4);
     max-width: 145px;
     padding: 6px;
   }
@@ -782,7 +798,7 @@ dialog a,
     right: 14px;
   }
 }
-@media (max-height: 760px) and (min-width: 761px) {
+@container game (max-height: 760px) and (min-width: 761px) {
   .coach {
     top: 135px;
     padding: 18px 22px;
@@ -858,7 +874,7 @@ dialog .credits {
   border: 0;
 }
 .ending {
-  width: min(540px, calc(100% - 28px));
+  width: min(540px, calc(var(--game-width) - 28px));
   text-align: center;
   padding: 32px;
 }
@@ -889,7 +905,7 @@ dialog .credits {
   font-size: 10px;
   color: var(--color-ink-muted);
 }
-@media (max-width: 760px) {
+@container game (max-width: 760px) {
   .coach.freeplay .correspondent,
   .coach.freeplay .postmark {
     display: none;
@@ -918,7 +934,7 @@ dialog .credits {
   }
   .ending {
     padding: 20px;
-    max-height: calc(100dvh - 30px);
+    max-height: calc(var(--game-height) - 30px);
     overflow: auto;
   }
   .ending h2 {
@@ -987,15 +1003,15 @@ dialog .credits {
 .menu-shell {
   position: relative;
   z-index: 2;
-  min-height: 100dvh;
+  min-height: var(--game-height);
   padding: 40px 24px;
   display: grid;
   place-items: center;
 }
-@media (min-width: 1000px) {
+@container game (min-width: 1000px) {
   .menu-shell {
     justify-items: end;
-    padding-inline: clamp(32px, 5vw, 96px);
+    padding-inline: clamp(32px, calc(var(--game-width) * 0.05), 96px);
   }
 }
 .menu-heading {
@@ -1090,7 +1106,7 @@ dialog .credits {
   margin-top: 17px;
 }
 .settings-menu {
-  width: min(560px, calc(100% - 28px));
+  width: min(560px, calc(var(--game-width) - 28px));
 }
 .settings-menu h2 {
   margin-top: 14px;
@@ -1159,7 +1175,7 @@ dialog .credits {
   width: 100%;
 }
 dialog {
-  max-height: calc(100dvh - 28px);
+  max-height: calc(var(--game-height) - 28px);
   overflow: auto;
 }
 #world:focus {
@@ -1182,7 +1198,7 @@ body[data-hints='hide'] .coach.freeplay .mission {
   border-top: 0;
   padding-top: 0;
 }
-@media (max-width: 650px) {
+@container game (max-width: 650px) {
   .menu-shell {
     padding: 28px 18px;
   }
@@ -1194,7 +1210,7 @@ body[data-hints='hide'] .coach.freeplay .mission {
     letter-spacing: 1.5px;
   }
   .menu-heading h1 {
-    font-size: clamp(30px, 9vw, 44px);
+    font-size: clamp(30px, calc(var(--game-width) * 0.09), 44px);
     letter-spacing: -1px;
   }
   .menu-card {
@@ -1247,9 +1263,9 @@ body[data-hints='hide'] .coach.freeplay .mission {
   position: fixed;
   inset: 0;
   margin: 0;
-  width: 100%;
+  width: var(--game-width);
   max-width: none;
-  height: 100dvh;
+  height: var(--game-height);
   max-height: none;
   padding: 0;
   border: 0;
@@ -1259,7 +1275,7 @@ body[data-hints='hide'] .coach.freeplay .mission {
   overflow-x: hidden;
 }
 .intro-dialog::backdrop {
-  background: var(--intro-backdrop);
+  background: transparent;
   backdrop-filter: none;
 }
 .intro-stage {
@@ -1267,19 +1283,19 @@ body[data-hints='hide'] .coach.freeplay .mission {
   display: grid;
   grid-template-columns: minmax(220px, 0.8fr) minmax(0, 1.65fr);
   align-items: end;
-  gap: clamp(20px, 3vw, 44px);
+  gap: clamp(20px, calc(var(--game-width) * 0.03), 44px);
   overflow: clip;
   width: min(1240px, 100%);
   min-height: 100%;
   margin: 0 auto;
-  padding: 24px clamp(18px, 3vw, 42px) 0;
+  padding: 24px clamp(18px, calc(var(--game-width) * 0.03), 42px) 0;
 }
 .intro-character {
   position: fixed;
   z-index: 1;
   bottom: -2px;
-  left: max(14px, calc((100vw - 1240px) / 2 + 14px));
-  width: min(34vw, 400px);
+  left: max(14px, calc((var(--game-width) - 1240px) / 2 + 14px));
+  width: min(calc(var(--game-width) * 0.34), 400px);
   margin: 0;
   pointer-events: none;
 }
@@ -1287,7 +1303,7 @@ body[data-hints='hide'] .coach.freeplay .mission {
   display: block;
   width: 100%;
   height: auto;
-  max-height: 80dvh;
+  max-height: calc(var(--game-height) * 0.8);
   object-fit: contain;
   object-position: bottom;
   filter: drop-shadow(var(--shadow-character));
@@ -1298,7 +1314,7 @@ body[data-hints='hide'] .coach.freeplay .mission {
   isolation: isolate;
   z-index: 2;
   min-width: 0;
-  margin-bottom: clamp(26px, 4.5vh, 54px);
+  margin-bottom: clamp(26px, calc(var(--game-height) * 0.045), 54px);
   filter: drop-shadow(var(--shadow-letter));
   perspective: 1200px;
 }
@@ -1450,7 +1466,7 @@ body[data-hints='hide'] .coach.freeplay .mission {
   font-size: 12px;
   color: var(--color-accent);
 }
-@media (max-width: 650px) {
+@container game (max-width: 650px) {
   .intro-stage {
     display: flex;
     align-items: flex-end;
@@ -1458,11 +1474,11 @@ body[data-hints='hide'] .coach.freeplay .mission {
   }
   .intro-character {
     left: 2px;
-    width: min(57vw, 235px);
+    width: min(calc(var(--game-width) * 0.57), 235px);
   }
   .intro-letter {
     width: 100%;
-    margin-bottom: min(57vw, 235px);
+    margin-bottom: min(calc(var(--game-width) * 0.57), 235px);
   }
   .intro-sheet {
     padding: 18px 16px;
@@ -1498,7 +1514,7 @@ body[data-hints='hide'] .coach.freeplay .mission {
     padding-inline: 5px;
   }
 }
-@media (max-height: 500px) and (min-width: 651px) {
+@container game (max-height: 500px) and (min-width: 651px) {
   .intro-stage {
     padding-top: 15px;
   }
@@ -1522,9 +1538,9 @@ body[data-hints='hide'] .coach.freeplay .mission {
 
 /* Изолированная мастерская: каталог остаётся доступен рядом с живым 3D. */
 dialog.objects-dialog {
-  width: min(1440px, 96vw);
+  width: min(1440px, calc(var(--game-width) * 0.96));
   max-width: none;
-  height: 94dvh;
+  height: calc(var(--game-height) * 0.94);
   max-height: none;
   padding: 24px;
   overflow: hidden;
@@ -1651,11 +1667,11 @@ dialog.objects-dialog {
   background: var(--color-paper-shade);
   border-radius: var(--radius-paper);
 }
-@media (max-width: 760px) {
+@container game (max-width: 760px) {
   dialog.objects-dialog {
     padding: 12px;
-    width: 100vw;
-    height: 100dvh;
+    width: var(--game-width);
+    height: var(--game-height);
     border: 0;
     border-radius: 0;
   }
@@ -1731,4 +1747,22 @@ dialog.objects-dialog {
   .object-stage {
     min-height: 100px;
   }
+}
+
+/* showModal() выносит диалог в верхний слой браузера: масштаб задаём ему отдельно.
+   Затемнение остаётся внутри холста, поэтому чёрные поля не меняют цвет. */
+dialog:modal {
+  position: fixed;
+  inset: 50% auto auto 50%;
+  margin: 0;
+  transform: translate(-50%, -50%) scale(var(--game-scale, 1));
+  max-width: var(--game-width);
+}
+#game-viewport:has(dialog[open])::after {
+  background: color-mix(in srgb, var(--color-shadow) 40%, transparent);
+  backdrop-filter: blur(4px);
+}
+#game-viewport:has(#intro-dialog[open])::after {
+  background: var(--intro-backdrop);
+  backdrop-filter: none;
 }

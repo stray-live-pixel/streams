@@ -101,13 +101,16 @@ export function createMenuBackground(
     'pointermove',
     (event) => {
       if (!drag || event.pointerId !== drag.pointerId) return;
-      // Обе половины видео показывают ту же дугу. Перетаскивание всегда движет
-      // ракурс в сторону мыши и останавливается у края, а не прыгает на другой вид.
+      // Обе половины видео показывают ту же дугу. Инверсия жеста даёт ощущение
+      // вращения самого острова; у края ракурс останавливается без скачка.
       const progress = Math.max(
         0,
-        Math.min(1, drag.progress - (event.clientX - drag.x) / surface.clientWidth),
+        Math.min(
+          1,
+          drag.progress + (event.clientX - drag.x) / surface.getBoundingClientRect().width,
+        ),
       );
-      if (event.clientX !== drag.lastX) drag.direction = event.clientX < drag.lastX ? 1 : -1;
+      if (event.clientX !== drag.lastX) drag.direction = event.clientX > drag.lastX ? 1 : -1;
       drag.lastX = event.clientX;
       const time = (video.duration / (2 * Math.PI)) * Math.acos(1 - 2 * progress);
       // Выбор половины сохраняет направление последнего жеста после пяти секунд паузы.
