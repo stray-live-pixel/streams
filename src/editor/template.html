@@ -105,7 +105,7 @@
             <canvas
               id="object-canvas"
               tabindex="0"
-              aria-label="3D-превью: выберите деталь и двигайте оси; перетаскивайте фон для вращения камеры"
+              aria-label="3D-превью: WASD — полёт, Q/E — вниз/вверх, Shift — быстрее, правая кнопка мыши — обзор; левая — выбор деталей и орбита"
             ></canvas>
             <div id="object-bounds" class="bounds-status" role="status"></div>
             <div class="stage-label">ПЕРСПЕКТИВА <span>·</span> КЛЕТКА 1 × 1 · ЦЕНТР (0, 0)</div>
@@ -141,7 +141,10 @@
             <p id="object-error" role="alert"></p>
           </div>
           <div class="object-preview-footer">
-            <span>Мышь — орбита · Колесо — приближение</span>
+            <span
+              title="Щёлкните по сцене. Q/E — вниз/вверх, левая кнопка — орбита, колесо — приближение."
+              >WASD — полёт · ПКМ — обзор · Shift — быстрее</span
+            >
             <div class="object-pagination">
               <button
                 id="object-previous"

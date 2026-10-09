@@ -68,6 +68,46 @@ try {
         ctx.getImageData(0, 0, 48, 48).data.filter((v, i) => i % 4 === 3 && v > 10).length > 15
       );
     });
+  // Камера перемещается в настоящем WebGL, не меняя композицию и не захватывая ввод UI.
+  await visible();
+  const frame = () => page.locator('#object-canvas').evaluate((canvas) => canvas.toDataURL());
+  await page.locator('#object-canvas').focus();
+  const startFrame = await frame();
+  await page.keyboard.down('w');
+  await page.waitForTimeout(300);
+  await page.keyboard.up('w');
+  await page.waitForTimeout(100);
+  const movedFrame = await frame();
+  assert.notEqual(movedFrame, startFrame, 'W must move the camera');
+  await page.waitForTimeout(150);
+  assert.equal(await frame(), movedFrame, 'Key release must stop movement');
+  await page.locator('#object-canvas').dispatchEvent('keydown', { code: 'KeyW', key: 'ц' });
+  await page.waitForTimeout(150);
+  await page.locator('#object-canvas').dispatchEvent('keyup', { code: 'KeyW', key: 'ц' });
+  assert.notEqual(await frame(), movedFrame, 'Physical WASD must work with Russian layout');
+  await page.keyboard.down('d');
+  await page.waitForTimeout(100);
+  await page.locator('#objects-search').focus();
+  await page.waitForTimeout(100);
+  const blurredFrame = await frame();
+  await page.waitForTimeout(150);
+  assert.equal(await frame(), blurredFrame, 'Input focus must stop a held key');
+  await page.keyboard.up('d');
+  await page.keyboard.type('wasd');
+  assert.equal(await page.inputValue('#objects-search'), 'wasd');
+  await page.fill('#objects-search', '');
+  await visible();
+  assert.equal(await page.locator('#object-save').isDisabled(), true);
+  const canvasBox = await page.locator('#object-canvas').boundingBox();
+  await page.mouse.move(canvasBox.x + 50, canvasBox.y + 120);
+  const beforeLook = await frame();
+  await page.mouse.down({ button: 'right' });
+  await page.mouse.move(canvasBox.x + 130, canvasBox.y + 140, { steps: 8 });
+  await page.mouse.up({ button: 'right' });
+  await page.waitForTimeout(100);
+  assert.notEqual(await frame(), beforeLook, 'Right-drag must turn the view');
+  assert.equal(await page.locator('#object-save').isDisabled(), true);
+  await page.click('#object-reset');
   for (const id of Object.keys(library)) {
     await page.locator(`[data-object="${id}"]`).evaluate((button) => button.click());
     assert.equal(await page.locator('#object-error').textContent(), '', id);
@@ -177,7 +217,7 @@ try {
   assert.deepEqual(errors, []);
   assert.deepEqual(external, []);
   console.log(
-    'Editor: 239 assets, bounded game cell, gizmos, transforms, history, direct file save, main commit, reload, no browser storage and local API access PASS',
+    'Editor: camera flight and focus, 239 assets, bounded game cell, gizmos, transforms, history, direct file save, main commit, reload, no browser storage and local API access PASS',
   );
   console.log(`Screenshots: ${screenshots}`);
 } finally {

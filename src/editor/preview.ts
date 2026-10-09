@@ -6,6 +6,7 @@ import { copyParts, editableObjectIds, objectTemplate, type ObjectPart } from '.
 import { Engine } from '@babylonjs/core/Engines/engine.js';
 import { Scene } from '@babylonjs/core/scene.js';
 import { ArcRotateCamera } from '@babylonjs/core/Cameras/arcRotateCamera.js';
+import { ArcRotateCameraPointersInput } from '@babylonjs/core/Cameras/Inputs/arcRotateCameraPointersInput.js';
 import { Mesh } from '@babylonjs/core/Meshes/mesh.js';
 import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial.js';
 import { Vector3 } from '@babylonjs/core/Maths/math.vector.js';
@@ -22,6 +23,7 @@ import {
 } from '../scene/index.js';
 import { createPerson, createSmoke, lifeColors } from '../scene/index.js';
 import library from '../../.generated/library-models.json';
+import { bindEditorNavigation } from './navigation.js';
 
 export interface PreviewObject {
   id: string;
@@ -137,6 +139,8 @@ export function createObjectPreview(canvas: HTMLCanvasElement) {
   );
   camera.attachControl(canvas, true);
   camera.inputs.removeByType('ArcRotateCameraKeyboardMoveInput');
+  const pointerInput = camera.inputs.attached.pointers;
+  if (pointerInput instanceof ArcRotateCameraPointersInput) pointerInput.buttons = [0, 1];
   camera.panningSensibility = 0;
   camera.wheelDeltaPercentage = 0.01;
   camera.pinchDeltaPercentage = 0.01;
@@ -191,7 +195,12 @@ export function createObjectPreview(canvas: HTMLCanvasElement) {
   }
   const observed = new WeakSet<object>();
   scene.onPointerObservable.add((event) => {
-    if (event.type !== PointerEventTypes.POINTERTAP || gizmos.isHovered || gizmos.isDragging)
+    if (
+      event.type !== PointerEventTypes.POINTERTAP ||
+      event.event.button !== 0 ||
+      gizmos.isHovered ||
+      gizmos.isDragging
+    )
       return;
     const mesh = event.pickInfo?.pickedMesh;
     const id = [...meshes].find(([, value]) => value === mesh)?.[0];
@@ -203,6 +212,10 @@ export function createObjectPreview(canvas: HTMLCanvasElement) {
   let radius = 4;
   let extent = 1;
   let target = Vector3.Zero();
+  const unbindNavigation = bindEditorNavigation(canvas, camera, {
+    canNavigate: () => !gizmos.isDragging,
+    speed: () => Math.max(0.25, extent) * 1.5,
+  });
   const resize = new ResizeObserver(() => {
     engine.resize();
     fitRadius();
@@ -364,6 +377,7 @@ export function createObjectPreview(canvas: HTMLCanvasElement) {
       measure(true, grid ? 0.7 : 0.001);
     },
     dispose() {
+      unbindNavigation();
       resize.disconnect();
       gizmos.dispose();
       scene.dispose();
