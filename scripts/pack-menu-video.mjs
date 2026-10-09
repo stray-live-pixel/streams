@@ -7,11 +7,10 @@ import { fileURLToPath } from 'node:url';
 
 // Подготовка ассета вручную; обычная сборка игры не требует FFmpeg.
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-// Третий исходник уже содержит целый круг. Склейка всех трёх меняла направление камеры.
-const source = path.join(root, 'assets/art/orbit/segment-03-source.mp4');
+// В этом участке первого ролика причал и постройки сохраняются. Полный круг менял геометрию.
+const source = path.join(root, 'assets/art/orbit/segment-01-source.mp4');
 await access(source);
 const temporary = await mkdtemp(path.join(tmpdir(), 'quiet-harbor-pack-'));
-const firstFrame = path.join(temporary, 'first.png');
 const interpolated = path.join(temporary, 'interpolated.mp4');
 const output = path.join(temporary, 'loop.mp4');
 // Провайдер слегка меняет пропорции между роликами: обрезаем пару краевых пикселей, не растягиваем.
@@ -27,13 +26,16 @@ function ffmpeg(args) {
 }
 try {
   ffmpeg([
+    '-ss',
+    '1',
     '-i',
     source,
     '-vf',
     frameSize +
-      ',fps=30,trim=end_frame=450,setpts=N/(30*TB),' +
+      // Растягиваем пять секунд исходника на 7,5 с с замедлением у обоих концов.
+      ',fps=30,trim=end_frame=150,setpts=acos(1-2*N/149)*7.5/(PI*TB),' +
       'minterpolate=fps=48:mi_mode=mci:mc_mode=obmc:me_mode=bidir,' +
-      'setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop=48,trim=end_frame=720,format=yuv420p',
+      'tpad=stop_mode=clone:stop=48,trim=end_frame=360,setpts=N/(48*TB),format=yuv420p',
     '-an',
     '-r',
     '48',
@@ -44,29 +46,19 @@ try {
     '-crf',
     '23',
     '-frames:v',
-    '720',
+    '360',
     '-movflags',
     '+faststart',
     interpolated,
   ]);
-  // Замыкаем после интерполяции, чтобы её крайние кадры не оставили скачок на повторе.
-  ffmpeg(['-i', interpolated, '-frames:v', '1', '-update', '1', firstFrame]);
+  // Обратная половина использует те же кадры. На стыках объекты не растворяются.
   ffmpeg([
     '-i',
     interpolated,
-    '-loop',
-    '1',
-    '-framerate',
-    '48',
-    '-i',
-    firstFrame,
-    '-filter_complex_threads',
-    '1',
     '-filter_complex',
-    '[0:v]settb=AVTB,setpts=PTS-STARTPTS[tour];' +
-      '[1:v]setsar=1,trim=duration=1,settb=AVTB,setpts=PTS-STARTPTS[start];' +
-      '[tour][start]xfade=transition=fade:duration=0.4:offset=14.6,' +
-      'fps=48,trim=end_frame=720,format=yuv420p[out]',
+    '[0:v]split[forward][back];' +
+      '[forward]setpts=PTS-STARTPTS[f];[back]reverse,setpts=PTS-STARTPTS[b];' +
+      '[f][b]concat=n=2:v=1:a=0,format=yuv420p[out]',
     '-map',
     '[out]',
     '-an',
@@ -121,7 +113,8 @@ try {
       source: `orbit/segment-0${number}-source.mp4`,
       metadata: `orbit/segment-0${number}.json`,
     })),
-    active_source: 'orbit/segment-03-source.mp4',
+    active_source: 'orbit/segment-01-source.mp4',
+    source_range_seconds: [1, 6],
     original_generation: 'main-menu-original.json',
     playback: {
       file: 'main-menu-loop.mp4',
@@ -131,10 +124,11 @@ try {
       ...media,
       playback_rate: 0.5,
       presentation_duration: 30,
+      motion: 'ping-pong',
       loop_processing:
-        'One continuous 15-second orbit from segment 03, without segments 01 and 02; ' +
-        'final 0.4 seconds dissolve to its own first frame. Keyframes every 0.5 seconds for scrubbing. ' +
-        'Motion interpolation to 48 fps, no time stretching. Browser playback at 0.5 gives 24 presented fps.',
+        'Stable seconds 1–6 of segment 01, eased to 7.5 seconds and mirrored in reverse. ' +
+        'No crossfade, no mixing of different island geometry. Keyframes every 0.5 seconds for scrubbing. ' +
+        '48 fps with browser playback at 0.5 gives 24 presented fps and a 30-second round trip.',
     },
   };
   await rename(output, path.join(root, 'assets/art/main-menu-loop.mp4'));

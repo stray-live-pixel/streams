@@ -1,4 +1,4 @@
-/** Один видеотаймлайн служит и автоматическим облётом, и ручным обзором острова. */
+/** Один стабильный участок служит и плавным пролётом, и ручным обзором острова. */
 export function createMenuBackground(
   surface: HTMLElement,
   video: HTMLVideoElement,
@@ -12,7 +12,9 @@ export function createMenuBackground(
   let active = true;
   let resumeTimer: ReturnType<typeof setTimeout> | undefined;
   let resumeAt = 0;
-  let drag: { pointerId: number; x: number; time: number } | undefined;
+  let drag:
+    | { pointerId: number; x: number; lastX: number; progress: number; direction: number }
+    | undefined;
 
   video.muted = true;
   // 48 кадров в файле дают 24 кадра/с при замедлении в браузере.
@@ -61,6 +63,11 @@ export function createMenuBackground(
     resumeAt = Date.now() + idleDelay;
     update();
   }
+  function viewProgress() {
+    const half = video.duration / 2;
+    const time = Math.min(video.currentTime, video.duration - video.currentTime);
+    return (1 - Math.cos((Math.PI * time) / half)) / 2;
+  }
   surface.addEventListener(
     'pointerdown',
     (event) => {
@@ -76,7 +83,13 @@ export function createMenuBackground(
       )
         return;
       event.preventDefault();
-      drag = { pointerId: event.pointerId, x: event.clientX, time: video.currentTime };
+      drag = {
+        pointerId: event.pointerId,
+        x: event.clientX,
+        lastX: event.clientX,
+        progress: viewProgress(),
+        direction: video.currentTime < video.duration / 2 ? 1 : -1,
+      };
       clearTimer();
       video.pause();
       surface.setPointerCapture(event.pointerId);
@@ -88,9 +101,20 @@ export function createMenuBackground(
     'pointermove',
     (event) => {
       if (!drag || event.pointerId !== drag.pointerId) return;
-      // Перетаскиваем пейзаж: ширина экрана соответствует одному полному кругу.
-      const time = drag.time - ((event.clientX - drag.x) / surface.clientWidth) * video.duration;
-      video.currentTime = ((time % video.duration) + video.duration) % video.duration;
+      // Обе половины видео показывают ту же дугу. Перетаскивание всегда движет
+      // ракурс в сторону мыши и останавливается у края, а не прыгает на другой вид.
+      const progress = Math.max(
+        0,
+        Math.min(1, drag.progress - (event.clientX - drag.x) / surface.clientWidth),
+      );
+      if (event.clientX !== drag.lastX) drag.direction = event.clientX < drag.lastX ? 1 : -1;
+      drag.lastX = event.clientX;
+      const time = (video.duration / (2 * Math.PI)) * Math.acos(1 - 2 * progress);
+      // Выбор половины сохраняет направление последнего жеста после пяти секунд паузы.
+      video.currentTime = Math.min(
+        video.duration - 0.001,
+        drag.direction > 0 ? time : video.duration - time,
+      );
     },
     { signal },
   );

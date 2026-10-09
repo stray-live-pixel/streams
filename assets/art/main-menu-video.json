@@ -14,11 +14,15 @@
       "metadata": "orbit/segment-03.json"
     }
   ],
-  "active_source": "orbit/segment-03-source.mp4",
+  "active_source": "orbit/segment-01-source.mp4",
+  "source_range_seconds": [
+    1,
+    6
+  ],
   "original_generation": "main-menu-original.json",
   "playback": {
     "file": "main-menu-loop.mp4",
-    "sha256": "69ce9ec47196fc074ec8a627da9b719193b2cae2a2e57ea667f163b714384abb",
+    "sha256": "977c6e982f5b3c30ff9e98d6684faf91fa04c86c95f7e1f18cc24083b14d25e3",
     "programs": [],
     "stream_groups": [],
     "streams": [
@@ -33,10 +37,11 @@
     ],
     "format": {
       "duration": "15.000000",
-      "size": "3933944"
+      "size": "4033019"
     },
     "playback_rate": 0.5,
     "presentation_duration": 30,
-    "loop_processing": "One continuous 15-second orbit from segment 03, without segments 01 and 02; final 0.4 seconds dissolve to its own first frame. Keyframes every 0.5 seconds for scrubbing. Motion interpolation to 48 fps, no time stretching. Browser playback at 0.5 gives 24 presented fps."
+    "motion": "ping-pong",
+    "loop_processing": "Stable seconds 1–6 of segment 01, eased to 7.5 seconds and mirrored in reverse. No crossfade, no mixing of different island geometry. Keyframes every 0.5 seconds for scrubbing. 48 fps with browser playback at 0.5 gives 24 presented fps and a 30-second round trip."
   }
 }

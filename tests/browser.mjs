@@ -277,22 +277,36 @@ try {
     const background = document.querySelector('#menu-video');
     return !background.paused && background.currentTime < 1;
   });
-  // Тянем открытый фон, а не меню: оба направления и переход через границу круга.
+  // Обе половины показывают одну дугу: жест сохраняет направление и не перескакивает край.
   await video.evaluate((v) => {
-    v.currentTime = 6;
+    v.currentTime = v.duration / 4;
   });
+  const viewProgress = () =>
+    video.evaluate((v) => {
+      const time = Math.min(v.currentTime, v.duration - v.currentTime);
+      return (1 - Math.cos((2 * Math.PI * time) / v.duration)) / 2;
+    });
   await videoPage.mouse.move(50, 100);
   await videoPage.mouse.down();
-  const dragStart = await video.evaluate((v) => v.currentTime);
+  const dragStart = await viewProgress();
   const viewportWidth = await videoPage.locator('#main-menu').evaluate((el) => el.clientWidth);
-  const expectedTime = (x) => (((dragStart - ((x - 50) / viewportWidth) * 15) % 15) + 15) % 15;
+  const expectedProgress = (x) => Math.max(0, Math.min(1, dragStart - (x - 50) / viewportWidth));
   await videoPage.mouse.move(250, 100);
   assert.equal(await video.evaluate((v) => v.paused), true);
-  assert(Math.abs((await video.evaluate((v) => v.currentTime)) - expectedTime(250)) < 0.1);
+  assert(Math.abs((await viewProgress()) - expectedProgress(250)) < 0.01);
+  assert(
+    await video.evaluate((v) => v.currentTime > v.duration / 2),
+    'Продолжить в обратной половине',
+  );
   await videoPage.mouse.move(20, 100);
-  assert(Math.abs((await video.evaluate((v) => v.currentTime)) - expectedTime(20)) < 0.1);
-  await videoPage.mouse.move(650, 100);
-  assert(Math.abs((await video.evaluate((v) => v.currentTime)) - expectedTime(650)) < 0.1);
+  assert(Math.abs((await viewProgress()) - expectedProgress(20)) < 0.01);
+  assert(
+    await video.evaluate((v) => v.currentTime < v.duration / 2),
+    'Продолжить в прямой половине',
+  );
+  await videoPage.mouse.move(1200, 100);
+  assert((await viewProgress()) < 0.001, 'Остановиться у края, не перескочить на другой ракурс');
+  await videoPage.mouse.move(20, 100);
   await videoPage.waitForFunction(() => !document.querySelector('#menu-video').seeking);
   await videoPage.screenshot({ path: path.join(screenshots, 'menu-dragged.png') });
   await videoPage.waitForTimeout(5100);
@@ -326,7 +340,7 @@ try {
   });
   await videoContext.close();
   console.log(
-    'Menu video: 15s orbit at half speed, two-way scrubbing, wrap, 5s idle, pause, settings and reduced motion PASS',
+    'Menu video: stable 15s sweep, clamped two-way scrubbing, playback direction, 5s idle, pause, settings and reduced motion PASS',
   );
 } finally {
   await browser.close();
