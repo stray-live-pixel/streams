@@ -22,6 +22,20 @@
         alt=""
         fetchpriority="high"
       />
+      <video
+        id="menu-video"
+        class="menu-background"
+        width="1080"
+        height="720"
+        poster="__MENU_BACKGROUND__"
+        muted
+        loop
+        playsinline
+        preload="metadata"
+        aria-hidden="true"
+      >
+        <source src="__MENU_VIDEO__" type="video/mp4" />
+      </video>
       <div class="menu-shell">
         <section class="menu-card" aria-labelledby="menu-greeting">
           <header class="menu-heading">
@@ -135,7 +149,10 @@
         </select>
       </label>
       <label class="setting-row" for="setting-animation">
-        <span><b>Анимация города</b><small>Прогулки жителей, дым и блики на воде.</small></span>
+        <span
+          ><b>Анимация окружения</b
+          ><small>Прогулки жителей, дым, вода и живой фон меню.</small></span
+        >
         <input type="checkbox" id="setting-animation" />
       </label>
       <label class="setting-row" for="setting-hints">

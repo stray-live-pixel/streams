@@ -30,7 +30,7 @@ try {
     assert.equal(await page.evaluate(() => cityDebug.renderer), 'not-started');
     assert.equal(await page.locator('#scene').count(), 0);
     assert.equal(await page.locator('#game-screen').isVisible(), false);
-    const background = page.locator('.menu-background');
+    const background = page.locator('img.menu-background');
     await background.evaluate((image) => image.decode());
     assert.equal(await background.evaluate((image) => image.naturalWidth), 1536);
     assert.match(await background.getAttribute('src'), /^data:image\/webp;base64,/);
@@ -248,6 +248,49 @@ try {
     );
     await context.close();
   }
+  // Проверяем реальный декодер, переход через конец ролика и экономию ресурсов вне меню.
+  const videoContext = await browser.newContext({ offline: true, reducedMotion: 'no-preference' });
+  const videoPage = await videoContext.newPage();
+  await videoPage.goto(pathToFileURL(path.resolve('dist/index.html')).href);
+  const video = videoPage.locator('#menu-video');
+  const waitForPlayback = () =>
+    videoPage.waitForFunction(() => {
+      const background = document.querySelector('#menu-video');
+      return !background.paused && background.currentTime > 0.1;
+    });
+  await waitForPlayback();
+  const media = await video.evaluate((v) => ({
+    duration: v.duration,
+    muted: v.muted,
+    loop: v.loop,
+  }));
+  assert(Math.abs(media.duration - 15) < 0.1);
+  assert.equal(media.muted, true);
+  assert.equal(media.loop, true);
+  await video.evaluate((v) => {
+    v.currentTime = 14.8;
+  });
+  await videoPage.waitForFunction(() => {
+    const background = document.querySelector('#menu-video');
+    return !background.paused && background.currentTime < 1;
+  });
+  await videoPage.click('#menu-start');
+  assert.equal(await video.evaluate((v) => v.paused), true);
+  await videoPage.keyboard.press('Escape');
+  await videoPage.click('#main-menu-button');
+  await waitForPlayback();
+  await videoPage.click('#menu-settings');
+  await videoPage.uncheck('#setting-animation');
+  assert.equal(await video.evaluate((v) => v.paused && v.hidden), true);
+  await videoPage.check('#setting-animation');
+  await waitForPlayback();
+  await videoPage.emulateMedia({ reducedMotion: 'reduce' });
+  await videoPage.waitForFunction(() => {
+    const background = document.querySelector('#menu-video');
+    return background.paused && background.hidden;
+  });
+  await videoContext.close();
+  console.log('Menu video: decoding, 15s loop, mute, pause, settings and reduced motion PASS');
 } finally {
   await browser.close();
 }

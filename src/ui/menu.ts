@@ -22,6 +22,22 @@ export function createMenu(document: Document, settings: GameSettings, actions: 
     element(id).addEventListener('click', action, { signal });
   let inGame = false;
   let settingsOrigin: 'main' | 'pause' = 'main';
+  let animateBackground = settings.animateCity;
+  const video = element<HTMLVideoElement>('menu-video');
+  const motionPreference = window.matchMedia('(prefers-reduced-motion: reduce)');
+  video.muted = true;
+
+  function updateBackground() {
+    const allowMotion = animateBackground && !motionPreference.matches;
+    video.hidden = !allowMotion || video.error !== null;
+    if (allowMotion && !inGame && !document.hidden && !video.error) {
+      // При запрете автозапуска браузером остаётся статичный постер гавани.
+      void video.play().catch(() => {});
+    } else video.pause();
+  }
+  motionPreference.addEventListener('change', updateBackground, { signal });
+  document.addEventListener('visibilitychange', updateBackground, { signal });
+  video.addEventListener('error', updateBackground, { signal });
 
   function closeMenus() {
     for (const id of ['pause-dialog', 'settings-dialog', 'reset-dialog']) dialog(id).close();
@@ -35,6 +51,7 @@ export function createMenu(document: Document, settings: GameSettings, actions: 
     inGame = true;
     element('main-menu').hidden = true;
     element('game-screen').hidden = false;
+    updateBackground();
     resume();
   }
   function openPause() {
@@ -63,6 +80,7 @@ export function createMenu(document: Document, settings: GameSettings, actions: 
     actions.pause(true);
     element('game-screen').hidden = true;
     element('main-menu').hidden = false;
+    updateBackground();
     element('menu-start').focus();
   });
   listen('menu-settings', () => openSettings('main'));
@@ -119,10 +137,13 @@ export function createMenu(document: Document, settings: GameSettings, actions: 
         };
         element('settings-status').textContent =
           actions.settings(next) ?? 'Настройки сохранены и применены.';
+        animateBackground = next.animateCity;
+        updateBackground();
       },
       { signal },
     );
   }
+  updateBackground();
   return {
     get inGame() {
       return inGame;
@@ -142,6 +163,7 @@ export function createMenu(document: Document, settings: GameSettings, actions: 
       element('menu-status').textContent = message;
     },
     dispose() {
+      video.pause();
       controller.abort();
     },
   };
