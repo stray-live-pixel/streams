@@ -20,6 +20,9 @@ const initial = () => ({
 });
 export type CameraState = ReturnType<typeof initial>;
 const clamp = (n: number, min: number, max: number) => Math.max(min, Math.min(max, n));
+// Почти вертикальный взгляд нужен для солнца в зените; небольшой запас
+// исключает вырожденное направление up у камеры.
+const minPitch = -Math.PI / 2 + 0.001;
 
 /** Независимая от FPS орбитальная камера. Цель движения отделена от текущего ракурса. */
 export function createCameraMotion() {
@@ -32,7 +35,11 @@ export function createCameraMotion() {
       Number(actions.has(positive)) - Number(actions.has(negative));
     const speed = actions.has('boost') ? 2 : 1;
     target.yaw += axis('right', 'left') * 1.35 * seconds * speed;
-    target.pitch = clamp(target.pitch + axis('tiltUp', 'tiltDown') * seconds * speed, -1.4, 1.2);
+    target.pitch = clamp(
+      target.pitch + axis('tiltUp', 'tiltDown') * seconds * speed,
+      minPitch,
+      1.2,
+    );
     target.zoom = clamp(
       target.zoom * Math.exp(axis('zoomIn', 'zoomOut') * 1.2 * seconds * speed),
       0.55,
@@ -75,11 +82,11 @@ export function createCameraMotion() {
       inputs.clear();
       target.yaw =
         current.yaw + Math.atan2(Math.sin(yaw - current.yaw), Math.cos(yaw - current.yaw));
-      target.pitch = clamp(pitch, -1.4, 1.2);
+      target.pitch = clamp(pitch, minPitch, 1.2);
     },
     orbit(dx: number, dy: number) {
       target.yaw += dx * 0.006;
-      target.pitch = clamp(target.pitch + dy * 0.005, -1.4, 1.2);
+      target.pitch = clamp(target.pitch + dy * 0.005, minPitch, 1.2);
     },
     pan(dx: number, dy: number, pixelsPerUnit: number) {
       // Панорамирование меняет центр орбиты: после перемещения вращаемся вокруг нового места.

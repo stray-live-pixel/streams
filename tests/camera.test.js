@@ -65,8 +65,19 @@ test('наклон и масштаб ограничены; сброс плавн
   camera.orbit(0, -1000);
   camera.zoom(-100);
   advance(camera, 2);
-  close(camera.state.pitch, -1.4);
+  close(camera.state.pitch, -Math.PI / 2 + 0.001);
   close(camera.state.zoom, 0.55);
+});
+
+test('камера видит солнце в зените без вырожденного вертикального взгляда', () => {
+  const camera = createCameraMotion();
+  camera.look(0, -Math.PI / 2);
+  advance(camera, 2);
+  assert(camera.state.pitch > -Math.PI / 2);
+  assert(
+    Math.cos(camera.state.pitch) * 170 < 0.2,
+    'Солнце в 170 единицах остаётся около центра кадра',
+  );
 });
 
 test('WASD следуют ракурсу; диагональ не быстрее, колесо не вызывает мгновенный скачок', () => {

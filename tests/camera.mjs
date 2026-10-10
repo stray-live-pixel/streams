@@ -54,6 +54,11 @@ try {
   await page.waitForTimeout(650);
   for (const key of Object.keys(initial))
     assert(Math.abs((await state())[key] - initial[key]) < 0.002);
+  await hold('ArrowDown', 2600);
+  await page.waitForTimeout(650);
+  assert((await state()).pitch < -1.55, 'Обзор достигает зенита');
+  await page.keyboard.press('Home');
+  await page.waitForTimeout(650);
 
   const left = await page.locator('#rotate-left').boundingBox();
   await page.mouse.move(left.x + left.width / 2, left.y + left.height / 2);
