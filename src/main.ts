@@ -1,6 +1,6 @@
 import type { Command } from './domain/index.js';
 import type { CityScene } from './scene/index.js';
-import { createGame, MAP_SIZE, isLand, shoreDirection } from './domain/index.js';
+import { createGame, createWorld } from './domain/index.js';
 import { createStorage } from './persistence/index.js';
 import { createUI, createMenu, fitGameViewport } from './ui/index.js';
 import { createScene } from './scene/index.js';
@@ -11,17 +11,29 @@ import { objectFootprints } from './objects/index.js';
 const disposeViewport = fitGameViewport(document.getElementById('game-viewport')!);
 const storage = createStorage(() => window.localStorage);
 const loaded = storage.load();
-const game = createGame(loaded.state, objectFootprints());
+const game = createGame(
+  loaded.state,
+  objectFootprints(),
+  () => crypto.getRandomValues(new Uint32Array(1))[0] || 1,
+);
 let settings = storage.loadSettings();
 let hasGame = loaded.state !== null;
 let scene: CityScene | undefined;
 let disposeInput: (() => void) | undefined;
 let paused = true;
 const canvas = document.getElementById('world') as HTMLCanvasElement;
-const ui = createUI(document, dispatch, (action, pressed) => {
-  if (action === 'home') scene?.resetCamera();
-  else scene?.setCameraInput(`toolbar:${action}`, pressed ? action : null);
-});
+const ui = createUI(
+  document,
+  dispatch,
+  (action, pressed) => {
+    if (action === 'home') scene?.resetCamera();
+    else scene?.setCameraInput(`toolbar:${action}`, pressed ? action : null);
+  },
+  (action) => {
+    if (action === 'time') scene?.cycleTime();
+    else scene?.lookAtSky();
+  },
+);
 const menu = createMenu(document, settings, {
   start() {
     if (!ensureScene()) return false;
@@ -84,9 +96,10 @@ function ensureScene() {
   try {
     scene = createScene({
       canvas,
-      board: { size: MAP_SIZE, isLand, shoreDirection },
+      board: createWorld(game.snapshot().islandSeed),
       onArrivalFinished: () => dispatch({ type: 'arrival-finished' }),
       onError: (text) => ui.notify(text),
+      onTimeChanged: (label) => ui.setTimeLabel(label),
     });
     applySettings();
     scene.setModel(game.snapshot());
@@ -124,6 +137,9 @@ window.cityDebug = Object.freeze({
   get paused() {
     return paused;
   },
+  get environment() {
+    return scene?.environmentState ?? null;
+  },
   get camera() {
     return scene?.cameraState ?? null;
   },
@@ -155,6 +171,7 @@ declare global {
       readonly renderer: string;
       readonly paused: boolean;
       readonly camera: CityScene['cameraState'] | null;
+      readonly environment: CityScene['environmentState'] | null;
       projectTile(x: number, z: number): { x: number; y: number };
     };
   }

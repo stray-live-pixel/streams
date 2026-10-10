@@ -5,15 +5,16 @@
   --game-width: 1440px;
   --game-height: 810px;
   --color-letterbox: #000;
-  --color-sea: #8eb8b7;
+  --color-sea: #63c1bb;
   --color-ink: #344c40;
+  --color-scene-ink: var(--color-ink);
   --color-ink-muted: #74694e;
-  --color-paper: #f7efd9;
-  --color-paper-light: #fff9e9;
-  --color-paper-shade: #e8d9b5;
+  --color-paper: #fff1d3;
+  --color-paper-light: #fff9e5;
+  --color-paper-shade: #ecdaac;
   --color-border: #b29c70;
-  --color-accent: #aa503c;
-  --color-primary: #496951;
+  --color-accent: #b95738;
+  --color-primary: #52764b;
   --color-primary-hover: #38573f;
   --color-gold: #e8bf70;
   --color-gold-border: #bb8c47;
@@ -70,4 +71,8 @@
       color-mix(in srgb, var(--color-border) 3%, transparent) 3px 4px
     ),
     radial-gradient(ellipse at 15% 10%, var(--color-paper-light), var(--color-paper));
+}
+
+#game-screen[data-dark='true'] {
+  --color-scene-ink: var(--color-paper);
 }

@@ -11,7 +11,7 @@ export function harborLayout(port: Tile, board: Board) {
     z: port.z + 0.5 + dz * outward - dx * side,
   });
   let distance = 1.8;
-  for (; distance < 3.6; distance += 0.3) {
+  for (; distance < 6; distance += 0.3) {
     const water = [-1.5, 0, 1.5].every((side) =>
       [-0.9, 0, 0.9].every((depth) => {
         const p = point(side, distance + depth);

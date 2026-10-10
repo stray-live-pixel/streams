@@ -11,7 +11,7 @@
     "build": "node scripts/build.mjs",
     "dev": "node scripts/dev.mjs",
     "test": "tsx --test tests/*.test.js",
-    "test:e2e": "node tests/viewport.mjs && node tests/browser.mjs && node tests/camera.mjs && node tests/intro.mjs && node --import tsx tests/editor.mjs && node --import tsx tests/footprint-browser.mjs",
+    "test:e2e": "node tests/viewport.mjs && node tests/browser.mjs && node tests/camera.mjs && node tests/intro.mjs && node --import tsx tests/editor.mjs && node --import tsx tests/footprint-browser.mjs && node tests/island-browser.mjs && node tests/environment-browser.mjs",
     "format": "prettier --write 'src/**/*.{ts,css,html}' 'scripts/*.mjs' 'tests/*.{js,mjs}'",
     "format:check": "prettier --check 'src/**/*.{ts,css,html}' 'scripts/*.mjs' 'tests/*.{js,mjs}'",
     "check": "npm run test && npm run build && npm run format:check",

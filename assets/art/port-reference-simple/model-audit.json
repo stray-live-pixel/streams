@@ -1,0 +1,64 @@
+{
+  "file": "assets/art/port-reference-simple/port.blend",
+  "file_bytes": 276719,
+  "collection": "Port - shared geometry",
+  "scene_object_count": 312,
+  "collection_object_count": 304,
+  "visible_object_count": 270,
+  "hidden_collection_objects": 34,
+  "evaluated_viewport_vertices": 27180,
+  "evaluated_viewport_triangles": 53314,
+  "used_material_count": 14,
+  "used_materials": [
+    "Cream canvas",
+    "Dark iron",
+    "Dark structural timber",
+    "Deck 0",
+    "Deck 1",
+    "Deck 2",
+    "Deep teal glass",
+    "Honey wood",
+    "Natural rope",
+    "Style roof 0",
+    "Style roof 1",
+    "Style roof 2",
+    "Style roof 3",
+    "Warm plaster"
+  ],
+  "objects_with_uv": 238,
+  "used_images": [],
+  "bounds": {
+    "min": [
+      -6.0,
+      -4.664999961853027,
+      -0.2199999988079071
+    ],
+    "max": [
+      6.096894264221191,
+      3.799999952316284,
+      6.079999923706055
+    ]
+  },
+  "measured_at": "2026-10-10T21:15:56.504676+00:00",
+  "method": "Read-only Blender MCP; evaluated dependency graph at viewport modifier settings; only objects in Port - shared geometry with hide_render=false and hide_get=false. No render, export or scene changes.",
+  "sha256": "0534b710b9acd564a630ff377132a51b90e4f19e2a7499eb19967a25aecbd721",
+  "triangles_by_type": {
+    "CURVE": 9104,
+    "MESH": 44210
+  },
+  "subdivision_modifiers": [
+    {
+      "object": "Style - Soft side canopy",
+      "type": "SUBSURF",
+      "viewport": true,
+      "render": true,
+      "levels": 1,
+      "render_levels": 2
+    }
+  ],
+  "limitations": [
+    "Viewport-evaluated triangles, not final export statistics. Render subdivision may differ.",
+    "No FPS, GPU time, draw calls or memory benchmark in the game has been run.",
+    "UV layer presence is not evidence of an authored unwrap; no image textures are used."
+  ]
+}

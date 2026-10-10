@@ -10,9 +10,15 @@ import { Color3, Color4 } from '@babylonjs/core/Maths/math.color.js';
 import { Plane } from '@babylonjs/core/Maths/math.plane.js';
 import '@babylonjs/core/Culling/ray.js';
 import type { Arrival, GameModel, Tile } from '../domain/index.js';
-import { buildingCells, proposedBuilding, placementIssue } from '../domain/index.js';
+import { buildingCells, proposedBuilding, placementIssue, createWorld } from '../domain/index.js';
 import type { SceneOptions, Passenger } from './types.js';
 import { islandGeometry, shipGeometry } from './geometry.js';
+import { FxaaPostProcess } from '@babylonjs/core/PostProcesses/fxaaPostProcess.js';
+import { createLighting } from './lighting.js';
+import { createOcean } from './ocean.js';
+import { createLens } from './lens.js';
+import { terrainHeight } from './terrain.js';
+import { sceneCoordinate, boardCoordinate, ISLAND_SPREAD } from './space.js';
 import { createCityLife } from './life.js';
 import { harborLayout } from './harbor.js';
 import { voyageFrame } from './voyage.js';
@@ -35,7 +41,13 @@ export { createPerson, createSmoke, lifeColors } from './life.js';
  * Публичный адаптер 3D. Получает снимки и события, никогда не изменяет город.
  * board — переданная география: renderer не импортирует внутренности домена.
  */
-export function createScene({ canvas, board, onArrivalFinished, onError }: SceneOptions) {
+export function createScene({
+  canvas,
+  board,
+  onArrivalFinished,
+  onError,
+  onTimeChanged,
+}: SceneOptions) {
   const context = canvas.getContext('2d')!;
   const surface = document.createElement('canvas');
   surface.id = 'scene';
@@ -66,13 +78,19 @@ export function createScene({ canvas, board, onArrivalFinished, onError }: Scene
   const camera = new FreeCamera('city-camera', Vector3.Zero(), scene);
   camera.mode = Camera.ORTHOGRAPHIC_CAMERA;
   camera.minZ = 0.1;
-  camera.maxZ = 100;
+  camera.maxZ = 650;
+  new FxaaPostProcess('soft-edges', 1, camera);
+  const lens = createLens(camera);
+  const lighting = createLighting(scene, camera, (label) => onTimeChanged?.(label));
+  const ocean = createOcean(scene, camera);
   const material = new StandardMaterial('palette', scene);
-  material.disableLighting = true;
-  material.emissiveColor = Color3.White();
+  material.disableLighting = false;
+  material.diffuseColor = Color3.White();
+  material.specularColor = Color3.Black();
+  material.twoSidedLighting = false;
   material.backFaceCulling = false;
   const ship = new Mesh('arrival-ship', scene);
-  shipGeometry().applyToMesh(ship);
+  shipGeometry(true).applyToMesh(ship);
   ship.material = material;
   ship.setEnabled(false);
   let island: Mesh | null = null;
@@ -86,7 +104,8 @@ export function createScene({ canvas, board, onArrivalFinished, onError }: Scene
     scale = 1,
     dirty = true,
     frameId = 0;
-  const ground = new Plane(0, 1, 0, 0);
+  const upperGround = new Plane(0, 1, 0, -4);
+  const lowerGround = new Plane(0, 1, 0, 0.02);
   const signal = new AbortController();
   surface.addEventListener(
     'webglcontextlost',
@@ -112,13 +131,14 @@ export function createScene({ canvas, board, onArrivalFinished, onError }: Scene
     camera.orthoRight = (width - cx) / scale;
     camera.orthoTop = cy / scale;
     camera.orthoBottom = -(height - cy) / scale;
+    const eyeHeight = Math.max(3.2, Math.sin(pitch) * 40);
     // Изометрический вид сохраняет размер домов при перемещении по острову.
     camera.position.set(
       x + Math.sin(yaw) * Math.cos(pitch) * 40,
-      Math.sin(pitch) * 40,
+      eyeHeight,
       z + Math.cos(yaw) * Math.cos(pitch) * 40,
     );
-    camera.setTarget(new Vector3(x, 0, z));
+    camera.setTarget(new Vector3(x, eyeHeight - Math.sin(pitch) * 40, z));
     camera.getViewMatrix(true);
     camera.getProjectionMatrix(true);
     scene.updateTransformMatrix(true);
@@ -144,7 +164,7 @@ export function createScene({ canvas, board, onArrivalFinished, onError }: Scene
   const observer = new ResizeObserver(resize);
   observer.observe(viewport);
   resize();
-  function project(x: number, y: number, z: number) {
+  function projectWorld(x: number, y: number, z: number) {
     const p = Vector3.Project(
       new Vector3(x, y, z),
       Matrix.Identity(),
@@ -153,11 +173,42 @@ export function createScene({ canvas, board, onArrivalFinished, onError }: Scene
     );
     return { x: p.x, y: p.y };
   }
+  function heightAt(x: number, z: number) {
+    return terrainHeight(x, z, board.seed ?? 0, model?.buildings ?? []);
+  }
+  function project(x: number, y: number, z: number) {
+    return projectWorld(sceneCoordinate(x), y + heightAt(x, z), sceneCoordinate(z));
+  }
   function pick(x: number, y: number): Tile | null {
     const ray = scene.createPickingRay(x, y, Matrix.Identity(), camera);
-    const distance = ray.intersectsPlane(ground);
-    if (distance === null) return null;
-    const hit = ray.origin.add(ray.direction.scale(distance));
+    if (ray.direction.y >= -0.0001) return null;
+    const start = ray.intersectsPlane(upperGround) ?? 0,
+      end = ray.intersectsPlane(lowerGround);
+    if (end === null) return null;
+    const difference = (distance: number) => {
+      const point = ray.origin.add(ray.direction.scale(distance));
+      return point.y - heightAt(boardCoordinate(point.x), boardCoordinate(point.z));
+    };
+    let previous = Math.max(0, start),
+      distance = end;
+    // Берём первое пересечение: пологие холмы могут перекрывать дальнюю землю.
+    for (let i = 1; i <= 64; i++) {
+      const next = Math.max(0, start) + ((end - Math.max(0, start)) * i) / 64;
+      if (difference(next) <= 0) {
+        let low = previous,
+          high = next;
+        for (let j = 0; j < 14; j++) {
+          const middle = (low + high) / 2;
+          if (difference(middle) > 0) low = middle;
+          else high = middle;
+        }
+        distance = (low + high) / 2;
+        break;
+      }
+      previous = next;
+    }
+    const point = ray.origin.add(ray.direction.scale(distance));
+    const hit = { x: boardCoordinate(point.x), z: boardCoordinate(point.z) };
     const tile = { x: Math.floor(hit.x), z: Math.floor(hit.z) };
     return board.isLand(tile.x, tile.z) ? tile : null;
   }
@@ -185,7 +236,11 @@ export function createScene({ canvas, board, onArrivalFinished, onError }: Scene
         for (let z = 0; z < board.size; z++) {
           if (
             board.shoreDirection(x, z) &&
-            !placementIssue(proposedBuilding('port', x, z, model.footprints), model.buildings)
+            !placementIssue(
+              proposedBuilding('port', x, z, model.footprints),
+              model.buildings,
+              board.isLand,
+            )
           )
             outline(x, z, '#f6deb633');
         }
@@ -193,26 +248,10 @@ export function createScene({ canvas, board, onArrivalFinished, onError }: Scene
     if (tile && model.selected) {
       const candidate = proposedBuilding(model.selected, tile.x, tile.z, model.footprints);
       const allowed =
-        !placementIssue(candidate, model.buildings) &&
+        !placementIssue(candidate, model.buildings, board.isLand) &&
         (model.selected !== 'port' || board.shoreDirection(tile.x, tile.z));
       for (const cell of buildingCells(candidate))
         outline(cell.x, cell.z, allowed ? '#ebf9c344' : '#e8a08b77');
-    }
-    // Тонкие блики остаются только на воде. Это декоративный слой, не клетки карты.
-    context.strokeStyle = '#e4f0dd66';
-    context.lineWidth = 1;
-    for (let i = 0; i < 30; i++) {
-      const x = ((i * 7) % 23) - 6,
-        z = ((i * 11) % 23) - 6;
-      if (board.isLand(Math.floor(x), Math.floor(z))) continue;
-      const drift =
-        !animateCity || motionPreference.matches ? 0 : Math.sin(seconds * 0.35 + i) * 0.3;
-      const a = project(x + drift, -0.3, z),
-        b = project(x + 0.45 + drift, -0.3, z);
-      context.beginPath();
-      context.moveTo(a.x, a.y);
-      context.lineTo(b.x, b.y);
-      context.stroke();
     }
     if (model.won) {
       const port = model.buildings.find((b) => b.t === 'port');
@@ -229,16 +268,28 @@ export function createScene({ canvas, board, onArrivalFinished, onError }: Scene
     }
   }
 
+  let environmentSeconds = 0;
+  let renderMilliseconds = 0;
   let previousFrame = 0;
   let previousMotion = 0;
+  let previousEnvironmentFrame = 0;
+  let cameraWasMoving = false;
+  let resourcesWereReady = false;
   function frame(now: number) {
     if (paused) return;
     const elapsed = previousMotion ? (now - previousMotion) / 1000 : 1 / 60;
     previousMotion = now;
-    if (motion.tick(elapsed)) {
+    const cameraMoving = motion.tick(elapsed);
+    if (cameraMoving) {
       updateCamera();
       hovered = null;
     }
+    // Последний неподвижный кадр отражения должен совпадать с новым ракурсом.
+    if (cameraWasMoving && !cameraMoving) {
+      ocean.invalidate();
+      dirty = true;
+    }
+    cameraWasMoving = cameraMoving;
     const reducedMotion = !animateCity || motionPreference.matches;
     if (now - previousFrame < (quality === 'low' ? 50 : 32) && !dirty) {
       frameId = requestAnimationFrame(frame);
@@ -253,7 +304,7 @@ export function createScene({ canvas, board, onArrivalFinished, onError }: Scene
         board.shoreDirection(arrival.event.port.x, arrival.event.port.z) ?? [0, 1],
         harborLayout(arrival.event.port, board).distance + 1.45,
       );
-      ship.position.set(result.x, -0.25, result.z);
+      ship.position.set(sceneCoordinate(result.x), -0.25, sceneCoordinate(result.z));
       ship.rotation.y = result.rotation;
       passengers = result.passengers;
       dirty = true;
@@ -265,11 +316,26 @@ export function createScene({ canvas, board, onArrivalFinished, onError }: Scene
     }
     const seconds = (now - pausedDuration) / 1000;
     life.update(seconds, passengers, reducedMotion);
-    if (dirty || (!!model?.pop && !reducedMotion)) {
+    if (!reducedMotion && previousEnvironmentFrame)
+      environmentSeconds += Math.min((now - previousEnvironmentFrame) / 1000, 0.1);
+    previousEnvironmentFrame = now;
+    const sun = lighting.update(environmentSeconds);
+    ocean.update(environmentSeconds, sun.daylight, sun.sun, now / 1000);
+    if (dirty || !reducedMotion) {
+      // Проверяем до рисования: после завершения компиляции нужен ещё один полный кадр.
+      const resourcesReady = !dirty || (scene.isReady() && lighting.isReady());
+      if (resourcesReady && !resourcesWereReady) {
+        // Частично готовые проходы не должны остаться последними в замороженной сцене.
+        lighting.invalidate();
+        ocean.invalidate();
+      }
+      resourcesWereReady = resourcesReady;
+      const renderStarted = performance.now();
       scene.render();
+      renderMilliseconds = performance.now() - renderStarted;
       // Babylon компилирует шейдеры асинхронно: первый render ещё может быть пустым.
       // Продолжаем кадры до готовности, затем экономим GPU на неподвижном острове.
-      dirty = !scene.isReady();
+      dirty = !resourcesReady;
     }
     overlays(seconds);
     frameId = requestAnimationFrame(frame);
@@ -285,6 +351,7 @@ export function createScene({ canvas, board, onArrivalFinished, onError }: Scene
       if (next) {
         motion.stop();
         previousMotion = 0;
+        previousEnvironmentFrame = 0;
         pausedAt = performance.now();
         cancelAnimationFrame(frameId);
         hovered = null;
@@ -302,20 +369,32 @@ export function createScene({ canvas, board, onArrivalFinished, onError }: Scene
         quality = settings.quality;
         resize();
       }
+      lighting.setQuality(settings.quality);
+      ocean.setQuality(settings.quality);
+      lens.setQuality(settings.quality);
       dirty = true;
     },
     setModel(next: GameModel) {
+      if (board.seed !== next.islandSeed) board = createWorld(next.islandSeed);
       model = next;
       life.setModel(next);
-      const key = JSON.stringify([next.buildings, next.won, objectTemplateRevision()]);
+      const key = JSON.stringify([
+        next.buildings,
+        next.won,
+        next.islandSeed,
+        objectTemplateRevision(),
+      ]);
       if (key !== signature) {
         if (island) {
           island.dispose();
         }
-        shipGeometry().applyToMesh(ship);
+        shipGeometry(true).applyToMesh(ship);
         island = new Mesh('island', scene);
         islandGeometry(next.buildings, board, next.won).applyToMesh(island);
         island.material = material;
+        island.receiveShadows = true;
+        lighting.setCasters([island, ship]);
+        ocean.setIsland(board, next.buildings, island, ship);
         signature = key;
         dirty = true;
       }
@@ -329,6 +408,29 @@ export function createScene({ canvas, board, onArrivalFinished, onError }: Scene
       ship.setEnabled(false);
       hovered = null;
       resetCamera();
+      environmentSeconds = 0;
+      lighting.reset();
+      ocean.invalidate();
+    },
+    cycleTime() {
+      lighting.cycle();
+      ocean.invalidate();
+      dirty = true;
+    },
+    lookAtSky() {
+      const sun = lighting.lookDirection;
+      motion.look(Math.atan2(-sun.x, -sun.z), -Math.asin(sun.y));
+    },
+    get environmentState() {
+      return {
+        ...lighting.diagnostics,
+        water: ocean.diagnostics,
+        islandSpread: ISLAND_SPREAD,
+        lensBlur: true,
+        renderMilliseconds,
+        settled: !dirty,
+        sunScreen: projectWorld(...(lighting.diagnostics.sunPosition as [number, number, number])),
+      };
     },
     get cameraState() {
       return motion.state;
@@ -361,6 +463,9 @@ export function createScene({ canvas, board, onArrivalFinished, onError }: Scene
       cancelAnimationFrame(frameId);
       signal.abort();
       observer.disconnect();
+      ocean.dispose();
+      lighting.dispose();
+      lens.dispose();
       scene.dispose();
       renderer.dispose();
       surface.remove();

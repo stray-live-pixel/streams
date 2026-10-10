@@ -1,0 +1,412 @@
+{
+  "schema_version": 1,
+  "path_base": "repository_root",
+  "updated_at": "2026-10-11",
+  "models": [
+    {
+      "id": "starter-port",
+      "name": "Стартовый порт",
+      "tags": [
+        "порт",
+        "причал",
+        "дом",
+        "low-poly",
+        "мягкие формы"
+      ],
+      "status": "design-iteration",
+      "game_ready": false,
+      "description": "Один фахверковый дом с боковым навесом, широкая набережная, правый пирс и грузовой подъёмник. Текущая модель ещё проходит визуальное согласование.",
+      "source": "assets/art/port-reference-simple/port.blend",
+      "preview": "assets/art/port-reference-simple/beauty.png",
+      "views": "assets/art/port-reference-simple/four-views.png",
+      "reference": "assets/art/port-reference-simple/design-reference.png",
+      "prompt": "assets/art/port-reference-simple/prompts.txt",
+      "generators": [
+        "assets/art/port-reference-simple/build_reference.py",
+        "assets/art/port-reference-simple/stylize_port.py"
+      ],
+      "audit": "assets/art/port-reference-simple/model-audit.json",
+      "runtime_export": null,
+      "game_integration": null,
+      "metrics": {
+        "evaluated_viewport_triangles": 53314,
+        "evaluated_viewport_vertices": 27180,
+        "visible_objects": 270,
+        "used_materials": 14,
+        "hidden_source_objects": 34
+      },
+      "notes": [
+        "Все ракурсы относятся к одной геометрии.",
+        "Старый блокинг сохранён скрытым внутри .blend, отдельно в каталоге не дублируется.",
+        "Рендеры — уже имеющиеся превью; для следующих проверок использовать viewport/Workbench/лёгкое Eevee.",
+        "Игровую оптимизацию выполнять после согласования внешнего вида."
+      ],
+      "source_sha256": "0534b710b9acd564a630ff377132a51b90e4f19e2a7499eb19967a25aecbd721"
+    },
+    {
+      "id": "island-nature/pine-tall",
+      "name": "Высокая сосна",
+      "tags": [
+        "остров",
+        "окружение",
+        "low-poly"
+      ],
+      "status": "integrated",
+      "game_ready": true,
+      "source": "assets/models/island-nature/pine-tall.glb",
+      "geometry_source": "assets/models/island-nature/models.json",
+      "geometry_key": "pine-tall",
+      "preview": "assets/models/island-nature/in-game-preview.png",
+      "reference": "assets/art/island-reference.png",
+      "generators": [
+        "scripts/create-nature-models.mjs"
+      ],
+      "runtime_export": "assets/models/island-nature/models.json",
+      "game_integration": "src/scene/environment.ts",
+      "metrics": {
+        "triangles": 158,
+        "source_vertices": 94,
+        "materials": 1
+      },
+      "notes": [
+        "GLB и игровой JSON получены из одной геометрии; Y вверх, основание в нуле.",
+        "В игре экземпляры имеют свободные координаты, поворот и масштаб, затем объединяются в один буфер.",
+        "Превью показывает набор в игровом окружении, не отдельный объект.",
+        "В игре используется реальный свет, плоские нормали природных граней и более яркая тёплая палитра сцены; расстояния между объектами увеличены в √2, модели сохраняют пропорции и размещены по рельефу, подводные основания камней удлинены при сборке; геометрия и палитра исходного GLB не изменены."
+      ],
+      "source_sha256": "efa027b0889675a0d88216f4fcb1187ccdefffa6ce5b339475b1fb734081c5cb"
+    },
+    {
+      "id": "island-nature/pine-wide",
+      "name": "Широкая сосна",
+      "tags": [
+        "остров",
+        "окружение",
+        "low-poly"
+      ],
+      "status": "integrated",
+      "game_ready": true,
+      "source": "assets/models/island-nature/pine-wide.glb",
+      "geometry_source": "assets/models/island-nature/models.json",
+      "geometry_key": "pine-wide",
+      "preview": "assets/models/island-nature/in-game-preview.png",
+      "reference": "assets/art/island-reference.png",
+      "generators": [
+        "scripts/create-nature-models.mjs"
+      ],
+      "runtime_export": "assets/models/island-nature/models.json",
+      "game_integration": "src/scene/environment.ts",
+      "metrics": {
+        "triangles": 158,
+        "source_vertices": 94,
+        "materials": 1
+      },
+      "notes": [
+        "GLB и игровой JSON получены из одной геометрии; Y вверх, основание в нуле.",
+        "В игре экземпляры имеют свободные координаты, поворот и масштаб, затем объединяются в один буфер.",
+        "Превью показывает набор в игровом окружении, не отдельный объект.",
+        "В игре используется реальный свет, плоские нормали природных граней и более яркая тёплая палитра сцены; расстояния между объектами увеличены в √2, модели сохраняют пропорции и размещены по рельефу, подводные основания камней удлинены при сборке; геометрия и палитра исходного GLB не изменены."
+      ],
+      "source_sha256": "42a085d81e197aeb00130c2d7cd1a992b0848e987fe32c4aef2c16d27a0c3c74"
+    },
+    {
+      "id": "island-nature/pine-young",
+      "name": "Молодая сосна",
+      "tags": [
+        "остров",
+        "окружение",
+        "low-poly"
+      ],
+      "status": "integrated",
+      "game_ready": true,
+      "source": "assets/models/island-nature/pine-young.glb",
+      "geometry_source": "assets/models/island-nature/models.json",
+      "geometry_key": "pine-young",
+      "preview": "assets/models/island-nature/in-game-preview.png",
+      "reference": "assets/art/island-reference.png",
+      "generators": [
+        "scripts/create-nature-models.mjs"
+      ],
+      "runtime_export": "assets/models/island-nature/models.json",
+      "game_integration": "src/scene/environment.ts",
+      "metrics": {
+        "triangles": 158,
+        "source_vertices": 94,
+        "materials": 1
+      },
+      "notes": [
+        "GLB и игровой JSON получены из одной геометрии; Y вверх, основание в нуле.",
+        "В игре экземпляры имеют свободные координаты, поворот и масштаб, затем объединяются в один буфер.",
+        "Превью показывает набор в игровом окружении, не отдельный объект.",
+        "В игре используется реальный свет, плоские нормали природных граней и более яркая тёплая палитра сцены; расстояния между объектами увеличены в √2, модели сохраняют пропорции и размещены по рельефу, подводные основания камней удлинены при сборке; геометрия и палитра исходного GLB не изменены."
+      ],
+      "source_sha256": "380926c22a1bd235b047c51ca773fb2aac2be9c7f7a2c1cdc82120ab6ba216df"
+    },
+    {
+      "id": "island-nature/rock-large",
+      "name": "Крупная скала",
+      "tags": [
+        "остров",
+        "окружение",
+        "low-poly"
+      ],
+      "status": "integrated",
+      "game_ready": true,
+      "source": "assets/models/island-nature/rock-large.glb",
+      "geometry_source": "assets/models/island-nature/models.json",
+      "geometry_key": "rock-large",
+      "preview": "assets/models/island-nature/in-game-preview.png",
+      "reference": "assets/art/island-reference.png",
+      "generators": [
+        "scripts/create-nature-models.mjs"
+      ],
+      "runtime_export": "assets/models/island-nature/models.json",
+      "game_integration": "src/scene/environment.ts",
+      "metrics": {
+        "triangles": 35,
+        "source_vertices": 22,
+        "materials": 1
+      },
+      "notes": [
+        "GLB и игровой JSON получены из одной геометрии; Y вверх, основание в нуле.",
+        "В игре экземпляры имеют свободные координаты, поворот и масштаб, затем объединяются в один буфер.",
+        "Превью показывает набор в игровом окружении, не отдельный объект.",
+        "В игре используется реальный свет, плоские нормали природных граней и более яркая тёплая палитра сцены; расстояния между объектами увеличены в √2, модели сохраняют пропорции и размещены по рельефу, подводные основания камней удлинены при сборке; геометрия и палитра исходного GLB не изменены."
+      ],
+      "source_sha256": "8dbfc07102f8950bda7a181261646272387b1f6e2a527c20a7ecb3a1416815eb"
+    },
+    {
+      "id": "island-nature/rock-flat",
+      "name": "Плоский камень",
+      "tags": [
+        "остров",
+        "окружение",
+        "low-poly"
+      ],
+      "status": "integrated",
+      "game_ready": true,
+      "source": "assets/models/island-nature/rock-flat.glb",
+      "geometry_source": "assets/models/island-nature/models.json",
+      "geometry_key": "rock-flat",
+      "preview": "assets/models/island-nature/in-game-preview.png",
+      "reference": "assets/art/island-reference.png",
+      "generators": [
+        "scripts/create-nature-models.mjs"
+      ],
+      "runtime_export": "assets/models/island-nature/models.json",
+      "game_integration": "src/scene/environment.ts",
+      "metrics": {
+        "triangles": 35,
+        "source_vertices": 22,
+        "materials": 1
+      },
+      "notes": [
+        "GLB и игровой JSON получены из одной геометрии; Y вверх, основание в нуле.",
+        "В игре экземпляры имеют свободные координаты, поворот и масштаб, затем объединяются в один буфер.",
+        "Превью показывает набор в игровом окружении, не отдельный объект.",
+        "В игре используется реальный свет, плоские нормали природных граней и более яркая тёплая палитра сцены; расстояния между объектами увеличены в √2, модели сохраняют пропорции и размещены по рельефу, подводные основания камней удлинены при сборке; геометрия и палитра исходного GLB не изменены."
+      ],
+      "source_sha256": "ec277a2073e0f996836a1ac7958a5f57a4fd943918cc6ece6b7bc1b3cb84029f"
+    },
+    {
+      "id": "island-nature/rock-small",
+      "name": "Малый камень",
+      "tags": [
+        "остров",
+        "окружение",
+        "low-poly"
+      ],
+      "status": "integrated",
+      "game_ready": true,
+      "source": "assets/models/island-nature/rock-small.glb",
+      "geometry_source": "assets/models/island-nature/models.json",
+      "geometry_key": "rock-small",
+      "preview": "assets/models/island-nature/in-game-preview.png",
+      "reference": "assets/art/island-reference.png",
+      "generators": [
+        "scripts/create-nature-models.mjs"
+      ],
+      "runtime_export": "assets/models/island-nature/models.json",
+      "game_integration": "src/scene/environment.ts",
+      "metrics": {
+        "triangles": 35,
+        "source_vertices": 22,
+        "materials": 1
+      },
+      "notes": [
+        "GLB и игровой JSON получены из одной геометрии; Y вверх, основание в нуле.",
+        "В игре экземпляры имеют свободные координаты, поворот и масштаб, затем объединяются в один буфер.",
+        "Превью показывает набор в игровом окружении, не отдельный объект.",
+        "В игре используется реальный свет, плоские нормали природных граней и более яркая тёплая палитра сцены; расстояния между объектами увеличены в √2, модели сохраняют пропорции и размещены по рельефу, подводные основания камней удлинены при сборке; геометрия и палитра исходного GLB не изменены."
+      ],
+      "source_sha256": "c07553dbc836f6a1e57705b2d036da3522a2583dd39edb50f46e1bc1fc2dac26"
+    },
+    {
+      "id": "island-nature/bush",
+      "name": "Куст",
+      "tags": [
+        "остров",
+        "окружение",
+        "low-poly"
+      ],
+      "status": "integrated",
+      "game_ready": true,
+      "source": "assets/models/island-nature/bush.glb",
+      "geometry_source": "assets/models/island-nature/models.json",
+      "geometry_key": "bush",
+      "preview": "assets/models/island-nature/in-game-preview.png",
+      "reference": "assets/art/island-reference.png",
+      "generators": [
+        "scripts/create-nature-models.mjs"
+      ],
+      "runtime_export": "assets/models/island-nature/models.json",
+      "game_integration": "src/scene/environment.ts",
+      "metrics": {
+        "triangles": 63,
+        "source_vertices": 45,
+        "materials": 1
+      },
+      "notes": [
+        "GLB и игровой JSON получены из одной геометрии; Y вверх, основание в нуле.",
+        "В игре экземпляры имеют свободные координаты, поворот и масштаб, затем объединяются в один буфер.",
+        "Превью показывает набор в игровом окружении, не отдельный объект.",
+        "В игре используется реальный свет, плоские нормали природных граней и более яркая тёплая палитра сцены; расстояния между объектами увеличены в √2, модели сохраняют пропорции и размещены по рельефу, подводные основания камней удлинены при сборке; геометрия и палитра исходного GLB не изменены."
+      ],
+      "source_sha256": "e632e6fdf0325ed1737f75f7f402d19807ec52dc5d725b6868fdc85ee1e08fe9"
+    },
+    {
+      "id": "island-nature/grass",
+      "name": "Пучок травы",
+      "tags": [
+        "остров",
+        "окружение",
+        "low-poly"
+      ],
+      "status": "integrated",
+      "game_ready": true,
+      "source": "assets/models/island-nature/grass.glb",
+      "geometry_source": "assets/models/island-nature/models.json",
+      "geometry_key": "grass",
+      "preview": "assets/models/island-nature/in-game-preview.png",
+      "reference": "assets/art/island-reference.png",
+      "generators": [
+        "scripts/create-nature-models.mjs"
+      ],
+      "runtime_export": "assets/models/island-nature/models.json",
+      "game_integration": "src/scene/environment.ts",
+      "metrics": {
+        "triangles": 7,
+        "source_vertices": 21,
+        "materials": 1
+      },
+      "notes": [
+        "GLB и игровой JSON получены из одной геометрии; Y вверх, основание в нуле.",
+        "В игре экземпляры имеют свободные координаты, поворот и масштаб, затем объединяются в один буфер.",
+        "Превью показывает набор в игровом окружении, не отдельный объект.",
+        "В игре используется реальный свет, плоские нормали природных граней и более яркая тёплая палитра сцены; расстояния между объектами увеличены в √2, модели сохраняют пропорции и размещены по рельефу, подводные основания камней удлинены при сборке; геометрия и палитра исходного GLB не изменены."
+      ],
+      "source_sha256": "81eb59e992340e7d517407e0b6bda09d3b77728006cc9589f309a0ef78a2ab95"
+    },
+    {
+      "id": "island-nature/flowers",
+      "name": "Полевые цветы",
+      "tags": [
+        "остров",
+        "окружение",
+        "low-poly"
+      ],
+      "status": "integrated",
+      "game_ready": true,
+      "source": "assets/models/island-nature/flowers.glb",
+      "geometry_source": "assets/models/island-nature/models.json",
+      "geometry_key": "flowers",
+      "preview": "assets/models/island-nature/in-game-preview.png",
+      "reference": "assets/art/island-reference.png",
+      "generators": [
+        "scripts/create-nature-models.mjs"
+      ],
+      "runtime_export": "assets/models/island-nature/models.json",
+      "game_integration": "src/scene/environment.ts",
+      "metrics": {
+        "triangles": 27,
+        "source_vertices": 45,
+        "materials": 1
+      },
+      "notes": [
+        "GLB и игровой JSON получены из одной геометрии; Y вверх, основание в нуле.",
+        "В игре экземпляры имеют свободные координаты, поворот и масштаб, затем объединяются в один буфер.",
+        "Превью показывает набор в игровом окружении, не отдельный объект.",
+        "В игре используется реальный свет, плоские нормали природных граней и более яркая тёплая палитра сцены; расстояния между объектами увеличены в √2, модели сохраняют пропорции и размещены по рельефу, подводные основания камней удлинены при сборке; геометрия и палитра исходного GLB не изменены."
+      ],
+      "source_sha256": "fc91fd5f8f9d1d4f6ce413b7881a3640f2fa387f34a56ecb2fef38ac13f4eb3b"
+    },
+    {
+      "id": "island-nature/cliff-rock",
+      "name": "Береговая скальная глыба",
+      "tags": [
+        "остров",
+        "скалы",
+        "low-poly"
+      ],
+      "status": "design-iteration",
+      "game_ready": true,
+      "source": "src/scene/cliffs.ts",
+      "geometry_source": "src/scene/cliffs.ts",
+      "preview": "assets/models/island-nature/in-game-preview.png",
+      "reference": "assets/art/coastal-reference/coast-3.png",
+      "references": [
+        "assets/art/coastal-reference/coast-1.png",
+        "assets/art/coastal-reference/coast-2.png",
+        "assets/art/coastal-reference/coast-3.png"
+      ],
+      "generators": [
+        "src/scene/cliffs.ts",
+        "src/scene/cliff-layout.ts"
+      ],
+      "runtime_export": null,
+      "game_integration": "src/scene/environment.ts",
+      "metrics": {
+        "triangles_per_block": 42,
+        "vertices_per_block": 126,
+        "scene_seed": 123456789,
+        "scene_triangles": 17155,
+        "scene_vertices": 51465,
+        "measured_at": "2026-10-11"
+      },
+      "notes": [
+        "Процедурная замкнутая глыба на основе формы rock-large; отдельного GLB или blend пока нет.",
+        "Короны заглублены под траву. Варьируются ширина, глубина, наклон, высота плеча и боковые скосы.",
+        "Глыбы задают контур берега; основной скальный бок строится отдельной общей поверхностью с дёрном. Объёмные экземпляры остаются на возвышенностях.",
+        "Проверено в браузере; художественное согласование владельцем ещё не завершено."
+      ],
+      "source_sha256": "51f36644ffb2c13d3d0795c7b77f2b0a62d2f4fcac97a74560a10812d1e6ab05",
+      "layout_sha256": "56b9dbad2417080c23309761582dc4b494015b90d38948831375038bcba9c885"
+    },
+    {
+      "id": "island-nature/coast-surface",
+      "name": "Общий скальный бок острова",
+      "status": "design-iteration",
+      "game_ready": true,
+      "source": "src/scene/cliff-layout.ts",
+      "generators": [
+        "src/scene/cliff-layout.ts",
+        "src/scene/environment.ts"
+      ],
+      "preview": "assets/models/island-nature/in-game-preview.png",
+      "reference": "assets/art/coastal-reference/coast-3.png",
+      "runtime_export": null,
+      "game_integration": "src/scene/environment.ts",
+      "metrics": {
+        "triangles": 1536,
+        "vertices": 4608,
+        "segments": 192,
+        "measured_at": "2026-10-11"
+      },
+      "source_sha256": "56b9dbad2417080c23309761582dc4b494015b90d38948831375038bcba9c885",
+      "notes": [
+        "Точный общий шов с травой, почти отвесный профиль со сколами и два пологих песчаных берега.",
+        "Процедурная часть сцены; отдельного blend/GLB нет. Художественная итерация ожидает оценки владельца."
+      ]
+    }
+  ]
+}

@@ -1,0 +1,28 @@
+SOFT, HAND-CRAFTED PORT — CANONICAL REFERENCE
+
+DELIVERABLES
+four-views.png: four orthographic renders of the same Blender model.
+beauty.png: three-quarter render of the actual styled Blender model.
+port.blend: authoritative model layout, four fixed reference cameras and a beauty camera.
+view-front.png, view-back.png, view-right.png, view-top.png: individual renders, 1600 x 1200 each.
+build_reference.py: recreates geometry and renders with Blender.
+stylize_port.py: repeatable styling pass, applied to the existing blockout via Blender MCP.
+render_sheet.mjs: assembles the sheet from the four renders; requires the project's Playwright dependency and Google Chrome.
+
+The generated design-reference.png defines the intended soft hand-crafted appearance. Geometry and positions are defined by port.blend. Unlike independently generated pictures, every rendered view uses the same objects without relocation. The actual model was edited in the open Blender scene through MCP. This is a styled modeling asset; UVs, optimization, collision and gameplay integration remain separate work.
+
+3D MODELING PROMPT
+
+Refine the existing simplified harbor into a charming, hand-crafted clay-like game model, preserving exactly one shared layout across all views. Use one cream timber-framed house with large softly rounded terracotta roof tiles and curved ridge caps, a gently sagging canvas awning on the right side wall, a broad wooden quay, a single finger pier projecting from its right end, one cargo hoist, one ground crate, one suspended cargo crate and two mooring bollards. Add thick rounded posts, rope collars, iron feet and collars, an open doorway with depth and timber knee braces. Do not add separate sheds, offices, barrels, additional buildings or scattered props.
+
+Coordinate system: X along the shoreline, +Y landward, Z upward, metres. Quay footprint: X -6 to 6, Y 0 to 3.6; deck top Z 1.54. Finger footprint: X 3 to 6, Y -4.5 to 0, same deck height. House footprint: X -4.675 to -1.325, Y .95 to 3.35; eaves Z 4.16. Rounded roof tiles extend the roof slightly, with caps above ridge Z 5.65. The house door faces -Y (sea). The right-hand awning extends from X -1.27 to .35, Y .72 to 3.33. Hoist mast: X 5.55, Y -2.8. Hoist boom extends towards -X, never changes side. The ground crate stands at X -1.93, Y .43; the suspended crate is below the boom tip at X 2.89, Y -2.8. Two bollards stand at X 3.27 and 5.73, Y -4.16. The ladder is centered at X 4.45 on the seaward tip Y -4.62. Keep the open quay between the house and pier clear.
+
+Use broad simple surfaces, visible rounded bevels, weighted normals, chunky proportions and matte honey wood, warm cream plaster, orange terracotta, pale canvas and subdued iron. Avoid sharp razor edges, realistic grain textures and thin engineering-like beams. Preserve readable structure rather than blobby geometry. Keep structural parts as separate named objects. No game terrain, water, boats, people or grid; the studio floor is a separate presentation object. Use the same geometry for front (-Y), back (+Y), right (+X) and top (+Z) orthographic views; do not recompose objects per view.
+
+VISUAL CONCEPT GENERATION PROMPT
+
+Simplify the attached harbor design into ONE coherent low-poly starter-port concept. Keep the broad wooden waterfront quay and the single projecting finger pier on the viewer's right. Keep ONLY ONE cream plaster, brown timber-framed harbor building with a warm orange simple gable roof, positioned on the rear LEFT half of the long quay so the projecting dock stays open. Keep one small simple cream canvas awning attached to the building's seaward facade, and one small timber cargo hoist on the outer right edge of the projecting pier. Remove both separate turquoise office and green warehouse. Remove all barrels, piles of crates, multiple lamps, spare sheds, repetitive clutter. Include only one single crate near the house entrance and two mooring bollards near the far tip of the finger pier. One ladder at the finger-pier end. The pedestrian path from land around the building to the pier must remain clear. Broad honey-colored planks, stout timber piles and a few diagonal braces. Very simple buildable meshes, no photoreal texture, no tiny shingles: large flat roof panels, matte materials, restrained bevels, warm cozy low-poly appearance.
+Render one isometric 3/4 design view on plain warm-light gray. Whole asset isolated, no ground terrain or water, no boats, no people, no grid. A single PORT ASSET, not a village. Keep building, platform and hoist easy to distinguish and suitable for recreating from primitive meshes in Blender.
+
+WORKFLOW
+Visual simplification: built-in imagegen. Styling: Python operations sent to the open Blender scene through the configured mcp-for-blender server. Consistent four-view reference: one Blender scene rendered from four orthographic cameras, all with ortho_scale 15.0. The three-quarter beauty camera uses ortho_scale 16.7. build_reference.py reproduces the same styling pass. No game source was changed.

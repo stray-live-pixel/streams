@@ -2,6 +2,9 @@ import type { Tile } from '../domain/index.js';
 /** Сцена видит только географию, а не правила экономики. */
 export interface Board {
   size: number;
+  seed?: number;
+  coastRadius?(angle: number): number;
+  contains?(x: number, z: number, margin?: number): boolean;
   isLand(x: number, z: number): boolean;
   shoreDirection(x: number, z: number): [number, number] | null;
 }
@@ -10,6 +13,7 @@ export interface SceneOptions {
   board: Board;
   onArrivalFinished(): void;
   onError(message: string): void;
+  onTimeChanged?(label: string): void;
 }
 export interface Passenger extends Tile {
   id: number;

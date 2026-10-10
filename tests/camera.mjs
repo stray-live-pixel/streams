@@ -54,6 +54,11 @@ try {
   await page.waitForTimeout(650);
   for (const key of Object.keys(initial))
     assert(Math.abs((await state())[key] - initial[key]) < 0.002);
+  await hold('ArrowDown', 2600);
+  await page.waitForTimeout(650);
+  assert((await state()).pitch < -1.55, 'Обзор достигает зенита');
+  await page.keyboard.press('Home');
+  await page.waitForTimeout(650);
 
   const left = await page.locator('#rotate-left').boundingBox();
   await page.mouse.move(left.x + left.width / 2, left.y + left.height / 2);
@@ -126,6 +131,11 @@ try {
   await hold('ArrowUp', 150);
   await page.waitForTimeout(350);
   const tile = await page.evaluate(() => cityDebug.projectTile(6, 11));
+  assert.equal(
+    await page.evaluate(({ x, y }) => document.elementFromPoint(x, y)?.id, tile),
+    'world',
+    'Transparent gaps in the build toolbar must not cover the enlarged island',
+  );
   await page.mouse.click(tile.x, tile.y);
   assert((await page.evaluate(() => cityDebug.state)).buildings.some((b) => b.t === 'port'));
   await page.click('#home');

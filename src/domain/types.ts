@@ -10,6 +10,7 @@ export interface Building extends Tile {
 }
 export interface CityState {
   version: number;
+  islandSeed: number;
   pop: number;
   money: number;
   food: number;
