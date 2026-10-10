@@ -8,6 +8,7 @@ import {
   coastSection,
   COAST_SEGMENTS,
   uplandCliffs,
+  coastalCliffs,
   cliffShorelineRadius,
   cliffLandRadius,
 } from './cliff-layout.js';
@@ -389,7 +390,10 @@ export function environmentGeometry(board: Board, buildings: Building[], spread 
       triangle(a, c, d, color);
     }
   }
-  for (const spec of uplandCliffs(world.seed, buildings)) {
+  for (const spec of [
+    ...coastalCliffs(world.seed, buildings),
+    ...uplandCliffs(world.seed, buildings),
+  ]) {
     const rock = cliffRockGeometry(spec);
     for (let i = 0; i < rock.positions.length; i += 9) {
       const points = [0, 3, 6].map(
