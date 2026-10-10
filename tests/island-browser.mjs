@@ -81,6 +81,11 @@ try {
   await page.evaluate(() => {
     const old = { ...cityDebug.state, version: 5 };
     delete old.islandSeed;
+    old.buildings = old.buildings.map(({ legacy, ...b }) => ({
+      ...b,
+      x: Math.round(b.x),
+      z: Math.round(b.z),
+    }));
     localStorage.setItem('ostrov-simple-v2', JSON.stringify(old));
   });
   await page.reload();

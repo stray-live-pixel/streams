@@ -159,7 +159,7 @@ export function createUI(
       $('instruction').textContent = required
         ? selected === required
           ? selected === 'port'
-            ? 'Выберите свободный участок на берегу. Подходящие места подсвечены.'
+            ? 'Двигайте причал вдоль берега: береговая часть на суше, настил над водой.'
             : 'Выберите любой свободный участок. Жители прибудут утром, если для них есть места.'
           : `Выберите «${model.choices.find((c) => c.type === required)!.name}» внизу экрана.`
         : instruction;

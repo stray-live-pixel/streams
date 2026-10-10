@@ -68,7 +68,9 @@ try {
   await place('shop', 3, 4);
   state = await page.evaluate(() => cityDebug.state);
   assert(
-    state.buildings.some((b) => b.t === 'shop' && b.x === 3 && b.z === 4),
+    state.buildings.some(
+      (b) => b.t === 'shop' && Math.abs(b.x - 3) < 0.02 && Math.abs(b.z - 4) < 0.02,
+    ),
     'Missing corner must remain buildable',
   );
   await place('house', 11, 5);

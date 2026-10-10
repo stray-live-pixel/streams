@@ -1,5 +1,4 @@
 import type { Building, BuildingType, Tile } from './types.js';
-import { isLand } from './world.js';
 
 export type FootprintCatalog = Record<string, Tile[]>;
 export const singleCell = (): Tile[] => [{ x: 0, z: 0 }];
@@ -44,7 +43,7 @@ export function validFootprint(value: unknown): value is Tile[] {
 }
 
 export function buildingObjectId(building: Building): string {
-  const variant = (building.x * 3 + building.z) % 4;
+  const variant = (((Math.floor(building.x) * 3 + Math.floor(building.z)) % 4) + 4) % 4;
   return building.t === 'port'
     ? 'game/port'
     : `game/${building.t}/${building.t === 'house' ? variant : building.t === 'shop' ? variant % 2 : 0}`;
@@ -67,20 +66,7 @@ export function buildingCells(building: Building): Tile[] {
   }));
 }
 export function occupies(building: Building, x: number, z: number): boolean {
-  return buildingCells(building).some((cell) => cell.x === x && cell.z === z);
-}
-export function placementIssue(
-  building: Building,
-  existing: Building[],
-  land: (x: number, z: number) => boolean = isLand,
-): 'water' | 'occupied' | null {
-  const cells = buildingCells(building);
-  if (cells.some((cell) => !land(cell.x, cell.z))) return 'water';
-  if (
-    cells.some((cell) =>
-      existing.some((other) => other.t !== 'road' && occupies(other, cell.x, cell.z)),
-    )
-  )
-    return 'occupied';
-  return null;
+  return buildingCells(building).some(
+    (cell) => x >= cell.x && x < cell.x + 1 && z >= cell.z && z < cell.z + 1,
+  );
 }

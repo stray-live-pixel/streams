@@ -43,7 +43,7 @@ test('новые острова связны, отличаются по seed и 
       for (const side of [-1.5, 0, 1.5])
         for (const depth of [-0.9, 0, 0.9]) {
           const p = layout.point(side, layout.distance + depth);
-          assert(!world.isLand(Math.floor(p.x), Math.floor(p.z)));
+          assert(!world.contains(p.x, p.z));
         }
     }
     silhouettes.add(cells.join(';'));

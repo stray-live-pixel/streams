@@ -1,6 +1,7 @@
 /**
  * География острова — чистые функции: здесь нет ни браузера, ни Babylon.js.
- * Клетка имеет размер 1 × 1; участок здания задаётся отдельной маской клеток.
+ * contains принимает непрерывные координаты; isLand сохраняет старую клеточную географию
+ * для миграции сохранений. Форма участка задаётся в локальных единицах.
  */
 export const MAP_SIZE = 12;
 export function isLand(x: number, z: number) {
@@ -80,7 +81,8 @@ export function createWorld(seed = 0) {
           z < MAP_SIZE &&
           contains(x + 0.5, z + 0.5, 0.12);
   const shore = (x: number, z: number): [number, number] | null => {
-    if (!land(x, z)) return null;
+    if (!Number.isFinite(x) || !Number.isFinite(z) || !contains(x + 0.5, z + 0.5, -0.2))
+      return null;
     const directions: [number, number][] = [
       [0, 1],
       [1, 0],
@@ -92,7 +94,11 @@ export function createWorld(seed = 0) {
     if (seed !== 0)
       directions.sort((a, b) => (b[0] - a[0]) * (x + 0.5 - 6) + (b[1] - a[1]) * (z + 0.5 - 6));
     return (
-      directions.find(([dx, dz]) => !land(x + dx, z + dz) && !land(x + 2 * dx, z + 2 * dz)) ?? null
+      directions.find(
+        ([dx, dz]) =>
+          !contains(x + 0.5 + dx * 1.35, z + 0.5 + dz * 1.35) &&
+          !contains(x + 0.5 + dx * 2, z + 0.5 + dz * 2),
+      ) ?? null
     );
   };
   return { size: MAP_SIZE, seed, isLand: land, shoreDirection: shore, coastRadius, contains };

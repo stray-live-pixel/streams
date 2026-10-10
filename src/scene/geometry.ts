@@ -250,7 +250,7 @@ function builder(
   function building(b: Building) {
     const x = b.x + 0.5,
       z = b.z + 0.5;
-    const variant = (b.x * 3 + b.z) % 4;
+    const variant = (((Math.floor(b.x) * 3 + Math.floor(b.z)) % 4) + 4) % 4;
     const id = b.t === 'port' && completed ? 'game/beacon' : buildingObjectId(b);
     const custom = overrides ? gameObjectParts(id) : undefined;
     if (custom) {

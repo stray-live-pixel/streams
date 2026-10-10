@@ -101,7 +101,9 @@ try {
   await page.mouse.click(point.x, point.y);
   assert(
     await page.evaluate(() =>
-      cityDebug.state.buildings.some((b) => b.t === 'port' && b.x === 6 && b.z === 11),
+      cityDebug.state.buildings.some(
+        (b) => b.t === 'port' && Math.abs(b.x - 6) < 0.02 && Math.abs(b.z - 11) < 0.02,
+      ),
     ),
   );
   await page.keyboard.press('Escape');
