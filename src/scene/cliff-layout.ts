@@ -61,6 +61,7 @@ export function coastalCliffs(seed: number, buildings: Building[] = []): CliffSp
       top,
       bottom,
       shoulderHeight,
+      profile: 'layered',
       crownScale,
       lean,
       rotation,
@@ -206,7 +207,7 @@ function cliffContours(seed: number, buildings: Building[]): CliffContours {
       // section retreats slightly inland; open beaches keep their old contour.
       // Дёрн закрывает весь верх заглублённых камней и не проваливается
       // в круглые впадины между ними. Снаружи видны только скальные бока.
-      const land = Number.isFinite(landCut) ? landCut + 0.015 : coast - 0.22;
+      const land = Number.isFinite(landCut) ? landCut - 0.035 : coast - 0.3;
       const blend = Math.max(0, Math.min(1, sand / 0.18));
       const beachBlend = blend * blend * (3 - 2 * blend);
       contours.land[i] = land * (1 - beachBlend) + coast * beachBlend;

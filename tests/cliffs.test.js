@@ -123,3 +123,50 @@ test('вариации наклона и плеча сохраняют замк�
         assert(mesh.normals.every(Number.isFinite));
       }
 });
+
+test('береговые глыбы имеют четыре неровных яруса над водой и расширяются книзу', () => {
+  for (const seed of [0, 1, 42, 1234, 3210380753]) {
+    for (const rock of coastalCliffs(seed).slice(0, 6)) {
+      const mesh = cliffRockGeometry(rock);
+      assert.equal(mesh.indices.length / 3, 84);
+      const edges = new Map();
+      const heights = new Set();
+      for (let i = 0; i < mesh.positions.length; i += 9) {
+        const points = [0, 3, 6].map((o) => mesh.positions.slice(i + o, i + o + 3));
+        for (let j = 0; j < 3; j++) {
+          const a = points[j],
+            b = points[(j + 1) % 3];
+          const key = [a.join(','), b.join(',')].sort().join('|');
+          edges.set(key, (edges.get(key) ?? 0) + 1);
+          if (a[1] > -0.68) heights.add(a[1].toFixed(5));
+        }
+      }
+      assert(
+        [...edges.values()].every((n) => n === 2),
+        'Замкнутая оболочка без разрывов',
+      );
+      assert(
+        heights.size >= 22,
+        'Плечи разных ярусов не лежат на одинаковых горизонтальных срезах',
+      );
+      function sectionWidth(level) {
+        const points = [];
+        const p = mesh.positions;
+        for (let i = 0; i < p.length; i += 9)
+          for (let edge = 0; edge < 3; edge++) {
+            const a = i + edge * 3,
+              b = i + ((edge + 1) % 3) * 3;
+            if (p[a + 1] < level === p[b + 1] < level) continue;
+            const t = (level - p[a + 1]) / (p[b + 1] - p[a + 1]);
+            const dx = p[a] + (p[b] - p[a]) * t - rock.x;
+            const dz = p[a + 2] + (p[b + 2] - p[a + 2]) * t - rock.z;
+            points.push(dx * Math.cos(rock.rotation) + dz * Math.sin(rock.rotation));
+          }
+        return Math.max(...points) - Math.min(...points);
+      }
+      assert(sectionWidth(-0.65) > sectionWidth(-0.06) * 1.25, 'К воде глыба становится шире');
+      assert(mesh.positions.every(Number.isFinite));
+      assert(mesh.normals.every(Number.isFinite));
+    }
+  }
+});
