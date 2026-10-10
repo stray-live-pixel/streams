@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { coastalCliffs, uplandCliffs } from '../src/scene/cliff-layout.ts';
 import { terrainHeight } from '../src/scene/terrain.ts';
 import { cliffRockGeometry } from '../src/scene/cliffs.ts';
+import { coastalElevation } from '../src/scene/coast-height.ts';
 
 const spec = {
   x: 3,
@@ -164,7 +165,12 @@ test('береговые глыбы имеют четыре неровных я�
           }
         return Math.max(...points) - Math.min(...points);
       }
-      assert(sectionWidth(-0.65) > sectionWidth(-0.06) * 1.25, 'К воде глыба становится шире');
+      const cap = mesh.positions.slice(-7 * 9);
+      const narrowLevel = Math.min(...cap.filter((_, i) => i % 3 === 1)) - 0.04;
+      assert(
+        sectionWidth(-0.65) > sectionWidth(narrowLevel) * 1.25,
+        'К воде глыба становится шире',
+      );
       assert(mesh.positions.every(Number.isFinite));
       assert(mesh.normals.every(Number.isFinite));
     }
@@ -175,7 +181,8 @@ test('береговые короны скошены наружу, а не об�
   for (const rock of coastalCliffs(123456789)) {
     const cap = cliffRockGeometry(rock).positions.slice(-7 * 9);
     const heights = cap.filter((_, i) => i % 3 === 1);
-    assert(Math.max(...heights) <= 0);
+    for (let i = 0; i < cap.length; i += 3)
+      assert(cap[i + 1] <= coastalElevation(cap[i], cap[i + 2], 123456789));
     assert(Math.max(...heights) - Math.min(...heights) > 0.03);
   }
 });

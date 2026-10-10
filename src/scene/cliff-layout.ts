@@ -4,15 +4,9 @@ import { cliffRockGeometry, type CliffSpec } from './cliffs.js';
 
 export const COAST_SEGMENTS = 192;
 
-const wrapAngle = (angle: number) => Math.atan2(Math.sin(angle), Math.cos(angle));
-export function beachInfluence(angle: number, seed: number) {
-  const shift = 0.1 * Math.sin(seed);
-  const influence = Math.max(
-    Math.exp(-Math.pow(wrapAngle(angle - 1.1 - shift) / 0.4, 4)),
-    Math.exp(-Math.pow(wrapAngle(angle - 3.85 + shift) / 0.38, 4)),
-  );
-  return influence < 0.0001 ? 0 : influence;
-}
+import { beachInfluence, coastalElevation } from './coast-height.js';
+export { beachInfluence } from './coast-height.js';
+
 function random(seed: number) {
   let value = seed >>> 0;
   return () => {
@@ -62,6 +56,7 @@ export function coastalCliffs(seed: number, buildings: Building[] = []): CliffSp
       bottom,
       shoulderHeight,
       profile: 'layered',
+      elevation: (px, pz) => coastalElevation(px, pz, seed, buildings),
       crownSlope: 0.16 + 0.06 * Math.sin(i * 2.3),
       crownScale,
       lean,
@@ -110,6 +105,7 @@ export function uplandCliffs(seed: number, buildings: Building[] = []): CliffSpe
         width,
         depth: run + 0.58,
         top,
+        ceiling: (px, pz) => terrainHeight(px, pz, seed, buildings) - 0.005,
         crownScale: 0.57 + ((i * 7 + hill) % 5) * 0.045,
         shoulderHeight: 0.3 + ((i * 11 + hill) % 7) * 0.06,
         lean: 0.13,
@@ -144,15 +140,21 @@ const CONTOUR_SEGMENTS = 768;
 
 /** Пересечение треугольников с горизонтальной плоскостью. Один mesh используется
  * для уровня травы и ватерлинии, поэтому контуры не расходятся с геометрией. */
-function horizontalSection(positions: number[], level: number): Section[] {
+function horizontalSection(
+  positions: number[],
+  level: number,
+  elevation?: (x: number, z: number) => number,
+): Section[] {
   const segments: Section[] = [];
   for (let i = 0; i < positions.length; i += 9) {
     const cut: [number, number][] = [];
     for (let edge = 0; edge < 3; edge++) {
       const a = i + edge * 3;
       const b = i + ((edge + 1) % 3) * 3;
-      if (positions[a + 1] < level === positions[b + 1] < level) continue;
-      const t = (level - positions[a + 1]) / (positions[b + 1] - positions[a + 1]);
+      const ay = positions[a + 1] - (elevation?.(positions[a], positions[a + 2]) ?? 0);
+      const by = positions[b + 1] - (elevation?.(positions[b], positions[b + 2]) ?? 0);
+      if (ay < level === by < level) continue;
+      const t = (level - ay) / (by - ay);
       cut.push([
         positions[a] + (positions[b] - positions[a]) * t - 6,
         positions[a + 2] + (positions[b + 2] - positions[a + 2]) * t - 6,
@@ -191,7 +193,13 @@ function cliffContours(seed: number, buildings: Building[]): CliffContours {
     for (const spec of coastalCliffs(seed, buildings)) {
       const mesh = cliffRockGeometry(spec);
       levels.forEach((height, band) => {
-        sections[band].push(...horizontalSection(mesh.positions, height));
+        sections[band].push(
+          ...horizontalSection(
+            mesh.positions,
+            height,
+            band === 0 ? (x, z) => coastalElevation(x, z, seed, buildings) : undefined,
+          ),
+        );
       });
     }
     contours = {
@@ -273,5 +281,12 @@ export function coastSection(
 ): [number, number] {
   const contours = cliffContours(seed, buildings);
   const depth = [0, -0.22, -0.47, -0.68, -1.15][band];
-  return [sampleContour(angle, contours.bands[band]), depth];
+  const radius = sampleContour(angle, contours.bands[band]);
+  const rise = coastalElevation(
+    6 + Math.cos(angle) * radius,
+    6 + Math.sin(angle) * radius,
+    seed,
+    buildings,
+  );
+  return [radius, depth + rise * [1, 0, 0, 0, 0][band]];
 }

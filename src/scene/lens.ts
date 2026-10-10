@@ -57,7 +57,7 @@ export function createLens(camera: Camera) {
     const height = Math.max(1, canvas?.clientHeight || engine.getRenderHeight());
     // Express the radius in CSS pixels so Retina rendering and the lower
     // quality resolution do not change the apparent size of the blur.
-    const radius = quality === 'high' ? 5.5 : 4;
+    const radius = quality === 'high' ? 3.2 : 2.4;
     effect.setFloat2('blurStep', radius / width, radius / height);
     effect.setFloat2('safeInset', 0.5 / postProcess.width, 0.5 / postProcess.height);
     effect.setFloat('highQuality', quality === 'high' ? 1 : 0);

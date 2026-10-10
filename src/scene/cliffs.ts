@@ -13,6 +13,9 @@ export interface CliffSpec {
   rotation: number;
   seed: number;
   crownSlope?: number;
+  /** A shared land heightfield raises the crown without lifting the seabed. */
+  elevation?: (x: number, z: number) => number;
+  ceiling?: (x: number, z: number) => number;
   /** Layered coastal buttresses widen towards the water below the turf. */
   profile?: 'boulder' | 'layered';
   /** Main shoulder height as a fraction of the full rock: 0.25…0.75. */
@@ -65,6 +68,8 @@ export function cliffRockGeometry(spec: CliffSpec): CliffGeometry {
     shoulderHeight = 0.5,
     crownScale = 1,
     lean = 0,
+    elevation,
+    ceiling,
   } = spec;
   if (
     ![
@@ -161,10 +166,15 @@ export function cliffRockGeometry(spec: CliffSpec): CliffGeometry {
     // Shear moves the crown and its shoulders together, keeping the buried
     // foot planted. This changes the profile without a second stepped ring.
     const shiftedZ = tz + py * lean * depth;
+    const worldX = x + tx * cos - shiftedZ * sin;
+    const worldZ = z + tx * sin + shiftedZ * cos;
+    const rise = elevation?.(worldX, worldZ) ?? 0;
+    const height = py === 0 ? bottom : py === 1 ? crown : bottom + py * (crown - bottom);
+    const raised = height + rise * Math.max(0, (py - 0.18) / 0.82);
     return [
-      x + tx * cos - shiftedZ * sin,
-      py === 0 ? bottom : py === 1 ? crown : bottom + py * (crown - bottom),
-      z + tx * sin + shiftedZ * cos,
+      worldX,
+      py === 1 && ceiling ? Math.min(raised, ceiling(worldX, worldZ)) : raised,
+      worldZ,
     ];
   };
   const transformed = rings.map((ring) => ring.map(transform));

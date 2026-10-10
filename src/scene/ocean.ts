@@ -64,7 +64,7 @@ float shoreAt(vec2 p){
  return (distance.r-distance.g)*2.0;
 }
 float angularShore(vec2 p){
- const float cell=.28;
+ const float cell=.18;
  vec2 i=floor(p/cell)*cell,f=fract(p/cell);
  float a=shoreAt(i),b=shoreAt(i+vec2(cell,0)),c=shoreAt(i+vec2(0,cell)),d=shoreAt(i+vec2(cell,cell));
  return f.x+f.y<1.0 ? a+(b-a)*f.x+(c-a)*f.y
@@ -82,8 +82,8 @@ void main(){
  float coast=max(0.0,angularShore(p));
  float facetTone=hash(vFacet+seed);
  float mottling=noise(vFacet*.32+seed);
- vec3 deep=mix(vec3(.17,.69,.73),vec3(.27,.78,.79),mottling);
- vec3 shallow=mix(vec3(.32,.81,.74),vec3(.48,.87,.77),mottling);
+ vec3 deep=mix(vec3(.09,.56,.67),vec3(.19,.70,.73),mottling);
+ vec3 shallow=mix(vec3(.24,.78,.70),vec3(.43,.87,.77),mottling);
  vec3 color=mix(shallow,deep,smoothstep(.0,1.8,coast));
  color*=mix(.95,1.05,facetTone);
  float diffuse=.88+.12*max(0.0,dot(normal,lightDirection));
@@ -101,21 +101,21 @@ void main(){
  // Медленные нерегулярные фронты идут к берегу. Все контуры линейные,
  // поэтому прибой огибает скалы ломаными лентами, без гладких окружностей.
  float slowTime=time/3.0;
- float broken=angularNoise(p*2.1+seed);
- float localRhythm=angularNoise(p*.32+seed);
- float phase=coast*1.7+slowTime*(.30+localRhythm*.12)
- +angularNoise(p*.8+seed)*.24;
- float front=abs(fract(phase)-.19);
- float crest=clamp((.068-front)/.028,0.0,1.0);
- float reach=clamp((1.15-coast)/.65,0.0,1.0);
- float gaps=clamp((broken-.32)*5.0,0.0,1.0);
- float ribbons=crest*reach*gaps;
- float impact=sin(slowTime*2.26+localRhythm*6.28)*.5+.5;
- float wash=clamp((.12+impact*.10-coast)/.08,0.0,1.0)*impact*.56;
- float contact=clamp((.075-coast)/.055,0.0,1.0)*.44;
- float foam=max(ribbons,max(wash,contact))*mix(.50,1.0,broken);
- vec3 foamColor=mix(vec3(.34,.46,.58),vec3(.94,1.0,.93),daylight);
- color=mix(color,foamColor,foam*.84);
+ float broken=angularNoise(p*4.7+seed);
+ float localRhythm=angularNoise(p*.62+seed);
+ float surge=sin(slowTime*.92+localRhythm*6.28)*.5+.5;
+ float ragged=(angularNoise(p*7.5+vec2(slowTime*.12,0.0)+seed)-.5)*.15;
+ // Broad sheets cling to the feet of rocks. Their outer edges break into
+ // angular fragments, then dissolve instead of drawing nested contour rings.
+ float washWidth=.10+surge*.17+localRhythm*.08;
+ float sheet=clamp((washWidth+ragged-coast)/.045,0.0,1.0);
+ sheet*=clamp((broken-.16)*4.8,0.0,1.0);
+ float frontDistance=.24+(.5-surge*.5)*(.55+localRhythm*.3);
+ float front=clamp((.045-abs(coast-frontDistance-ragged))/.02,0.0,1.0);
+ front*=step(.52,broken)*clamp((.9-coast)/.4,0.0,1.0)*.75;
+ float foam=max(sheet,front);
+ vec3 foamColor=mix(vec3(.34,.46,.58),vec3(.98,1.0,.91),daylight);
+ color=mix(color,foamColor,foam*.94);
  gl_FragColor=vec4(color,1.0);
 }`;
 

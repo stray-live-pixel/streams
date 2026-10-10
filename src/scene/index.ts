@@ -22,6 +22,7 @@ import { FxaaPostProcess } from '@babylonjs/core/PostProcesses/fxaaPostProcess.j
 import { createLighting } from './lighting.js';
 import { createOcean } from './ocean.js';
 import { createLens } from './lens.js';
+import { PaintedScenery } from './painted-material.js';
 import { terrainHeight } from './terrain.js';
 import { sceneCoordinate, boardCoordinate, ISLAND_SPREAD } from './space.js';
 import { createCityLife } from './life.js';
@@ -94,8 +95,11 @@ export function createScene({
   material.specularColor = Color3.Black();
   material.twoSidedLighting = false;
   material.backFaceCulling = false;
+  new PaintedScenery(material);
   const ship = new Mesh('arrival-ship', scene);
-  shipGeometry(true).applyToMesh(ship);
+  const shipData = shipGeometry(true);
+  shipData.uvs = new Array((shipData.positions!.length / 3) * 2).fill(0);
+  shipData.applyToMesh(ship);
   ship.material = material;
   ship.setEnabled(false);
   let island: Mesh | null = null;
@@ -417,7 +421,9 @@ export function createScene({
         if (island) {
           island.dispose();
         }
-        shipGeometry(true).applyToMesh(ship);
+        const shipData = shipGeometry(true);
+        shipData.uvs = new Array((shipData.positions!.length / 3) * 2).fill(0);
+        shipData.applyToMesh(ship);
         island = new Mesh('island', scene);
         islandGeometry(next.buildings, board, next.won).applyToMesh(island);
         island.material = material;

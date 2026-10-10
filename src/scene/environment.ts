@@ -210,6 +210,31 @@ export function environmentLayout(board: Board, buildings: Building[]): NatureIn
       0.76 + talusRandom() * 0.14,
     );
   }
+  // Loose vegetation groups soften the turf rim without repeating a hedge.
+  // The same placement clearance keeps both beaches and future docks open.
+  const rimRandom = randomSequence(world.seed ^ 0x734d9);
+  for (let i = 0; i < 38; i++) {
+    const angle = ((i + rimRandom() * 0.8) / 38) * Math.PI * 2;
+    if (beachInfluence(angle, world.seed) > 0.08 || rimRandom() < 0.28) continue;
+    const r = cliffLandRadius(angle, world.seed) - 0.25 - rimRandom() * 0.3;
+    const x = 6 + Math.cos(angle) * r,
+      z = 6 + Math.sin(angle) * r;
+    add('bush', x, 0.01, z, 0.45 + rimRandom() * 0.38);
+    add(
+      'flowers',
+      x - Math.sin(angle) * 0.22,
+      0.02,
+      z + Math.cos(angle) * 0.22,
+      1.0 + rimRandom() * 0.4,
+    );
+    add(
+      'grass',
+      x - Math.cos(angle) * 0.18,
+      0.01,
+      z - Math.sin(angle) * 0.18,
+      0.8 + rimRandom() * 0.4,
+    );
+  }
   return instances;
 }
 
@@ -302,12 +327,22 @@ function triangulate(points: Point[], boundaryCount: number): [number, number, n
 export function environmentGeometry(board: Board, buildings: Building[], spread = 1) {
   const world = createWorld(board.seed ?? 0);
   const positions: number[] = [],
-    colors: number[] = [];
-  function triangle(a: Point, b: Point, c: Point, color: number[], stone = false) {
+    colors: number[] = [],
+    surfaces: number[] = [];
+  function triangle(
+    a: Point,
+    b: Point,
+    c: Point,
+    color: number[],
+    stone = false,
+    surface = stone ? 1 : 0,
+  ) {
     // Материалы получают исходный цвет: свет и тени рассчитывает Babylon.
     for (const point of [a, b, c]) {
       positions.push(6 + (point[0] - 6) * spread, point[1], 6 + (point[2] - 6) * spread);
-      const pigment = stone ? rockPigment(...point, color) : color;
+      // Tide shading is evaluated per fragment, so its edge can cross a face.
+      const pigment = stone ? rockPigment(point[0], Math.max(0, point[1]), point[2], color) : color;
+      surfaces.push(surface, 0);
       colors.push(...pigment.map((n) => Math.min(1, n / 255)), 1);
     }
   }
@@ -319,7 +354,7 @@ export function environmentGeometry(board: Board, buildings: Building[], spread 
       radius = cliffLandRadius(angle, world.seed, buildings);
     const x = 6 + Math.cos(angle) * radius,
       z = 6 + Math.sin(angle) * radius;
-    return [x, 0, z];
+    return [x, coastSection(angle, 0, world.seed, buildings)[1], z];
   });
   // Независимые точки по всей площади: треугольники больше не расходятся
   // лучами из центра. Береговые точки входят в ту же триангуляцию.
@@ -368,6 +403,7 @@ export function environmentGeometry(board: Board, buildings: Building[], spread 
       points[1],
       steep > 0.95 ? color : grassPigment(x, z, color),
       steep > 0.95,
+      steep > 0.95 ? 1 : 2,
     );
   }
 
@@ -437,6 +473,7 @@ export function environmentGeometry(board: Board, buildings: Building[], spread 
   const data = new VertexData();
   data.positions = positions;
   data.colors = colors;
+  data.uvs = surfaces;
   data.indices = Array.from({ length: positions.length / 3 }, (_, i) => i);
   data.normals = [];
   VertexData.ComputeNormals(positions, data.indices, data.normals, { useRightHandedSystem: true });
