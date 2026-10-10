@@ -12,7 +12,6 @@ export {
   proposedBuilding,
   buildingCells,
   occupies,
-  placementIssue,
 } from './footprint.js';
 export type { FootprintCatalog } from './footprint.js';
 
@@ -29,3 +28,10 @@ export type {
 export type { GameModel } from './game.js';
 
 export { storyProgress, BEACON_COST } from './story.js';
+
+export {
+  buildingsOverlap,
+  footprintSamples,
+  portLayout,
+  continuousPlacementIssue,
+} from './placement.js';

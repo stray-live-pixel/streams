@@ -250,7 +250,7 @@ function builder(
   function building(b: Building) {
     const x = b.x + 0.5,
       z = b.z + 0.5;
-    const variant = (b.x * 3 + b.z) % 4;
+    const variant = (((Math.floor(b.x) * 3 + Math.floor(b.z)) % 4) + 4) % 4;
     const id = b.t === 'port' && completed ? 'game/beacon' : buildingObjectId(b);
     const custom = overrides ? gameObjectParts(id) : undefined;
     if (custom) {
@@ -413,7 +413,9 @@ export function islandGeometry(buildings: Building[], board: Board, completed = 
   }
   const environment = environmentGeometry(board, buildings, ISLAND_SPREAD);
   // У природных граней сохраняем плоские нормали: резные скалы должны читаться.
-  return environment.merge(softenNormals(b.finish()), true);
+  const built = softenNormals(b.finish());
+  built.uvs = new Array((built.positions!.length / 3) * 2).fill(0);
+  return environment.merge(built, true);
 }
 /** Корабль — отдельный объект; анимация не пересоздаёт геометрию острова. */
 export function shipGeometry(realtimeLighting = false) {

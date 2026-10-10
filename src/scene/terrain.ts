@@ -1,4 +1,5 @@
 import { buildingCells, createWorld, type Building } from '../domain/index.js';
+import { coastalElevation } from './coast-height.js';
 
 const smooth = (value: number) => {
   const t = Math.max(0, Math.min(1, value));
@@ -117,7 +118,7 @@ function naturalHeight(x: number, z: number, seed: number) {
   const rolling = 0.085 + 0.055 * Math.sin(x * 0.81 + phase) * Math.cos(z * 0.69 - phase);
   const distance = Math.hypot(x - 6, z - 6);
   const coast = createWorld(seed).coastRadius(Math.atan2(z - 6, x - 6));
-  return (hills + rolling) * smooth((coast - distance) / 0.95);
+  return (hills + rolling) * smooth((coast - distance - 0.65) / 0.95);
 }
 
 /** Одна горизонтальная площадка для всего здания, включая многоклеточные шаблоны. */
@@ -126,13 +127,13 @@ export function buildingElevation(building: Building, seed = 0) {
   const cells = buildingCells(building);
   const x = cells.reduce((sum, cell) => sum + cell.x + 0.5, 0) / cells.length;
   const z = cells.reduce((sum, cell) => sum + cell.z + 0.5, 0) / cells.length;
-  return naturalHeight(x, z, seed);
+  return naturalHeight(x, z, seed) + coastalElevation(x, z, seed);
 }
 
 /** Общая высота для поверхности, растительности, зданий и попадания курсора.
  * Под пятном здания земля плоская; за его краем она плавно возвращается к рельефу. */
 export function terrainHeight(x: number, z: number, seed = 0, buildings: Building[] = []) {
-  const height = naturalHeight(x, z, seed);
+  const height = naturalHeight(x, z, seed) + coastalElevation(x, z, seed, buildings);
   let nearest = Infinity;
   let weightedHeight = 0;
   let totalWeight = 0;

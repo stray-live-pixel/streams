@@ -111,10 +111,11 @@ function grass(flowers = false) {
       i % 2 ? 9 : 10,
     );
     if (flowers && i % 2 === 0) {
-      const r = 0.035,
+      const r = 0.052,
         center = m.vertex(x, h, z);
       const petals = ring(m, x, h + 0.012, z, r, 5, a);
-      for (let j = 0; j < 5; j++) m.face(center, petals[j], petals[(j + 1) % 5], 11 + (i % 2));
+      for (let j = 0; j < 5; j++)
+        m.face(center, petals[(j + 1) % 5], petals[j], 11 + ((i / 2) % 2));
     }
   }
   return m;

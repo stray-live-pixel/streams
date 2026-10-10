@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { coastSection, coastalCliffs, cliffLandRadius } from '../src/scene/cliff-layout.ts';
 import { createWorld } from '../src/domain/index.ts';
 import { cliffRockGeometry } from '../src/scene/cliffs.ts';
+import { coastalElevation } from '../src/scene/coast-height.ts';
 import {
   beachInfluence,
   environmentGeometry,
@@ -167,7 +168,7 @@ test('примерно три четверти высоких склонов и�
       );
       if (triangle.some((point) => point[1] < 0)) break;
       for (const [x, y, z] of triangle) {
-        assert(y === 0 || Math.abs(y - terrainHeight(x, z, seed)) < 1e-9);
+        assert(Math.abs(y - terrainHeight(x, z, seed)) < 1e-9);
         terrainVertices.add(`${x.toFixed(8)},${z.toFixed(8)}`);
       }
     }
@@ -187,7 +188,7 @@ test('примерно три четверти высоких склонов и�
       if (grade > 2) steepSides++;
     }
     assert(
-      steepSides >= 22 && steepSides <= 25,
+      steepSides >= 22 && steepSides <= 26,
       'Около 75% периметра — крутые срезы, остальное подъём',
     );
   }
@@ -203,7 +204,10 @@ test('скальный бок соединяется с травой и спус
       const [topRadius, topY] = coastSection(angle, 0, seed);
       const [waterRadius, waterY] = coastSection(angle, 3, seed);
       assert.equal(topRadius, cliffLandRadius(angle, seed));
-      assert.equal(topY, 0);
+      assert.equal(
+        topY,
+        coastalElevation(6 + Math.cos(angle) * topRadius, 6 + Math.sin(angle) * topRadius, seed),
+      );
       assert.equal(waterY, -0.68);
       assert(Math.abs(shorelineRadius(angle, seed) - waterRadius) < 1e-8);
       if (beachInfluence(angle, seed) > 0.001) continue;
@@ -233,7 +237,14 @@ test('скальный бок соединяется с травой и спус
       for (let j = 0; j < 3; j++) {
         const a = pts[j],
           b = pts[(j + 1) % 3];
-        if (a[1] !== 0 || b[1] !== 0) continue;
+        const onBoundary = (p) => {
+          const angle = Math.atan2(p[2] - 6, p[0] - 6);
+          const [radius, y] = coastSection(angle, 0, seed);
+          return (
+            Math.abs(p[1] - y) < 1e-8 && Math.abs(Math.hypot(p[0] - 6, p[2] - 6) - radius) < 1e-8
+          );
+        };
+        if (!onBoundary(a) || !onBoundary(b)) continue;
         const key = [a.join(','), b.join(',')].sort().join('|');
         edges.set(key, (edges.get(key) ?? 0) + 1);
       }

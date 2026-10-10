@@ -7,6 +7,8 @@ export interface Tile {
 export interface Building extends Tile {
   t: BuildingType;
   footprint?: Tile[];
+  /** Retains valid pre-coordinate-save placements at the old island boundary. */
+  legacy?: true;
 }
 export interface CityState {
   version: number;

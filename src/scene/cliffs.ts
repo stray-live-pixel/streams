@@ -13,6 +13,11 @@ export interface CliffSpec {
   rotation: number;
   seed: number;
   crownSlope?: number;
+  /** A shared land heightfield raises the crown without lifting the seabed. */
+  elevation?: (x: number, z: number) => number;
+  ceiling?: (x: number, z: number) => number;
+  /** Layered coastal buttresses widen towards the water below the turf. */
+  profile?: 'boulder' | 'layered';
   /** Main shoulder height as a fraction of the full rock: 0.25…0.75. */
   shoulderHeight?: number;
   /** Relative width/depth of the buried crown: 0.5…1.2. */
@@ -59,9 +64,12 @@ export function cliffRockGeometry(spec: CliffSpec): CliffGeometry {
     rotation,
     seed,
     crownSlope = 0,
+    profile = 'boulder',
     shoulderHeight = 0.5,
     crownScale = 1,
     lean = 0,
+    elevation,
+    ceiling,
   } = spec;
   if (
     ![
@@ -119,6 +127,31 @@ export function cliffRockGeometry(spec: CliffSpec): CliffGeometry {
     ]);
   }
 
+  if (profile === 'layered') {
+    const crown = rings[2];
+    // Four exposed courses plus a buried foot. Heights vary per corner so
+    // they read as fractured rock, not horizontal masonry courses.
+    const layers = [
+      [0, 1.08],
+      [0.34, 1.14],
+      [0.58, 1.04],
+      [0.73, 0.91],
+      [0.87, 0.78],
+    ];
+    const stratified = layers.map(([height, width], layer) =>
+      Array.from({ length: 7 }, (_, i): Point => {
+        const p = source[7 + i];
+        const irregularity = 0.94 + random() * 0.12;
+        return [
+          p[0] * width * irregularity,
+          layer === 0 ? 0 : height + (random() - 0.5) * 0.09,
+          p[2] * width * irregularity,
+        ];
+      }),
+    );
+    rings.splice(0, rings.length, ...stratified, crown);
+  }
+
   const points = rings.flat();
   const minX = Math.min(...points.map((p) => p[0]));
   const maxX = Math.max(...points.map((p) => p[0]));
@@ -133,10 +166,15 @@ export function cliffRockGeometry(spec: CliffSpec): CliffGeometry {
     // Shear moves the crown and its shoulders together, keeping the buried
     // foot planted. This changes the profile without a second stepped ring.
     const shiftedZ = tz + py * lean * depth;
+    const worldX = x + tx * cos - shiftedZ * sin;
+    const worldZ = z + tx * sin + shiftedZ * cos;
+    const rise = elevation?.(worldX, worldZ) ?? 0;
+    const height = py === 0 ? bottom : py === 1 ? crown : bottom + py * (crown - bottom);
+    const raised = height + rise * Math.max(0, (py - 0.18) / 0.82);
     return [
-      x + tx * cos - shiftedZ * sin,
-      py === 0 ? bottom : py === 1 ? crown : bottom + py * (crown - bottom),
-      z + tx * sin + shiftedZ * cos,
+      worldX,
+      py === 1 && ceiling ? Math.min(raised, ceiling(worldX, worldZ)) : raised,
+      worldZ,
     ];
   };
   const transformed = rings.map((ring) => ring.map(transform));
@@ -162,7 +200,7 @@ export function cliffRockGeometry(spec: CliffSpec): CliffGeometry {
     }
   }
 
-  for (let layer = 0; layer < 2; layer++) {
+  for (let layer = 0; layer < rings.length - 1; layer++) {
     for (let i = 0; i < 7; i++) {
       const next = (i + 1) % 7;
       const low = transformed[layer];
@@ -179,7 +217,7 @@ export function cliffRockGeometry(spec: CliffSpec): CliffGeometry {
       }
     }
   }
-  for (const layer of [0, 2]) {
+  for (const layer of [0, rings.length - 1]) {
     const ring = transformed[layer];
     const center = transform([
       rings[layer].reduce((sum, p) => sum + p[0], 0) / 7,

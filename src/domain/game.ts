@@ -4,13 +4,8 @@ import { initialState, restoreState } from './state.js';
 import { storyProgress, BEACON_COST } from './story.js';
 import { calculate } from './economy.js';
 import { createWorld } from './world.js';
-import {
-  buildingCells,
-  occupies,
-  placementIssue,
-  proposedBuilding,
-  type FootprintCatalog,
-} from './footprint.js';
+import { occupies, proposedBuilding, type FootprintCatalog } from './footprint.js';
+import { buildingsOverlap, continuousPlacementIssue } from './placement.js';
 import {
   STEP,
   requiredBuilding,
@@ -110,17 +105,17 @@ export function createGame(
     } else if (command.type === 'build') {
       const { x, z } = command;
       if (!selected) say('Сначала выберите постройку внизу.');
-      else if (world.isLand(x, z) && isChoiceAllowed(selected, state, busy)) {
-        const old = state.buildings.find((b) => occupies(b, x, z));
+      else if (Number.isFinite(x) && Number.isFinite(z) && isChoiceAllowed(selected, state, busy)) {
+        const old = state.buildings.find((b) => occupies(b, x + 0.5, z + 0.5));
         const building = proposedBuilding(selected, x, z, footprints);
         // Удаление уже построенной дороги не зависит от нового рецепта её участка.
         const issue =
           selected === 'road' && old?.t === 'road'
             ? null
-            : placementIssue(building, state.buildings, world.isLand);
+            : continuousPlacementIssue(building, state.buildings, world);
         const definition = BUILDINGS[selected];
-        if (selected === 'port' && !world.shoreDirection(x, z))
-          say('Порту нужен выход к морю. Выберите подсвеченный участок.');
+        if (issue === 'shore')
+          say('Поставьте причал у берега: береговая часть на суше, настил над водой.');
         else if (issue === 'occupied')
           say('Часть участка уже занята зданием. Выберите другое место.');
         else if (issue === 'water') say('Весь участок здания должен находиться на суше.');
@@ -130,10 +125,7 @@ export function createGame(
           if (selected === 'road' && old?.t === 'road') {
             state.buildings.splice(state.buildings.indexOf(old), 1);
           } else {
-            const cells = buildingCells(building);
-            state.buildings = state.buildings.filter(
-              (b) => !cells.some((cell) => occupies(b, cell.x, cell.z)),
-            );
+            state.buildings = state.buildings.filter((b) => !buildingsOverlap(building, b));
             state.buildings.push(building);
           }
           state.money -= definition.cost;

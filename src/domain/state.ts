@@ -3,7 +3,8 @@ import { createWorld, MAP_SIZE } from './world.js';
 import { STEP } from './tutorial.js';
 import type { CityState, Building, BuildingType } from './types.js';
 import { validFootprint, buildingCells } from './footprint.js';
-export const SAVE_VERSION = 6;
+import { buildingsOverlap, continuousPlacementIssue } from './placement.js';
+export const SAVE_VERSION = 7;
 export function initialState(islandSeed = 0): CityState {
   return {
     version: SAVE_VERSION,
@@ -21,22 +22,29 @@ export function initialState(islandSeed = 0): CityState {
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
 }
-function isBuilding(value: unknown, isLand: (x: number, z: number) => boolean): value is Building {
+function isBuilding(value: unknown): value is Building {
   return (
     isRecord(value) &&
     typeof value.t === 'string' &&
     Object.hasOwn(BUILDINGS, value.t) &&
     typeof value.x === 'number' &&
     typeof value.z === 'number' &&
-    isLand(value.x, value.z) &&
+    Number.isFinite(value.x) &&
+    Number.isFinite(value.z) &&
+    (value.legacy === undefined || value.legacy === true) &&
     (value.footprint === undefined || validFootprint(value.footprint))
   );
 }
 /** JSON не становится безопасным от наличия TypeScript: проверяем каждое внешнее поле. */
 export function restoreState(raw: unknown): CityState {
-  if (!isRecord(raw) || typeof raw.version !== 'number' || ![2, 3, 4, 5, 6].includes(raw.version))
+  if (
+    !isRecord(raw) ||
+    typeof raw.version !== 'number' ||
+    ![2, 3, 4, 5, 6, 7].includes(raw.version)
+  )
     throw new Error('Неизвестная версия сохранения');
   const { money, food, day, step, buildings } = raw;
+  const legacySave = raw.version < 7;
   const islandSeed = raw.version < 6 ? 0 : raw.islandSeed;
   if (
     typeof islandSeed !== 'number' ||
@@ -45,7 +53,8 @@ export function restoreState(raw: unknown): CityState {
     islandSeed > 0xffffffff
   )
     throw new Error('Некорректный seed острова');
-  const { isLand, shoreDirection } = createWorld(islandSeed);
+  const world = createWorld(islandSeed);
+  const { isLand, shoreDirection } = world;
   if (
     typeof money !== 'number' ||
     !Number.isFinite(money) ||
@@ -62,17 +71,19 @@ export function restoreState(raw: unknown): CityState {
     step > 7 ||
     !Array.isArray(buildings) ||
     buildings.length > MAP_SIZE ** 2 ||
-    !buildings.every((b) => isBuilding(b, isLand)) ||
+    !buildings.every(isBuilding) ||
     buildings.filter((b) => b.t === 'hall').length !== 1 ||
     new Set(buildings.map((b) => `${b.x},${b.z}`)).size !== buildings.length
   )
     throw new Error('Сохранение повреждено');
-  const cells = buildings.flatMap(buildingCells);
-  if (
-    cells.some((cell) => !isLand(cell.x, cell.z)) ||
-    new Set(cells.map((cell) => `${cell.x},${cell.z}`)).size !== cells.length
-  )
-    throw new Error('Участки зданий пересекаются или выходят за остров');
+  for (const [index, building] of buildings.entries()) {
+    const legacy = legacySave || building.legacy === true;
+    const invalid = legacy
+      ? buildingCells(building).some((cell) => !isLand(cell.x, cell.z))
+      : continuousPlacementIssue(building, [], world) !== null;
+    if (invalid || buildings.slice(0, index).some((other) => buildingsOverlap(building, other)))
+      throw new Error('Участки зданий пересекаются или выходят за остров');
+  }
   const capacity = buildings.filter((b) => b.t === 'house').length * BUILDINGS.house.capacity;
   // Версия 2 заселяла дома сразу. Не теряем этих жителей при обновлении игры.
   const pop = raw.version === 2 ? capacity : raw.pop;
@@ -96,11 +107,12 @@ export function restoreState(raw: unknown): CityState {
     step,
     won: raw.won === true,
     endingSeen: raw.won === true && raw.endingSeen === true,
-    buildings: buildings.map(({ x, z, t, footprint }) => ({
+    buildings: buildings.map(({ x, z, t, footprint, legacy }) => ({
       x,
       z,
       t: t as BuildingType,
       ...(footprint ? { footprint: structuredClone(footprint) } : {}),
+      ...(legacySave || legacy ? { legacy: true as const } : {}),
     })),
   };
   // Победа старой версии остаётся победой: маяк достраивается без повторной оплаты.

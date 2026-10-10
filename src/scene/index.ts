@@ -10,13 +10,19 @@ import { Color3, Color4 } from '@babylonjs/core/Maths/math.color.js';
 import { Plane } from '@babylonjs/core/Maths/math.plane.js';
 import '@babylonjs/core/Culling/ray.js';
 import type { Arrival, GameModel, Tile } from '../domain/index.js';
-import { buildingCells, proposedBuilding, placementIssue, createWorld } from '../domain/index.js';
+import {
+  buildingCells,
+  proposedBuilding,
+  continuousPlacementIssue,
+  createWorld,
+} from '../domain/index.js';
 import type { SceneOptions, Passenger } from './types.js';
 import { islandGeometry, shipGeometry } from './geometry.js';
 import { FxaaPostProcess } from '@babylonjs/core/PostProcesses/fxaaPostProcess.js';
 import { createLighting } from './lighting.js';
 import { createOcean } from './ocean.js';
 import { createLens } from './lens.js';
+import { PaintedScenery } from './painted-material.js';
 import { terrainHeight } from './terrain.js';
 import { sceneCoordinate, boardCoordinate, ISLAND_SPREAD } from './space.js';
 import { createCityLife } from './life.js';
@@ -89,8 +95,11 @@ export function createScene({
   material.specularColor = Color3.Black();
   material.twoSidedLighting = false;
   material.backFaceCulling = false;
+  new PaintedScenery(material);
   const ship = new Mesh('arrival-ship', scene);
-  shipGeometry(true).applyToMesh(ship);
+  const shipData = shipGeometry(true);
+  shipData.uvs = new Array((shipData.positions!.length / 3) * 2).fill(0);
+  shipData.applyToMesh(ship);
   ship.material = material;
   ship.setEnabled(false);
   let island: Mesh | null = null;
@@ -197,7 +206,7 @@ export function createScene({
       if (difference(next) <= 0) {
         let low = previous,
           high = next;
-        for (let j = 0; j < 14; j++) {
+        for (let j = 0; j < 24; j++) {
           const middle = (low + high) / 2;
           if (difference(middle) > 0) low = middle;
           else high = middle;
@@ -209,49 +218,73 @@ export function createScene({
     }
     const point = ray.origin.add(ray.direction.scale(distance));
     const hit = { x: boardCoordinate(point.x), z: boardCoordinate(point.z) };
-    const tile = { x: Math.floor(hit.x), z: Math.floor(hit.z) };
-    return board.isLand(tile.x, tile.z) ? tile : null;
+    if (hit.x < -2 || hit.z < -2 || hit.x > board.size + 2 || hit.z > board.size + 2) return null;
+    return { x: hit.x - 0.5, z: hit.z - 0.5 };
   }
-  function outline(x: number, z: number, color: string) {
-    const points = [
-      [x + 0.025, z + 0.025],
-      [x + 0.975, z + 0.025],
-      [x + 0.975, z + 0.975],
-      [x + 0.025, z + 0.975],
-    ].map(([x, z]) => project(x, 0.025, z));
+  function placementOutline(candidate: Parameters<typeof buildingCells>[0], allowed: boolean) {
+    const cells = buildingCells(candidate);
+    const edges = new Map<string, [number, number][]>();
     context.beginPath();
-    points.forEach((p, i) => (i ? context.lineTo(p.x, p.y) : context.moveTo(p.x, p.y)));
-    context.closePath();
-    context.fillStyle = color;
+    for (const cell of cells) {
+      const corners: [number, number][] = [
+        [cell.x, cell.z],
+        [cell.x + 1, cell.z],
+        [cell.x + 1, cell.z + 1],
+        [cell.x, cell.z + 1],
+      ];
+      corners.forEach((p, i) => {
+        const screen = project(p[0], 0.035, p[1]);
+        if (i) context.lineTo(screen.x, screen.y);
+        else context.moveTo(screen.x, screen.y);
+        const q = corners[(i + 1) % 4];
+        const key = [p.join(','), q.join(',')].sort().join('|');
+        if (edges.has(key)) edges.delete(key);
+        else edges.set(key, [p, q]);
+      });
+      context.closePath();
+    }
+    context.fillStyle = allowed ? '#ebf9c344' : '#e8a08b77';
     context.fill();
-    context.strokeStyle = '#fff3c8';
+    context.beginPath();
+    for (const [a, b] of edges.values()) {
+      const p = project(a[0], 0.035, a[1]),
+        q = project(b[0], 0.035, b[1]);
+      context.moveTo(p.x, p.y);
+      context.lineTo(q.x, q.y);
+    }
+    // The dock is part of the placement preview; no map-wide grid of available cells.
+    if (candidate.t === 'port') {
+      const layout = harborLayout(candidate, board);
+      const perimeter = [
+        [-0.45, 0],
+        [0.45, 0],
+        [0.45, layout.distance - 0.9],
+        [1.5, layout.distance - 0.9],
+        [1.5, layout.distance + 0.9],
+        [-1.5, layout.distance + 0.9],
+        [-1.5, layout.distance - 0.9],
+        [-0.45, layout.distance - 0.9],
+      ];
+      perimeter.forEach(([side, depth], i) => {
+        const p = layout.point(side, depth),
+          screen = project(p.x, 0.035, p.z);
+        if (i) context.lineTo(screen.x, screen.y);
+        else context.moveTo(screen.x, screen.y);
+      });
+      context.closePath();
+    }
+    context.strokeStyle = allowed ? '#fff3c8' : '#e87962';
     context.lineWidth = 2;
     context.stroke();
   }
   function overlays(seconds: number) {
     context.clearRect(0, 0, width, height);
     if (!model) return;
-    if (model.selected === 'port')
-      for (let x = 0; x < board.size; x++)
-        for (let z = 0; z < board.size; z++) {
-          if (
-            board.shoreDirection(x, z) &&
-            !placementIssue(
-              proposedBuilding('port', x, z, model.footprints),
-              model.buildings,
-              board.isLand,
-            )
-          )
-            outline(x, z, '#f6deb633');
-        }
-    const tile = hovered;
-    if (tile && model.selected) {
-      const candidate = proposedBuilding(model.selected, tile.x, tile.z, model.footprints);
-      const allowed =
-        !placementIssue(candidate, model.buildings, board.isLand) &&
-        (model.selected !== 'port' || board.shoreDirection(tile.x, tile.z));
-      for (const cell of buildingCells(candidate))
-        outline(cell.x, cell.z, allowed ? '#ebf9c344' : '#e8a08b77');
+    if (hovered && model.selected) {
+      const candidate = proposedBuilding(model.selected, hovered.x, hovered.z, model.footprints);
+      const world = createWorld(model.islandSeed);
+      const allowed = !continuousPlacementIssue(candidate, model.buildings, world);
+      placementOutline(candidate, allowed);
     }
     if (model.won) {
       const port = model.buildings.find((b) => b.t === 'port');
@@ -388,7 +421,9 @@ export function createScene({
         if (island) {
           island.dispose();
         }
-        shipGeometry(true).applyToMesh(ship);
+        const shipData = shipGeometry(true);
+        shipData.uvs = new Array((shipData.positions!.length / 3) * 2).fill(0);
+        shipData.applyToMesh(ship);
         island = new Mesh('island', scene);
         islandGeometry(next.buildings, board, next.won).applyToMesh(island);
         island.material = material;

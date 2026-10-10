@@ -43,7 +43,7 @@ test('новые острова связны, отличаются по seed и 
       for (const side of [-1.5, 0, 1.5])
         for (const depth of [-0.9, 0, 0.9]) {
           const p = layout.point(side, layout.distance + depth);
-          assert(!world.isLand(Math.floor(p.x), Math.floor(p.z)));
+          assert(!world.contains(p.x, p.z));
         }
     }
     silhouettes.add(cells.join(';'));
@@ -120,5 +120,20 @@ test('готовые GLB совпадают с числом треугольни
       NORMAL: 1,
       COLOR_0: 2,
     });
+  }
+});
+
+test('лепестки цветов обращены к свету и чередуют жёлтые и кремовые оттенки', async () => {
+  const { readFile } = await import('node:fs/promises');
+  const pack = JSON.parse(
+    await readFile(new URL('../assets/models/island-nature/models.json', import.meta.url), 'utf8'),
+  );
+  const flowers = pack.flowers;
+  const petals = flowers.f.filter((f) => f[3] >= 11);
+  assert.deepEqual(new Set(petals.map((f) => f[3])), new Set([11, 12]));
+  for (const face of petals) {
+    const [a, b, c] = face.slice(0, 3).map((i) => flowers.p[i]);
+    const normalY = (b[2] - a[2]) * (c[0] - a[0]) - (b[0] - a[0]) * (c[2] - a[2]);
+    assert(normalY > 0, 'Верх лепестка освещается сверху');
   }
 });
