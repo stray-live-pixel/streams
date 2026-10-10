@@ -1,6 +1,6 @@
 import type { Command } from './domain/index.js';
 import type { CityScene } from './scene/index.js';
-import { createGame, MAP_SIZE, isLand, shoreDirection } from './domain/index.js';
+import { createGame, createWorld } from './domain/index.js';
 import { createStorage } from './persistence/index.js';
 import { createUI, createMenu, fitGameViewport } from './ui/index.js';
 import { createScene } from './scene/index.js';
@@ -11,7 +11,11 @@ import { objectFootprints } from './objects/index.js';
 const disposeViewport = fitGameViewport(document.getElementById('game-viewport')!);
 const storage = createStorage(() => window.localStorage);
 const loaded = storage.load();
-const game = createGame(loaded.state, objectFootprints());
+const game = createGame(
+  loaded.state,
+  objectFootprints(),
+  () => crypto.getRandomValues(new Uint32Array(1))[0] || 1,
+);
 let settings = storage.loadSettings();
 let hasGame = loaded.state !== null;
 let scene: CityScene | undefined;
@@ -84,7 +88,7 @@ function ensureScene() {
   try {
     scene = createScene({
       canvas,
-      board: { size: MAP_SIZE, isLand, shoreDirection },
+      board: createWorld(game.snapshot().islandSeed),
       onArrivalFinished: () => dispatch({ type: 'arrival-finished' }),
       onError: (text) => ui.notify(text),
     });

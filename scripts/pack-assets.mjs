@@ -96,6 +96,8 @@ export async function packAssets(root) {
   };
   await mkdir(path.join(root, '.generated'), { recursive: true });
   await writeFile(path.join(root, '.generated/models.json'), JSON.stringify(models));
+  const natureModels = await readFile(path.join(root, 'assets/models/island-nature/models.json'));
+  await writeFile(path.join(root, '.generated/nature-models.json'), natureModels);
   await writeFile(
     path.join(root, '.generated/template-models.json'),
     JSON.stringify(templateModels),
@@ -103,5 +105,5 @@ export async function packAssets(root) {
   await writeFile(path.join(root, '.generated/model-ids.json'), JSON.stringify(modelIds));
   await writeFile(path.join(root, '.generated/library-models.json'), JSON.stringify(library));
   await writeFile(path.join(root, '.generated/card-art.json'), JSON.stringify(art));
-  return Object.keys(models).length;
+  return Object.keys(models).length + Object.keys(JSON.parse(natureModels)).length;
 }

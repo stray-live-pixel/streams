@@ -3,7 +3,7 @@ import { BUILDINGS, BUILD_ORDER, ARRIVALS_PER_DAY } from './catalog.js';
 import { initialState, restoreState } from './state.js';
 import { storyProgress, BEACON_COST } from './story.js';
 import { calculate } from './economy.js';
-import { isLand, shoreDirection } from './world.js';
+import { createWorld } from './world.js';
 import {
   buildingCells,
   occupies,
@@ -25,11 +25,16 @@ import {
  * Команды — обычные объекты. Событие arrival просит сцену показать рейс,
  * но сама экономика ничего не знает о кадрах, DOM и графической библиотеке.
  */
-export function createGame(saved: CityState | null = null, footprints: FootprintCatalog = {}) {
+export function createGame(
+  saved: CityState | null = null,
+  footprints: FootprintCatalog = {},
+  nextSeed: () => number = () => 0,
+) {
   footprints = structuredClone(footprints);
-  let state = saved ? restoreState(saved) : initialState();
+  let state = saved ? restoreState(saved) : initialState(nextSeed());
   if (!saved)
     state.buildings = state.buildings.map((b) => proposedBuilding(b.t, b.x, b.z, footprints));
+  let world = createWorld(state.islandSeed);
   let selected: BuildingType | null = null;
   let busy = false;
   function snapshot() {
@@ -59,7 +64,8 @@ export function createGame(saved: CityState | null = null, footprints: Footprint
     let changed = false;
     const say = (text: string) => events.push({ type: 'notice', text });
     if (command.type === 'reset') {
-      state = initialState();
+      state = initialState(nextSeed());
+      world = createWorld(state.islandSeed);
       state.buildings = state.buildings.map((b) => proposedBuilding(b.t, b.x, b.z, footprints));
       selected = null;
       busy = false;
@@ -104,16 +110,16 @@ export function createGame(saved: CityState | null = null, footprints: Footprint
     } else if (command.type === 'build') {
       const { x, z } = command;
       if (!selected) say('Сначала выберите постройку внизу.');
-      else if (isLand(x, z) && isChoiceAllowed(selected, state, busy)) {
+      else if (world.isLand(x, z) && isChoiceAllowed(selected, state, busy)) {
         const old = state.buildings.find((b) => occupies(b, x, z));
         const building = proposedBuilding(selected, x, z, footprints);
         // Удаление уже построенной дороги не зависит от нового рецепта её участка.
         const issue =
           selected === 'road' && old?.t === 'road'
             ? null
-            : placementIssue(building, state.buildings);
+            : placementIssue(building, state.buildings, world.isLand);
         const definition = BUILDINGS[selected];
-        if (selected === 'port' && !shoreDirection(x, z))
+        if (selected === 'port' && !world.shoreDirection(x, z))
           say('Порту нужен выход к морю. Выберите подсвеченный участок.');
         else if (issue === 'occupied')
           say('Часть участка уже занята зданием. Выберите другое место.');

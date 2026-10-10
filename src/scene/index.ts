@@ -10,7 +10,7 @@ import { Color3, Color4 } from '@babylonjs/core/Maths/math.color.js';
 import { Plane } from '@babylonjs/core/Maths/math.plane.js';
 import '@babylonjs/core/Culling/ray.js';
 import type { Arrival, GameModel, Tile } from '../domain/index.js';
-import { buildingCells, proposedBuilding, placementIssue } from '../domain/index.js';
+import { buildingCells, proposedBuilding, placementIssue, createWorld } from '../domain/index.js';
 import type { SceneOptions, Passenger } from './types.js';
 import { islandGeometry, shipGeometry } from './geometry.js';
 import { createCityLife } from './life.js';
@@ -185,7 +185,11 @@ export function createScene({ canvas, board, onArrivalFinished, onError }: Scene
         for (let z = 0; z < board.size; z++) {
           if (
             board.shoreDirection(x, z) &&
-            !placementIssue(proposedBuilding('port', x, z, model.footprints), model.buildings)
+            !placementIssue(
+              proposedBuilding('port', x, z, model.footprints),
+              model.buildings,
+              board.isLand,
+            )
           )
             outline(x, z, '#f6deb633');
         }
@@ -193,7 +197,7 @@ export function createScene({ canvas, board, onArrivalFinished, onError }: Scene
     if (tile && model.selected) {
       const candidate = proposedBuilding(model.selected, tile.x, tile.z, model.footprints);
       const allowed =
-        !placementIssue(candidate, model.buildings) &&
+        !placementIssue(candidate, model.buildings, board.isLand) &&
         (model.selected !== 'port' || board.shoreDirection(tile.x, tile.z));
       for (const cell of buildingCells(candidate))
         outline(cell.x, cell.z, allowed ? '#ebf9c344' : '#e8a08b77');
@@ -305,9 +309,15 @@ export function createScene({ canvas, board, onArrivalFinished, onError }: Scene
       dirty = true;
     },
     setModel(next: GameModel) {
+      if (board.seed !== next.islandSeed) board = createWorld(next.islandSeed);
       model = next;
       life.setModel(next);
-      const key = JSON.stringify([next.buildings, next.won, objectTemplateRevision()]);
+      const key = JSON.stringify([
+        next.buildings,
+        next.won,
+        next.islandSeed,
+        objectTemplateRevision(),
+      ]);
       if (key !== signature) {
         if (island) {
           island.dispose();

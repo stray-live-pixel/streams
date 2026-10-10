@@ -1,12 +1,13 @@
 import { BUILDINGS } from './catalog.js';
-import { isLand, MAP_SIZE, shoreDirection } from './world.js';
+import { createWorld, MAP_SIZE } from './world.js';
 import { STEP } from './tutorial.js';
 import type { CityState, Building, BuildingType } from './types.js';
 import { validFootprint, buildingCells } from './footprint.js';
-export const SAVE_VERSION = 5;
-export function initialState(): CityState {
+export const SAVE_VERSION = 6;
+export function initialState(islandSeed = 0): CityState {
   return {
     version: SAVE_VERSION,
+    islandSeed,
     pop: 0,
     money: 600,
     food: 30,
@@ -20,7 +21,7 @@ export function initialState(): CityState {
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
 }
-function isBuilding(value: unknown): value is Building {
+function isBuilding(value: unknown, isLand: (x: number, z: number) => boolean): value is Building {
   return (
     isRecord(value) &&
     typeof value.t === 'string' &&
@@ -33,9 +34,18 @@ function isBuilding(value: unknown): value is Building {
 }
 /** JSON не становится безопасным от наличия TypeScript: проверяем каждое внешнее поле. */
 export function restoreState(raw: unknown): CityState {
-  if (!isRecord(raw) || typeof raw.version !== 'number' || ![2, 3, 4, 5].includes(raw.version))
+  if (!isRecord(raw) || typeof raw.version !== 'number' || ![2, 3, 4, 5, 6].includes(raw.version))
     throw new Error('Неизвестная версия сохранения');
   const { money, food, day, step, buildings } = raw;
+  const islandSeed = raw.version < 6 ? 0 : raw.islandSeed;
+  if (
+    typeof islandSeed !== 'number' ||
+    !Number.isInteger(islandSeed) ||
+    islandSeed < 0 ||
+    islandSeed > 0xffffffff
+  )
+    throw new Error('Некорректный seed острова');
+  const { isLand, shoreDirection } = createWorld(islandSeed);
   if (
     typeof money !== 'number' ||
     !Number.isFinite(money) ||
@@ -52,7 +62,7 @@ export function restoreState(raw: unknown): CityState {
     step > 7 ||
     !Array.isArray(buildings) ||
     buildings.length > MAP_SIZE ** 2 ||
-    !buildings.every(isBuilding) ||
+    !buildings.every((b) => isBuilding(b, isLand)) ||
     buildings.filter((b) => b.t === 'hall').length !== 1 ||
     new Set(buildings.map((b) => `${b.x},${b.z}`)).size !== buildings.length
   )
@@ -78,6 +88,7 @@ export function restoreState(raw: unknown): CityState {
     throw new Error('Некорректный шаг обучения');
   const state: CityState = {
     version: SAVE_VERSION,
+    islandSeed,
     pop,
     money,
     food,

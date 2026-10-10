@@ -11,9 +11,10 @@ import {
 import templateModels from '../../.generated/template-models.json';
 import modelIds from '../../.generated/model-ids.json';
 import { VertexData } from '@babylonjs/core/Meshes/mesh.vertexData.js';
-import { buildingObjectId, buildingCells, type Building } from '../domain/index.js';
+import { buildingObjectId, type Building } from '../domain/index.js';
 import type { Board } from './types.js';
 import { harborLayout } from './harbor.js';
+import { environmentGeometry } from './environment.js';
 import assets from '../../.generated/models.json';
 
 // В игре только используемые ассеты; полную библиотеку подключает редактор.
@@ -346,27 +347,7 @@ function builder(
 }
 /** Полностью пересобирается только при изменении списка построек. */
 export function islandGeometry(buildings: Building[], board: Board, completed = false) {
-  const b = builder(board, completed),
-    occupied = new Set(buildings.flatMap(buildingCells).map((p) => p.x + ',' + p.z));
-  for (let x = 0; x < board.size; x++)
-    for (let z = 0; z < board.size; z++) {
-      if (!board.isLand(x, z)) continue;
-      b.terrain(x, z);
-      if (!occupied.has(x + ',' + z) && hash(x, z) > 0.77 && !(x > 2 && x < 9 && z > 2 && z < 9)) {
-        const scale = 0.3 + hash(z, x) * 0.12;
-        b.shadow(x + 0.51, z + 0.55, 0.28, 0.21);
-        b.model(
-          hash(z, x) > 0.5 ? 'tree' : 'tree-high',
-          x + 0.45,
-          0.02,
-          z + 0.52,
-          scale,
-          scale,
-          scale,
-          hash(x, z) * 6,
-        );
-      }
-    }
+  const b = builder(board, completed);
   // Маленькая площадь использует построенную улицу, не захватывая свободные клетки.
   const roads = new Set(buildings.filter((p) => p.t === 'road').map((p) => `${p.x},${p.z}`));
   const roadNeighbors = (road: Building) =>
@@ -399,7 +380,7 @@ export function islandGeometry(buildings: Building[], board: Board, completed = 
       b.streetDecoration(road.x, road.z, false);
     }
   }
-  return b.finish();
+  return environmentGeometry(board, buildings).merge(b.finish(), true);
 }
 /** Корабль — отдельный объект; анимация не пересоздаёт геометрию острова. */
 export function shipGeometry() {

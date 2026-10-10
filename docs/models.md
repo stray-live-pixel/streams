@@ -5,6 +5,15 @@
 | ID | Модель | Исходник | Превью | Статус | В игре |
 | --- | --- | --- | --- | --- | --- |
 | `starter-port` | Стартовый порт: дом, набережная, правый пирс, подъёмник | [port.blend](../assets/art/port-reference-simple/port.blend) | [Общий вид](../assets/art/port-reference-simple/beauty.png) · [4 ракурса](../assets/art/port-reference-simple/four-views.png) | Доработка внешнего вида; пользователь ещё не утвердил | Не подключён; игрового экспорта нет |
+| `island-nature/pine-tall` | Высокая сосна | [GLB](../assets/models/island-nature/pine-tall.glb) | [В игре](../assets/models/island-nature/in-game-preview.png) | Готовая модель, 158 треугольников | `scene/environment.ts` |
+| `island-nature/pine-wide` | Широкая сосна | [GLB](../assets/models/island-nature/pine-wide.glb) | [В игре](../assets/models/island-nature/in-game-preview.png) | Готовая модель, 158 треугольников | `scene/environment.ts` |
+| `island-nature/pine-young` | Молодая сосна | [GLB](../assets/models/island-nature/pine-young.glb) | [В игре](../assets/models/island-nature/in-game-preview.png) | Готовая модель, 158 треугольников | `scene/environment.ts` |
+| `island-nature/rock-large` | Крупная скала | [GLB](../assets/models/island-nature/rock-large.glb) | [В игре](../assets/models/island-nature/in-game-preview.png) | Готовая модель, 35 треугольников | `scene/environment.ts` |
+| `island-nature/rock-flat` | Плоский камень | [GLB](../assets/models/island-nature/rock-flat.glb) | [В игре](../assets/models/island-nature/in-game-preview.png) | Готовая модель, 35 треугольников | `scene/environment.ts` |
+| `island-nature/rock-small` | Малый камень | [GLB](../assets/models/island-nature/rock-small.glb) | [В игре](../assets/models/island-nature/in-game-preview.png) | Готовая модель, 35 треугольников | `scene/environment.ts` |
+| `island-nature/bush` | Куст | [GLB](../assets/models/island-nature/bush.glb) | [В игре](../assets/models/island-nature/in-game-preview.png) | Готовая модель, 63 треугольников | `scene/environment.ts` |
+| `island-nature/grass` | Пучок травы | [GLB](../assets/models/island-nature/grass.glb) | [В игре](../assets/models/island-nature/in-game-preview.png) | Готовая модель, 7 треугольников | `scene/environment.ts` |
+| `island-nature/flowers` | Полевые цветы | [GLB](../assets/models/island-nature/flowers.glb) | [В игре](../assets/models/island-nature/in-game-preview.png) | Готовая модель, 27 треугольников | `scene/environment.ts` |
 
 ## starter-port — стартовый порт
 
@@ -45,3 +54,14 @@
 - [Первый вариант порта](../assets/art/port-reference-v1/) — изображения и промпт, не 3D-модель.
 - [Большой порт по береговому референсу](../assets/art/port-reference-waterfront/) — изображения и промпт, не 3D-модель.
 - Текущий упрощённый вариант с одним домом — `starter-port`, описан выше.
+
+
+## island-nature — набор окружения
+
+[Общий вид в игре](../assets/models/island-nature/in-game-preview.png) · [Визуальный референс](../assets/art/island-reference.png) · [Игровые меши](../assets/models/island-nature/models.json) · [Генератор исходников](../scripts/create-nature-models.mjs)
+
+Девять авторских низкополигональных моделей: три хвойных дерева, три камня, куст, трава и цветы. Всего 676 треугольников в библиотеке исходников; число треугольников окружения зависит от расстановки экземпляров (около 30 тысяч для тестового seed 123456789, включая землю, воду, берег и упрощённые тени).
+
+GLB можно импортировать в Blender; JSON содержит те же вершины, треугольники и цвета палитры для автономной игры. Единицы соответствуют игровым; Y направлена вверх, основание объекта стоит в нуле. Никаких изображений-текстур, внешних запросов, скелетов или анимаций. Материал GLB матовый с vertex colors; в игре направленное освещение заранее рассчитано в цветах вершин при сборке окружения.
+
+Изменение модели: обновить `scripts/create-nature-models.mjs`, выполнить `node scripts/create-nature-models.mjs`, пересобрать игру, обновить этот каталог. Скрипт не выполняет рендеры. Игровой код читает готовую библиотеку, затем расставляет экземпляры по seed с независимыми координатами, поворотом и масштабом. При строительстве декор в пределах здания и прохода к порту исчезает; прочие экземпляры сохраняют положение.

@@ -72,9 +72,10 @@ export function occupies(building: Building, x: number, z: number): boolean {
 export function placementIssue(
   building: Building,
   existing: Building[],
+  land: (x: number, z: number) => boolean = isLand,
 ): 'water' | 'occupied' | null {
   const cells = buildingCells(building);
-  if (cells.some((cell) => !isLand(cell.x, cell.z))) return 'water';
+  if (cells.some((cell) => !land(cell.x, cell.z))) return 'water';
   if (
     cells.some((cell) =>
       existing.some((other) => other.t !== 'road' && occupies(other, cell.x, cell.z)),
