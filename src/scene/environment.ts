@@ -26,8 +26,39 @@ function randomSequence(seed: number) {
 }
 const clamp = (value: number, low: number, high: number) => Math.max(low, Math.min(high, value));
 const wrapAngle = (angle: number) => Math.atan2(Math.sin(angle), Math.cos(angle));
-const beach = (angle: number, seed: number) =>
-  Math.exp(-Math.pow(wrapAngle(angle - 1.1 - 0.1 * Math.sin(seed)) / 0.31, 2));
+const beach = (angle: number, seed: number) => {
+  const influence = Math.exp(-Math.pow(wrapAngle(angle - 1.1 - 0.1 * Math.sin(seed)) / 0.31, 2));
+  return influence < 0.0001 ? 0 : influence;
+};
+
+/** Общая для береговой геометрии и прибоя кромка на уровне воды.
+ * Граница доступной для строительства суши остаётся внутри, на Y=0. */
+export function shorelineRadius(
+  angle: number,
+  seed: number,
+  landRadius = createWorld(seed).coastRadius(angle),
+) {
+  const phase = ((seed >>> 0) / 4294967296) * Math.PI * 2;
+  return landRadius + 0.44 + beach(angle, seed) * 0.28 + 0.06 * Math.sin(angle * 7 + phase);
+}
+
+// Цвета мешей сохраняются в исходных GLB. Эта палитра задаёт их прочтение
+// именно в солнечной игровой сцене: хвоя насыщеннее, камень теплее и светлее.
+const sceneNaturePalette = [
+  [66, 111, 72],
+  [83, 133, 77],
+  [111, 151, 82],
+  [139, 171, 91],
+  [124, 87, 49],
+  [153, 116, 67],
+  [205, 185, 150],
+  [230, 210, 172],
+  [182, 171, 145],
+  [153, 178, 65],
+  [181, 196, 81],
+  [240, 207, 88],
+  [251, 232, 167],
+];
 
 /** Одинаковый seed даёт те же экземпляры. Здания только расчищают своё место:
  * новая постройка не перемешивает лес на другом конце острова. */
@@ -180,7 +211,7 @@ export function environmentGeometry(board: Board, buildings: Building[]) {
     const x = points.reduce((s, p) => s + p[0], 0) / 3,
       z = points.reduce((s, p) => s + p[2], 0) / 3;
     const patch = Math.sin(x * 2.8 + z * 1.4) * Math.cos(z * 2.3 - x) * 3.5 + random() * 4;
-    triangle(points[0], points[1], points[2], [167 + patch, 179 + patch, 91 + patch * 0.6]);
+    triangle(points[0], points[1], points[2], [175 + patch, 188 + patch, 82 + patch * 0.6]);
   }
   for (let ring = 0; ring < rings; ring++)
     for (let i = 0; i < segments; i++) {
@@ -191,37 +222,62 @@ export function environmentGeometry(board: Board, buildings: Building[]) {
       if (ring) turf([a, b, c]);
       turf([a, c, d]);
     }
-  // Уступ под травой, светлый каменный берег и песчаная бухта.
+  // Наружный скат продолжает плоскую игровую поверхность. Неровные
+  // плечи и отдельные треугольники цвета земли вплетают дерн в камни,
+  // вместо одинакового вертикального среза по всему периметру.
+  const phase = ((world.seed >>> 0) / 4294967296) * Math.PI * 2;
+  const radial = (angle: number, r: number, y: number): Point => [
+    6 + Math.cos(angle) * r,
+    y,
+    6 + Math.sin(angle) * r,
+  ];
+  const shoulder = (angle: number, band: number): Point => {
+    const coast = world.coastRadius(angle),
+      width = shorelineRadius(angle, world.seed, coast) - coast,
+      sand = beach(angle, world.seed),
+      fold = Math.sin(angle * 11 + phase) * 0.5 + Math.sin(angle * 17 - phase) * 0.25;
+    if (band === 0) return radial(angle, coast, 0);
+    if (band === 1)
+      return radial(
+        angle,
+        coast + width * (0.32 + fold * 0.12),
+        -0.09 - (fold + 0.75) * 0.075 * (1 - sand),
+      );
+    if (band === 2) return radial(angle, coast + width * (0.7 + fold * 0.08), -0.39 - fold * 0.055);
+    return radial(angle, coast + width, -0.74);
+  };
   for (let i = 0; i < segments; i++) {
     const a = angleAt(i),
       b = angleAt(i + 1),
-      sandA = beach(a, world.seed),
-      sandB = beach(b, world.seed),
-      sand = (sandA + sandB) / 2;
-    const radial = (angle: number, r: number, y: number): Point => [
-      6 + Math.cos(angle) * r,
-      y,
-      6 + Math.sin(angle) * r,
-    ];
+      sand = (beach(a, world.seed) + beach(b, world.seed)) / 2;
     const g0 = point(i, 1),
-      g1 = point(i + 1, 1);
-    // Вся разрешённая для строительства суша, включая песок, имеет Y=0.
-    // Склон начинается за контуром: дом и трава не повиснут над пляжем.
-    const rim0 = radial(a, world.coastRadius(a), 0),
-      rim1 = radial(b, world.coastRadius(b), 0);
-    quad(g0, g1, rim1, rim0, [221, 204, 160]);
-    const e0 = radial(a, world.coastRadius(a) + 0.06, -0.12),
-      e1 = radial(b, world.coastRadius(b) + 0.06, -0.12);
-    quad(rim0, rim1, e1, e0, sand > 0.12 ? [217, 199, 154] : [145, 156, 76]);
-    const bottom0 = radial(a, world.coastRadius(a) + 0.24 + sandA * 0.32, -0.67),
-      bottom1 = radial(b, world.coastRadius(b) + 0.24 + sandB * 0.32, -0.67);
-    quad(
-      e0,
-      e1,
-      bottom1,
-      bottom0,
-      sand > 0.35 ? [223, 204, 157] : [174 + random() * 12, 164 + random() * 10, 141],
-    );
+      g1 = point(i + 1, 1),
+      rim0 = shoulder(a, 0),
+      rim1 = shoulder(b, 0);
+    // Песок в бухте также находится на Y=0: строения не повиснут над ним.
+    if (sand > 0) quad(g0, g1, rim1, rim0, [230, 210, 164]);
+    for (let band = 0; band < 3; band++) {
+      const upper0 = shoulder(a, band),
+        upper1 = shoulder(b, band),
+        lower0 = shoulder(a, band + 1),
+        lower1 = shoulder(b, band + 1);
+      for (const points of [
+        [upper0, upper1, lower1],
+        [upper0, lower1, lower0],
+      ]) {
+        const mottling = random() * 8,
+          grassTongue = (Math.sin((a + b) * 5.5 + phase) + 1) * 0.5,
+          grass = sand > 0.25 ? 0 : band === 0 ? 1 : band === 1 ? grassTongue * 0.65 : 0;
+        const rock = [219 + mottling, 197 + mottling * 0.7, 155 + mottling * 0.4],
+          turfColor = [173 + mottling, 186 + mottling, 84 + mottling * 0.6];
+        triangle(
+          points[0],
+          points[1],
+          points[2],
+          rock.map((c, j) => c * (1 - grass) + turfColor[j] * grass),
+        );
+      }
+    }
   }
   const layout = environmentLayout(board, buildings);
   for (const instance of layout) {
@@ -234,7 +290,8 @@ export function environmentGeometry(board: Board, buildings: Building[]) {
       y + py * scale * stretch,
       z + (px * si + pz * co) * scale,
     ]);
-    for (const f of model.f) triangle(points[f[0]], points[f[1]], points[f[2]], model.c[f[3]]);
+    for (const f of model.f)
+      triangle(points[f[0]], points[f[1]], points[f[2]], sceneNaturePalette[f[3]] ?? model.c[f[3]]);
   }
   const data = new VertexData();
   data.positions = positions;

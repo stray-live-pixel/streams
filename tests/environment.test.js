@@ -20,11 +20,21 @@ test('сутки проходят полный цикл, фиксированн�
   assert(daylightState(0, 'dusk').sun.x < 0);
 });
 
-test('вода имеет плотную непрерывную сетку без щелей между дальними кольцами', () => {
+test('вода имеет крупные цветовые грани и непрерывные рёбра без щелей', () => {
   const high = waterGeometry(),
     low = waterGeometry(false);
   assert(high.indices.length > low.indices.length);
-  assert(high.indices.length / 3 > 18000 && high.indices.length / 3 < 22000);
+  assert.equal(high.indices.length / 3, 2816);
+  assert.equal(low.indices.length / 3, 1728);
+  assert.equal(high.uvs.length, (high.positions.length / 3) * 2);
+  const positionKeys = new Map();
+  const positionsByKey = new Map();
+  for (let i = 0; i < high.positions.length / 3; i++) {
+    const position = high.positions.slice(i * 3, i * 3 + 3);
+    const key = position.join(':');
+    positionKeys.set(i, key);
+    positionsByKey.set(key, position);
+  }
   const edges = new Map();
   for (let i = 0; i < high.indices.length; i += 3) {
     const [a, b, c] = high.indices.slice(i, i + 3);
@@ -38,17 +48,19 @@ test('вода имеет плотную непрерывную сетку бе�
       [b, c],
       [c, a],
     ]) {
-      const key = [u, v].sort((a, b) => a - b).join(',');
+      const key = [positionKeys.get(u), positionKeys.get(v)].sort().join(',');
       edges.set(key, (edges.get(key) ?? 0) + 1);
     }
+    assert.deepEqual(high.uvs.slice(a * 2, a * 2 + 2), high.uvs.slice(b * 2, b * 2 + 2));
+    assert.deepEqual(high.uvs.slice(a * 2, a * 2 + 2), high.uvs.slice(c * 2, c * 2 + 2));
   }
   for (const [edge, count] of edges) {
     assert(count === 1 || count === 2);
     if (count === 1)
-      for (const v of edge.split(',').map(Number))
+      for (const key of edge.split(','))
         assert(
-          Math.abs(high.positions[v * 3] - 6) === 192 ||
-            Math.abs(high.positions[v * 3 + 2] - 6) === 192,
+          Math.abs(positionsByKey.get(key)[0] - 6) === 192 ||
+            Math.abs(positionsByKey.get(key)[2] - 6) === 192,
           'Открытые рёбра допускаются только на внешнем периметре',
         );
   }

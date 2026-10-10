@@ -11,7 +11,7 @@ import type { Scene } from '@babylonjs/core/scene.js';
 import type { Camera } from '@babylonjs/core/Cameras/camera.js';
 import type { Building } from '../domain/index.js';
 import { createWorld } from '../domain/index.js';
-import { environmentLayout } from './environment.js';
+import { environmentLayout, shorelineRadius } from './environment.js';
 import type { Board } from './types.js';
 
 export const WATER_LEVEL = -0.68;
@@ -28,56 +28,71 @@ float heightAt(vec2 p){
  +(noise(p*.9+vec2(time*.12,-time*.06)+seed)-.5)*.055;
 }`;
 export const waterVertex = `precision highp float;
-attribute vec3 position;uniform mat4 worldViewProjection;uniform float time;uniform float seed;
-varying vec3 vPosition;varying vec3 vNormal;varying vec4 vClip;
+attribute vec3 position;attribute vec2 uv;uniform mat4 worldViewProjection;uniform float time;uniform float seed;
+varying vec3 vPosition;varying vec2 vFacet;varying vec4 vClip;
 ${shaderNoise}${waveCode}
 void main(){
  vec3 p=position;p.y+=heightAt(p.xz);
- float e=.13;float dx=(heightAt(p.xz+vec2(e,0))-heightAt(p.xz-vec2(e,0)))/(2.0*e);
- float dz=(heightAt(p.xz+vec2(0,e))-heightAt(p.xz-vec2(0,e)))/(2.0*e);
- vPosition=p;vNormal=normalize(vec3(-dx,1.0,-dz));
+ vPosition=p;vFacet=uv;
  vClip=worldViewProjection*vec4(p,1.0);gl_Position=vClip;
 }`;
-export const waterFragment = `precision highp float;
-varying vec3 vPosition;varying vec3 vNormal;varying vec4 vClip;
+export const waterFragment = `
+#ifdef GL_OES_standard_derivatives
+#extension GL_OES_standard_derivatives : enable
+#endif
+precision highp float;
+varying vec3 vPosition;varying vec2 vFacet;varying vec4 vClip;
 uniform float time;uniform float seed;uniform float daylight;uniform float reflectionStrength;
 uniform vec3 eyePosition;uniform vec3 lightDirection;uniform sampler2D coastSampler;uniform sampler2D reflectionSampler;
 ${shaderNoise}
 void main(){
- vec2 p=vPosition.xz;vec3 normal=normalize(vNormal);
+ vec2 p=vPosition.xz;
+ // Производные одной грани дают плоскую нормаль, а общий центр — её постоянный оттенок.
+ #if defined(GL_OES_standard_derivatives) || __VERSION__ >= 300
+ vec3 normal=normalize(cross(dFdx(vPosition),dFdy(vPosition)));
+ #else
+ vec3 normal=vec3(0.0,1.0,0.0);
+ #endif
+ if(normal.y<0.0)normal=-normal;
  vec2 coastUV=(p+18.0)/48.0;float coast=texture2D(coastSampler,coastUV).r*2.0;
  if(any(lessThan(coastUV,vec2(0)))||any(greaterThan(coastUV,vec2(1))))coast=2.0;
- float mottling=noise(p*.38+seed)*.6+noise(p*1.2+vec2(time*.028,-time*.018))*.4;
- vec3 deep=mix(vec3(.18,.52,.56),vec3(.28,.65,.65),mottling);
- vec3 shallow=mix(vec3(.40,.72,.67),vec3(.51,.78,.70),mottling);
+ float facetTone=hash(vFacet+seed);
+ float mottling=noise(vFacet*.32+seed);
+ vec3 deep=mix(vec3(.16,.62,.66),vec3(.25,.72,.73),mottling);
+ vec3 shallow=mix(vec3(.30,.75,.70),vec3(.43,.81,.72),mottling);
  vec3 color=mix(shallow,deep,smoothstep(.0,1.8,coast));
- float diffuse=.82+.18*max(0.0,dot(normal,lightDirection));
+ color*=mix(.95,1.05,facetTone);
+ float diffuse=.88+.12*max(0.0,dot(normal,lightDirection));
  color*=diffuse*mix(.30,1.0,daylight);
  vec3 view=normalize(eyePosition-vPosition);
  float fresnel=pow(1.0-max(0.0,dot(view,normal)),3.0);
- vec2 uv=vClip.xy/vClip.w*.5+.5+normal.xz*.022;
+ vec2 uv=vClip.xy/vClip.w*.5+.5+normal.xz*.012;
  vec4 reflected=texture2D(reflectionSampler,uv);
  reflected+=texture2D(reflectionSampler,uv+vec2(.003,0));
  reflected+=texture2D(reflectionSampler,uv-vec2(.003,0));reflected/=3.0;
  color=mix(color,reflected.rgb,reflectionStrength*(.45+fresnel)*reflected.a);
- float sparkle=pow(max(0.0,dot(reflect(-lightDirection,normal),view)),75.0);
- color+=vec3(1.0,.86,.58)*sparkle*.34*mix(.25,1.0,daylight);
- // Прибой движется к берегу. Шум меняет ширину и разрывает границы пены.
- float foamNoise=noise(p*5.5+vec2(time*.17,-time*.12));
- float surge=sin(time*1.35+noise(p*1.4)*5.0)*.5+.5;
- float edge=.11+surge*.24+noise(p*2.7+time*.04)*.14;
- float foam=(1.0-smoothstep(edge-.09,edge+.06,coast))*smoothstep(.23,.58,foamNoise);
- float breaker=1.0-smoothstep(.025,.11,abs(coast-edge));
- foam=max(foam,breaker*smoothstep(.43,.71,foamNoise)*.8);
- foam*=1.0-smoothstep(.65,.9,coast);
- vec3 foamColor=mix(vec3(.34,.46,.58),vec3(.91,.97,.91),daylight);
- color=mix(color,foamColor,foam*.85);
+ // Широкий мягкий отблеск оставляет главным цвет граней, без зеркального блеска.
+ float glow=pow(max(0.0,dot(reflect(-lightDirection,normal),view)),8.0);
+ color+=vec3(.70,.90,.83)*glow*.035*daylight;
+ // Фронты идут от моря к нулевой изолинии расстояния, огибая берег и камни.
+ float broken=noise(p*2.8+seed+vec2(time*.06,0));
+ float phase=coast*1.7+time*.36+noise(p*.7+seed)*.16;
+ float front=abs(fract(phase)-.16);
+ float crest=1.0-smoothstep(.025,.13,front);
+ float reach=1.0-smoothstep(.48,1.15,coast);
+ float ribbons=crest*reach*smoothstep(.34,.60,broken);
+ float impact=sin(time*2.26+noise(p*1.8)*1.7)*.5+.5;
+ float wash=(1.0-smoothstep(.025,.12+impact*.10,coast))*impact*.56;
+ float contact=(1.0-smoothstep(.015,.075,coast))*.56;
+ float foam=max(ribbons,max(wash,contact))*mix(.55,1.0,broken);
+ vec3 foamColor=mix(vec3(.34,.46,.58),vec3(.94,1.0,.93),daylight);
+ color=mix(color,foamColor,foam*.84);
  gl_FragColor=vec4(color,1.0);
 }`;
 
 /** Непрерывная сетка: высокая плотность у острова, общие рёбра дальних колец. */
 export function waterGeometry(high = true) {
-  const n = high ? 96 : 64,
+  const n = high ? 32 : 24,
     span = 48,
     positions: number[] = [],
     indices: number[] = [];
@@ -86,9 +101,9 @@ export function waterGeometry(high = true) {
     for (let x = 0; x <= n; x++) {
       const edge = x === 0 || z === 0 || x === n || z === n;
       positions.push(
-        -18 + (x * span) / n + (edge ? 0 : jitter(x, z) * 0.09),
+        -18 + (x * span) / n + (edge ? 0 : jitter(x, z) * 0.24),
         WATER_LEVEL,
-        -18 + (z * span) / n + (edge ? 0 : jitter(z, x) * 0.09),
+        -18 + (z * span) / n + (edge ? 0 : jitter(z, x) * 0.24),
       );
     }
   for (let z = 0; z < n; z++)
@@ -123,8 +138,24 @@ export function waterGeometry(high = true) {
     border = outer;
   }
   const data = new VertexData();
-  data.positions = positions;
-  data.indices = indices;
+  // Раздельные вершины сохраняют один оттенок на треугольник. Координаты общих
+  // рёбер совпадают буквально, поэтому волновая деформация не создаёт щелей.
+  const facetedPositions: number[] = [],
+    facets: number[] = [],
+    facetedIndices: number[] = [];
+  for (let i = 0; i < indices.length; i += 3) {
+    const triangle = indices.slice(i, i + 3);
+    const centerX = triangle.reduce((sum, v) => sum + positions[v * 3], 0) / 3;
+    const centerZ = triangle.reduce((sum, v) => sum + positions[v * 3 + 2], 0) / 3;
+    for (const vertex of triangle) {
+      facetedIndices.push(facetedPositions.length / 3);
+      facetedPositions.push(...positions.slice(vertex * 3, vertex * 3 + 3));
+      facets.push(centerX, centerZ);
+    }
+  }
+  data.positions = facetedPositions;
+  data.indices = facetedIndices;
+  data.uvs = facets;
   return data;
 }
 
@@ -141,8 +172,10 @@ export function shoreDistancePixels(
     for (let x = 0; x < size; x++) {
       const px = -18 + ((x + 0.5) / size) * 48,
         pz = -18 + ((z + 0.5) / size) * 48;
+      const angle = Math.atan2(pz - 6, px - 6);
       let distance =
-        Math.hypot(px - 6, pz - 6) - world.coastRadius(Math.atan2(pz - 6, px - 6)) - 0.2;
+        Math.hypot(px - 6, pz - 6) -
+        shorelineRadius(angle, board.seed ?? 0, world.coastRadius(angle));
       for (const rock of rocks) {
         if (Math.abs(px - rock.x) > 2 || Math.abs(pz - rock.z) > 2) continue;
         distance = Math.min(
@@ -174,7 +207,7 @@ export function createOcean(scene: Scene, camera: Camera) {
     scene,
     { vertexSource: waterVertex, fragmentSource: waterFragment },
     {
-      attributes: ['position'],
+      attributes: ['position', 'uv'],
       uniforms: [
         'worldViewProjection',
         'time',
@@ -194,14 +227,16 @@ export function createOcean(scene: Scene, camera: Camera) {
   material.setFloat('time', 0);
   material
     .setFloat('daylight', 1)
-    .setFloat('reflectionStrength', 0.2)
+    .setFloat('reflectionStrength', 0.12)
     .setVector3('lightDirection', Vector3.Up())
     .setVector3('eyePosition', camera.position);
   let field: RawTexture | null = null,
     lastReflection = -100,
     quality: 'high' | 'low' = 'high',
     time = 0;
-  let reflections = 0;
+  let reflections = 0,
+    cameraMoving = false;
+  const previousCamera = new Float32Array(32).fill(Number.NaN);
   reflection.onClearObservable.add((engine) => {
     engine.clear(reflection.clearColor, true, true, true);
     reflections++;
@@ -233,7 +268,22 @@ export function createOcean(scene: Scene, camera: Camera) {
         .setFloat('daylight', daylight)
         .setVector3('lightDirection', sun.y > 0 ? sun : sun.scale(-1))
         .setVector3('eyePosition', camera.position);
-      if (clockSeconds - lastReflection > (quality === 'high' ? 0.5 : 1)) {
+      const view = camera.getViewMatrix().m,
+        projection = camera.getProjectionMatrix().m;
+      cameraMoving = false;
+      for (let i = 0; i < 16; i++) {
+        if (
+          !Number.isFinite(previousCamera[i]) ||
+          Math.abs(view[i] - previousCamera[i]) > 0.000001 ||
+          Math.abs(projection[i] - previousCamera[i + 16]) > 0.000001
+        )
+          cameraMoving = true;
+        previousCamera[i] = view[i];
+        previousCamera[i + 16] = projection[i];
+      }
+      // Положение отражения должно соответствовать текущему кадру камеры.
+      // В покое маленькая RTT обновляется реже: вода сама не входит в renderList.
+      if (cameraMoving || clockSeconds - lastReflection > (quality === 'high' ? 0.25 : 0.5)) {
         reflection.resetRefreshCounter();
         lastReflection = clockSeconds;
       }
@@ -256,7 +306,8 @@ export function createOcean(scene: Scene, camera: Camera) {
         vertices: mesh.getTotalVertices(),
         reflectionSize: reflection.getSize().width,
         reflectionUpdates: reflections,
-        reflectionHz: quality === 'high' ? 2 : 1,
+        reflectionHz: quality === 'high' ? 4 : 2,
+        reflectionCameraMoving: cameraMoving,
         shoreTextureSize: SHORE_TEXTURE_SIZE,
       };
     },

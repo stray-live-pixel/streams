@@ -58,11 +58,14 @@ export function createLighting(scene: Scene, camera: Camera, onLabel: (label: st
   sunlight.orthoBottom = -11;
   sunlight.shadowMinZ = 1;
   sunlight.shadowMaxZ = 75;
-  const shadows = new ShadowGenerator(1024, sunlight);
+  const shadows = new ShadowGenerator(2048, sunlight);
   shadows.usePercentageCloserFiltering = true;
-  shadows.filteringQuality = ShadowGenerator.QUALITY_LOW;
-  shadows.bias = 0.003;
-  shadows.normalBias = 0.06;
+  // The broad island frustum needs enough texels for the small pine tiers.
+  // A 5×5 comparison filter softens their silhouettes without losing contact.
+  shadows.filteringQuality = ShadowGenerator.QUALITY_HIGH;
+  shadows.bias = 0.0008;
+  shadows.normalBias = 0.025;
+  shadows.setDarkness(0.12);
   shadows.getShadowMap()!.refreshRate = 0;
   const sky = CreateSphere('sky-dome', { diameter: 600, segments: 12 }, scene);
   sky.infiniteDistance = true;
@@ -103,21 +106,21 @@ export function createLighting(scene: Scene, camera: Camera, onLabel: (label: st
       const direction = current.sun.y > -0.04 ? current.sun : current.sun.scale(-1);
       sunlight.direction.copyFrom(direction.scale(-1));
       sunlight.position.copyFrom(new Vector3(6, 0, 6).add(direction.scale(35)));
-      sunlight.intensity = (0.28 + 0.72 * daylight) * (1 - 0.14 * twilight);
+      sunlight.intensity = (0.28 + 0.64 * daylight) * (1 - 0.14 * twilight);
       sunlight.diffuse = Color3.Lerp(
         new Color3(0.5, 0.64, 0.92),
         Color3.Lerp(new Color3(1, 0.98, 0.85), new Color3(1, 0.62, 0.3), twilight),
         daylight,
       );
-      ambient.intensity = 0.5 + 0.22 * daylight;
+      ambient.intensity = 0.5 + 0.3 * daylight;
       ambient.diffuse = Color3.Lerp(
         new Color3(0.42, 0.52, 0.78),
-        new Color3(0.92, 0.97, 1),
+        new Color3(1, 0.99, 0.93),
         daylight,
       );
       ambient.groundColor = Color3.Lerp(
         new Color3(0.24, 0.31, 0.45),
-        new Color3(0.52, 0.48, 0.33),
+        new Color3(0.59, 0.55, 0.37),
         daylight,
       );
       skyMaterial
@@ -154,7 +157,9 @@ export function createLighting(scene: Scene, camera: Camera, onLabel: (label: st
     },
     setQuality(value: 'high' | 'low') {
       quality = value;
-      shadows.mapSize = value === 'high' ? 1024 : 512;
+      shadows.mapSize = value === 'high' ? 2048 : 1024;
+      shadows.filteringQuality =
+        value === 'high' ? ShadowGenerator.QUALITY_HIGH : ShadowGenerator.QUALITY_MEDIUM;
       lastShadow = -100;
     },
     get state() {
@@ -180,7 +185,8 @@ export function createLighting(scene: Scene, camera: Camera, onLabel: (label: st
         daylight: current.daylight,
         sunPosition: sun.position.asArray(),
         sunEnabled: sun.isEnabled(),
-        shadowSize: quality === 'high' ? 1024 : 512,
+        shadowSize: quality === 'high' ? 2048 : 1024,
+        shadowFilter: quality === 'high' ? 'PCF 5×5' : 'PCF 3×3',
         shadowRefreshHz: quality === 'high' ? 4 : 2,
       };
     },
