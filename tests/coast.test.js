@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { coastSection, coastalCliffs, cliffLandRadius } from '../src/scene/cliff-layout.ts';
 import { createWorld } from '../src/domain/index.ts';
+import { cliffRockGeometry } from '../src/scene/cliffs.ts';
 import {
   beachInfluence,
   environmentGeometry,
@@ -10,14 +11,14 @@ import {
 } from '../src/scene/environment.ts';
 import { terrainHeight, buildingElevation, terrainContourPoints } from '../src/scene/terrain.ts';
 
-test('береговой скат остаётся снаружи строительной поверхности для разных островов', () => {
+test('ватерлиния следует объёму глыб без чрезмерных выступов и поднутрений', () => {
   for (const seed of [0, 1, 1234, 3210380753, 4294967295]) {
     const world = createWorld(seed);
     for (let i = 0; i < 128; i++) {
       const angle = (i / 128) * Math.PI * 2;
       const land = cliffLandRadius(angle, seed);
       const waterline = shorelineRadius(angle, seed, land);
-      assert(waterline >= land - 1e-6 && waterline < land + 1.65);
+      assert(waterline > land - 0.18 && waterline < land + 1.65);
       assert.equal(waterline, shorelineRadius(angle, seed));
     }
   }
@@ -209,7 +210,7 @@ test('скальный бок соединяется с травой и спус
       for (let band = 1; band < 5; band++) {
         const [radius, height] = coastSection(angle, band, seed);
         assert(
-          Math.abs(radius - topRadius) < 0.105,
+          Math.abs(radius - topRadius) < (band === 3 ? 1.1 : 0.44),
           'Скалы не разъезжаются наружу длинными клиньями',
         );
         assert(height < topY);
@@ -242,5 +243,30 @@ test('скальный бок соединяется с травой и спус
       'Нет висящих рёбер земли',
     );
     assert(coastalCliffs(seed, [{ t: 'port', x: 11, z: 6 }]).length < cliffs.length);
+  }
+});
+
+// A prismatic extrusion would also pass seam tests. Require real shoulders and
+// changing slopes, while retaining a shared, watertight turf boundary.
+test('берег состоит из объёмных глыб с плечами, а не вытянутой плоской стенки', () => {
+  for (const seed of [0, 1, 3210380753]) {
+    let shaped = 0;
+    for (let i = 0; i < 192; i++) {
+      const angle = (i / 192) * Math.PI * 2;
+      if (beachInfluence(angle, seed) > 0.001) continue;
+      const radii = [0, 1, 2, 3].map((band) => coastSection(angle, band, seed)[0]);
+      if (Math.max(...radii) - Math.min(...radii) > 0.12) shaped++;
+    }
+    assert(shaped > 65, 'Большинство скальных участков имеют объёмный профиль');
+    const layout = coastalCliffs(seed);
+    const rendered = environmentGeometry(createWorld(seed), []).positions;
+    const triangles = new Set();
+    const signature = (points) => points.map((n) => n.toFixed(6)).join(',');
+    for (let i = 0; i < rendered.length; i += 9) triangles.add(signature(rendered.slice(i, i + 9)));
+    for (const rock of layout) {
+      const mesh = cliffRockGeometry(rock).positions;
+      for (let i = 0; i < mesh.length; i += 9)
+        assert(triangles.has(signature(mesh.slice(i, i + 9))), 'В сцене есть сами объёмные глыбы');
+    }
   }
 });
