@@ -7,6 +7,7 @@ The generated design image is an appearance reference; this scene defines layout
 
 from pathlib import Path
 from math import pi
+import runpy
 
 import bpy
 from mathutils import Vector
@@ -20,7 +21,7 @@ scene.unit_settings.system = 'METRIC'
 
 
 def material(name, color):
-    mat = bpy.data.materials.new(name)
+    mat = bpy.data.materials.get(name) or bpy.data.materials.new(name)
     mat.diffuse_color = (*color, 1)
     mat.use_nodes = True
     bsdf = mat.node_tree.nodes.get('Principled BSDF')
@@ -40,8 +41,10 @@ glass = material('Deep teal glass', (.075, .20, .21))
 rope = material('Natural rope', (.52, .40, .22))
 iron = material('Dark iron', (.11, .125, .115))
 
-model = bpy.data.collections.new('Port - shared geometry')
-scene.collection.children.link(model)
+model = bpy.data.collections.get('Port - shared geometry')
+if model is None:
+    model = bpy.data.collections.new('Port - shared geometry')
+    scene.collection.children.link(model)
 
 
 def keep(obj, name, mat, bevel=0):
@@ -224,6 +227,9 @@ scene.render.image_settings.file_format = 'PNG'
 scene.render.image_settings.color_mode = 'RGBA'
 scene.view_settings.view_transform = 'AgX'
 
+# Apply the same styling pass used through MCP in the open Blender scene.
+runpy.run_path(str(OUT / 'stylize_port.py'))['apply_style']()
+
 views = [
     ('front', (0, -30, 2.80), (0, 0, 2.80)),
     ('back', (0, 30, 2.80), (0, 0, 2.80)),
@@ -241,8 +247,15 @@ for name, location, target in views:
     scene.render.filepath = str(OUT / ('view-' + name + '.png'))
     bpy.ops.render.render(write_still=True)
 
-scene.camera = bpy.data.objects['View - front']
-bpy.ops.wm.save_as_mainfile(filepath=str(OUT / 'port.blend'))
+scene.camera = bpy.data.objects['Style - beauty camera']
+scene.render.filepath = str(OUT / 'beauty.png')
+bpy.ops.render.render(write_still=True)
+backup_versions = bpy.context.preferences.filepaths.save_version
+try:
+    bpy.context.preferences.filepaths.save_version = 0
+    bpy.ops.wm.save_as_mainfile(filepath=str(OUT / 'port.blend'))
+finally:
+    bpy.context.preferences.filepaths.save_version = backup_versions
 assert sum(obj.name == 'Harbor house walls' for obj in model.objects) == 1
-assert len([obj for obj in scene.objects if obj.type == 'CAMERA']) == 4
-print('PORT_REFERENCE_COMPLETE', len(model.objects), 'shared model objects, four orthographic cameras')
+assert len([obj for obj in scene.objects if obj.type == 'CAMERA']) == 5
+print('PORT_REFERENCE_COMPLETE', len(model.objects), 'shared model objects, four reference cameras plus beauty')
