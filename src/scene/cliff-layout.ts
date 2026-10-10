@@ -44,8 +44,8 @@ export function coastalCliffs(seed: number, buildings: Building[] = []): CliffSp
       z = 6 + Math.sin(angle) * radius;
     const width = 0.7 + next() * 1.0,
       depth = 0.95 + next() * 0.7;
-    // Корона целиком ниже дерна. Наружу выходят только сколотые боковые
-    // грани; отдельные круглые крышки камней не образуют берег.
+    // Внутренняя корона под дёрном, наружная скошена к воде.
+    // Плоская крышка не подпирает траву широким нависающим козырьком.
     const top = -0.002;
     const bottom = -1.08 - next() * 0.24;
     const shoulderHeight = 0.29 + next() * 0.42;
@@ -62,6 +62,7 @@ export function coastalCliffs(seed: number, buildings: Building[] = []): CliffSp
       bottom,
       shoulderHeight,
       profile: 'layered',
+      crownSlope: 0.16 + 0.06 * Math.sin(i * 2.3),
       crownScale,
       lean,
       rotation,
@@ -203,11 +204,10 @@ function cliffContours(seed: number, buildings: Building[]): CliffContours {
       const coast = world.coastRadius(theta);
       const landCut = outerSectionRadius(theta, sections[0]);
       const sand = beachInfluence(theta, seed);
-      // No rock should leave a green shelf suspended over a fissure. An absent
-      // section retreats slightly inland; open beaches keep their old contour.
-      // Дёрн закрывает весь верх заглублённых камней и не проваливается
-      // в круглые впадины между ними. Снаружи видны только скальные бока.
-      const land = Number.isFinite(landCut) ? landCut - 0.035 : coast - 0.3;
+      // Дёрн следует верхнему сечению скошенной короны. Малый отступ
+      // оставляет каменный скос снаружи и убирает зелёные козырьки.
+      // Во впадинах край отступает внутрь, пляжи сохраняют свой контур.
+      const land = Number.isFinite(landCut) ? landCut - 0.045 : coast - 0.3;
       const blend = Math.max(0, Math.min(1, sand / 0.18));
       const beachBlend = blend * blend * (3 - 2 * blend);
       contours.land[i] = land * (1 - beachBlend) + coast * beachBlend;

@@ -13,6 +13,7 @@ import {
   cliffLandRadius,
 } from './cliff-layout.js';
 import { cliffRockGeometry } from './cliffs.js';
+import { grassPigment, rockPigment } from './surface-color.js';
 export { beachInfluence } from './cliff-layout.js';
 
 type Point = [number, number, number];
@@ -302,11 +303,12 @@ export function environmentGeometry(board: Board, buildings: Building[], spread 
   const world = createWorld(board.seed ?? 0);
   const positions: number[] = [],
     colors: number[] = [];
-  function triangle(a: Point, b: Point, c: Point, color: number[]) {
+  function triangle(a: Point, b: Point, c: Point, color: number[], stone = false) {
     // Материалы получают исходный цвет: свет и тени рассчитывает Babylon.
     for (const point of [a, b, c]) {
       positions.push(6 + (point[0] - 6) * spread, point[1], 6 + (point[2] - 6) * spread);
-      colors.push(...color.map((n) => Math.min(1, n / 255)), 1);
+      const pigment = stone ? rockPigment(...point, color) : color;
+      colors.push(...pigment.map((n) => Math.min(1, n / 255)), 1);
     }
   }
   const random = randomSequence(world.seed ^ 0x29e0b51);
@@ -360,7 +362,13 @@ export function environmentGeometry(board: Board, buildings: Building[], spread 
         ? [232 + variation, 207 + variation, 158 + variation * 0.7]
         : [186 + variation, 202 + variation, 81 + variation * 0.6];
     // Bowyer-Watson даёт CCW в XZ; в правой системе вверх смотрит обратный обход.
-    triangle(points[0], points[2], points[1], color);
+    triangle(
+      points[0],
+      points[2],
+      points[1],
+      steep > 0.95 ? color : grassPigment(x, z, color),
+      steep > 0.95,
+    );
   }
 
   const radial = (angle: number, r: number, y: number): Point => [
@@ -386,8 +394,8 @@ export function environmentGeometry(board: Board, buildings: Building[], spread 
         d = ledge(i, band + 1);
       const facet = Math.sin(angleAt(i) * 9 + world.seed) * 3;
       const color = [224 + sand * 23 + facet, 198 + sand * 27 + facet, 152 + sand * 17 + facet];
-      triangle(a, b, c, color);
-      triangle(a, c, d, color);
+      triangle(a, b, c, color, sand < 0.4);
+      triangle(a, c, d, color, sand < 0.4);
     }
   }
   for (const spec of [
@@ -400,7 +408,7 @@ export function environmentGeometry(board: Board, buildings: Building[], spread 
         (offset) => rock.positions.slice(i + offset, i + offset + 3) as Point,
       );
       const color = rock.colors.slice((i / 3) * 4, (i / 3) * 4 + 3).map((value) => value * 255);
-      triangle(points[0], points[1], points[2], color);
+      triangle(points[0], points[1], points[2], color, true);
     }
   }
   const layout = environmentLayout(board, buildings);
@@ -418,7 +426,13 @@ export function environmentGeometry(board: Board, buildings: Building[], spread 
       z + ((px * si + pz * co) * scale) / spread,
     ]);
     for (const f of model.f)
-      triangle(points[f[0]], points[f[1]], points[f[2]], sceneNaturePalette[f[3]] ?? model.c[f[3]]);
+      triangle(
+        points[f[0]],
+        points[f[1]],
+        points[f[2]],
+        sceneNaturePalette[f[3]] ?? model.c[f[3]],
+        asset.startsWith('rock'),
+      );
   }
   const data = new VertexData();
   data.positions = positions;

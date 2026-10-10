@@ -170,3 +170,12 @@ test('береговые глыбы имеют четыре неровных я�
     }
   }
 });
+
+test('береговые короны скошены наружу, а не образуют плоскую полку под травой', () => {
+  for (const rock of coastalCliffs(123456789)) {
+    const cap = cliffRockGeometry(rock).positions.slice(-7 * 9);
+    const heights = cap.filter((_, i) => i % 3 === 1);
+    assert(Math.max(...heights) <= 0);
+    assert(Math.max(...heights) - Math.min(...heights) > 0.03);
+  }
+});
