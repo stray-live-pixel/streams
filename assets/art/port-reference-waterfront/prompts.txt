@@ -1,0 +1,27 @@
+WATERFRONT PORT REFERENCE — QUIET HARBOR
+
+DESIGN SOURCE
+source-reference.png is the user-supplied image defining the design. It supersedes the compact T-shaped starter-port concept.
+
+VIEWS
+four-views.png: sea-facing front, land-facing back, right side, and top. Generated with built-in imagegen. These are visual concept views rather than calibrated orthographic drawings; reconcile perspective and small details into one coherent model in Blender.
+
+3D MODELING PROMPT
+
+Create a game-ready low-poly waterfront port matching the attached reference image and four-view sheet. Preserve its overall layout: a long broad wooden quay on piles, an asymmetric finger pier projecting seaward on the right, a large cream timber-framed harbor house with an orange gable roof at the rear right, a smaller sage-roof warehouse beside it, and a tiny turquoise dock office at the far left. Keep the working lane along the water clear.
+
+Include the house's canvas awnings, exposed timber framing, chimney and open storage entrance; wooden piles and supporting beams; a cargo hoist with pulley and rope on the projecting pier; mooring posts, ladders, grouped crates and barrels.
+
+Use chunky readable shapes, restrained bevels, matte materials and warm wood colors. Model the quay, supports, buildings, roofs, hoist and props as separate logical objects. No water, terrain, vegetation, boats or people. No grid dependency. Resolve projection differences into one coherent geometry, prioritizing the supplied screenshot's design. Place origin at the landward attachment edge, Z up, seaward direction +Y, for free positioning and rotation.
+
+IMAGE GENERATION PROMPT
+
+Create a FOUR-VIEW 3D MODEL REFERENCE SHEET faithfully based on the USER'S ATTACHED HARBOR IMAGE. This image defines the design, not merely the mood. The asset is the complete waterfront port ensemble visible in the image: broad wooden quay on heavy timber piles running along the shore, an asymmetric finger pier extending into the sea on its RIGHT-hand portion, a large cream plaster and dark-timber harbor house with orange terracotta gable roof at the rear RIGHT, a smaller sage-teal roofed timber warehouse immediately to its LEFT, and a tiny teal dock office at the far LEFT. Preserve the reference's relative arrangement, silhouettes and proportions. Do not replace it with a tiny hut, narrow T-shaped dock, symmetrical harbor, lighthouse or invented building. Capture the identifiable design of THIS harbor.
+
+Subject specifics: long broad planked waterfront platform with an irregular L-like footprint and a generous working area; substantial vertical timber piles underneath and visible supporting beams, wooden steps down from the rear shore attachment, side ladders to water level; stout wooden A-frame cargo hoist with horizontal boom, pulley and hanging rope on the right-hand projecting dock; low mooring posts, ropes, a few grouped crates and barrels. The main harbor house is approximately twice the height of the smaller shed, two storeys including its gabled upper volume, with cream walls, warm brown exposed timber, a small chimney, warm orange roof, open ground-level storage doorway and light canvas awnings on timber posts. The small warehouse has a subdued green gable roof and timber walls. The far-left office is a low turquoise-painted simple box with a shallow roof. There are THREE buildings total, all belonging to one coherent port asset. Main house and sheds occupy the rear edge of the quay, leaving its seaward working lane unobstructed. Preserve asymmetry.
+
+Render as a buildable stylized low-poly game model for Blender: simple planar surfaces, chunky clean timber, low-sided piles and barrels, restrained bevels, matte flat-color materials, minimal texture noise. Warm wood, cream plaster, orange tile roof, sage green and turquoise accents. Retain enough construction detail to guide modeling, but avoid photoreal microdetail.
+
+Output ONE large, crisp 2 by 2 reference sheet with FOUR projections of the SAME complete model on a neutral light warm-gray background. TOP LEFT: FRONT / SEA (sea-facing elevation, main orange-roof building on viewer's right, small office left). TOP RIGHT: BACK / LAND (reverse elevation, consistent mirrored positions). BOTTOM LEFT: RIGHT SIDE (profile of projecting pier and main house). BOTTOM RIGHT: TOP (strict overhead plan that clearly shows the long waterfront quay, three building footprints along its landward edge, and the right-hand seaward projecting dock). Orthographic views, parallel lines, minimal perspective, matched scale and exactly consistent geometry and object arrangement in all panels. Do not make four different harbor designs. Keep all piles, roofs, hoist and complete pier extremities within the frame. Simple readable labels below each view: "FRONT / SEA", "BACK / LAND", "RIGHT SIDE", "TOP".
+
+Isolate the PORT MODEL ONLY: no sea plane, no shoreline terrain, no rocks, no trees, no background town, no sailboat or rowboats, no people. These are external scenery or separate assets. Do not include a diorama base or round pedestal. Preserve the structural underside so it can later intersect arbitrary natural shores. No grid, no construction snapping tiles, no decorative border, no dimensions, no logos. Soft neutral studio light and gentle ambient occlusion, no strong shadows obscuring geometry. This is a design reference for making the user's pictured harbor in Blender.
