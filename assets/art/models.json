@@ -369,18 +369,44 @@
         "triangles_per_block": 42,
         "vertices_per_block": 126,
         "scene_seed": 123456789,
-        "scene_triangles": 18457,
-        "scene_vertices": 55371,
+        "scene_triangles": 17155,
+        "scene_vertices": 51465,
         "measured_at": "2026-10-11"
       },
       "notes": [
         "Процедурная замкнутая глыба на основе формы rock-large; отдельного GLB или blend пока нет.",
         "Короны заглублены под траву. Варьируются ширина, глубина, наклон, высота плеча и боковые скосы.",
-        "Контур дерна покрывает сечение скрытых корон; прибой следует сечению на Y=-0.68.",
+        "Глыбы задают контур берега; основной скальный бок строится отдельной общей поверхностью с дёрном. Объёмные экземпляры остаются на возвышенностях.",
         "Проверено в браузере; художественное согласование владельцем ещё не завершено."
       ],
       "source_sha256": "51f36644ffb2c13d3d0795c7b77f2b0a62d2f4fcac97a74560a10812d1e6ab05",
-      "layout_sha256": "6e75d0f58dcc0ea9ab43e177e04d6b3e3f8d385f4bbd46e219d4e71ee4313ebd"
+      "layout_sha256": "56b9dbad2417080c23309761582dc4b494015b90d38948831375038bcba9c885"
+    },
+    {
+      "id": "island-nature/coast-surface",
+      "name": "Общий скальный бок острова",
+      "status": "design-iteration",
+      "game_ready": true,
+      "source": "src/scene/cliff-layout.ts",
+      "generators": [
+        "src/scene/cliff-layout.ts",
+        "src/scene/environment.ts"
+      ],
+      "preview": "assets/models/island-nature/in-game-preview.png",
+      "reference": "assets/art/coastal-reference/coast-3.png",
+      "runtime_export": null,
+      "game_integration": "src/scene/environment.ts",
+      "metrics": {
+        "triangles": 1536,
+        "vertices": 4608,
+        "segments": 192,
+        "measured_at": "2026-10-11"
+      },
+      "source_sha256": "56b9dbad2417080c23309761582dc4b494015b90d38948831375038bcba9c885",
+      "notes": [
+        "Точный общий шов с травой, почти отвесный профиль со сколами и два пологих песчаных берега.",
+        "Процедурная часть сцены; отдельного blend/GLB нет. Художественная итерация ожидает оценки владельца."
+      ]
     }
   ]
 }

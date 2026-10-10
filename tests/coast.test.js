@@ -1,7 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { coastalCliffs, cliffLandRadius } from '../src/scene/cliff-layout.ts';
-import { cliffRockGeometry } from '../src/scene/cliffs.ts';
+import { coastSection, coastalCliffs, cliffLandRadius } from '../src/scene/cliff-layout.ts';
 import { createWorld } from '../src/domain/index.ts';
 import {
   beachInfluence,
@@ -16,7 +15,7 @@ test('береговой скат остаётся снаружи строите
     const world = createWorld(seed);
     for (let i = 0; i < 128; i++) {
       const angle = (i / 128) * Math.PI * 2;
-      const land = world.coastRadius(angle);
+      const land = cliffLandRadius(angle, seed);
       const waterline = shorelineRadius(angle, seed, land);
       assert(waterline >= land - 1e-6 && waterline < land + 1.65);
       assert.equal(waterline, shorelineRadius(angle, seed));
@@ -34,7 +33,7 @@ test('подложка острова замкнута ниже воды, гео
     if (y !== -1.15) continue;
     const angle = Math.atan2(z - 6, x - 6);
     const sand = beachInfluence(angle, world.seed);
-    const radius = cliffLandRadius(angle, world.seed) + sand * 1.4 * 1.29;
+    const [radius] = coastSection(angle, 4, world.seed);
     if (Math.abs(Math.hypot(x - 6, z - 6) - radius) < 1e-6)
       edge.add(`${x.toFixed(8)},${z.toFixed(8)}`);
   }
@@ -193,35 +192,55 @@ test('примерно три четверти высоких склонов и�
   }
 });
 
-test('прибой следует реальному сечению объёмных скал, а пляжи остаются открыты', () => {
+test('скальный бок соединяется с травой и спускается вниз, а прибой следует его граням', () => {
   for (const seed of [0, 1, 3210380753]) {
+    const world = createWorld(seed);
     const cliffs = coastalCliffs(seed);
-    assert(cliffs.length > 15);
     assert(new Set(cliffs.map((rock) => rock.width.toFixed(2))).size > 10);
-    for (const spec of cliffs) {
-      assert(beachInfluence(Math.atan2(spec.z - 6, spec.x - 6), seed) <= 0.18);
-      const mesh = cliffRockGeometry(spec);
-      let cuts = 0;
-      for (let i = 0; i < mesh.positions.length; i += 9) {
-        const points = [0, 3, 6].map((offset) => mesh.positions.slice(i + offset, i + offset + 3));
-        for (let edge = 0; edge < 3; edge++) {
-          const a = points[edge],
-            b = points[(edge + 1) % 3];
-          if (a[1] < -0.68 === b[1] < -0.68) continue;
-          const t = (-0.68 - a[1]) / (b[1] - a[1]);
-          const x = a[0] + (b[0] - a[0]) * t - 6;
-          const z = a[2] + (b[2] - a[2]) * t - 6;
-          const angle = Math.atan2(z, x);
-          if (beachInfluence(angle, seed) > 0.001) continue;
-          assert(
-            shorelineRadius(angle, seed) >= Math.hypot(x, z) - 0.055,
-            'Ватерлиния не проходит внутри скального выступа',
-          );
-          cuts++;
-        }
+    for (let i = 0; i < 192; i++) {
+      const angle = (i / 192) * Math.PI * 2;
+      const [topRadius, topY] = coastSection(angle, 0, seed);
+      const [waterRadius, waterY] = coastSection(angle, 3, seed);
+      assert.equal(topRadius, cliffLandRadius(angle, seed));
+      assert.equal(topY, 0);
+      assert.equal(waterY, -0.68);
+      assert(Math.abs(shorelineRadius(angle, seed) - waterRadius) < 1e-8);
+      if (beachInfluence(angle, seed) > 0.001) continue;
+      for (let band = 1; band < 5; band++) {
+        const [radius, height] = coastSection(angle, band, seed);
+        assert(
+          Math.abs(radius - topRadius) < 0.105,
+          'Скалы не разъезжаются наружу длинными клиньями',
+        );
+        assert(height < topY);
       }
-      if (beachInfluence(Math.atan2(spec.z - 6, spec.x - 6), seed) < 0.001) assert(cuts > 0);
     }
+    // Проверяем общий шов в итоговом меше: каждое граничное ребро травы
+    // должно иметь ровно одну ответную грань скалы, включая последний сегмент.
+    const data = environmentGeometry(world, []);
+    const edges = new Map();
+    let groundEnd = 0;
+    for (let i = 0; i < data.positions.length; i += 9) {
+      if ([1, 4, 7].some((offset) => data.positions[i + offset] < 0)) {
+        groundEnd = i;
+        break;
+      }
+    }
+    const limit = groundEnd + 192 * 4 * 2 * 9;
+    for (let i = 0; i < limit; i += 9) {
+      const pts = [0, 3, 6].map((offset) => data.positions.slice(i + offset, i + offset + 3));
+      for (let j = 0; j < 3; j++) {
+        const a = pts[j],
+          b = pts[(j + 1) % 3];
+        if (a[1] !== 0 || b[1] !== 0) continue;
+        const key = [a.join(','), b.join(',')].sort().join('|');
+        edges.set(key, (edges.get(key) ?? 0) + 1);
+      }
+    }
+    assert(
+      [...edges.values()].every((count) => count === 2),
+      'Нет висящих рёбер земли',
+    );
     assert(coastalCliffs(seed, [{ t: 'port', x: 11, z: 6 }]).length < cliffs.length);
   }
 });

@@ -5,7 +5,8 @@ import type { Board } from './types.js';
 import { terrainContourPoints, terrainHeight } from './terrain.js';
 import {
   beachInfluence,
-  coastalCliffs,
+  coastSection,
+  COAST_SEGMENTS,
   uplandCliffs,
   cliffShorelineRadius,
   cliffLandRadius,
@@ -35,7 +36,6 @@ function randomSequence(seed: number) {
   };
 }
 const clamp = (value: number, low: number, high: number) => Math.max(low, Math.min(high, value));
-const COAST_SEGMENTS = 192;
 /** Общий контур прибоя по реальному сечению скальных глыб. */
 export function shorelineRadius(
   angle: number,
@@ -367,16 +367,13 @@ export function environmentGeometry(board: Board, buildings: Building[], spread 
     y,
     6 + Math.sin(angle) * r,
   ];
-  // Тонкая внутренняя подложка закрывает остров под глыбами. Наружный
-  // силуэт формируют сами камни, без выдвинутых зелёных круглых полок.
+  // Верх скального бока использует те же вершины, что и земля.
+  // Это цельный край, а не отдельные клинья под нависающим дёрном.
   const ledge = (i: number, band: number): Point => {
-    const angle = angleAt(i),
-      coast = cliffLandRadius(angle, world.seed, buildings);
-    const sand = beachInfluence(angle, world.seed);
     if (band === 0) return boundary[i % segments];
-    const progression = [0, 0.34, 0.7, 1, 1.4][band];
-    const depth = [0, -0.22, -0.47, -0.68, -1.15][band];
-    return radial(angle, coast + sand * progression * 1.29, depth);
+    const angle = angleAt(i);
+    const [radius, height] = coastSection(angle, band, world.seed, buildings);
+    return radial(angle, radius, height);
   };
   for (let i = 0; i < segments; i++) {
     const sand =
@@ -386,16 +383,13 @@ export function environmentGeometry(board: Board, buildings: Building[], spread 
         b = ledge(i + 1, band);
       const c = ledge(i + 1, band + 1),
         d = ledge(i, band + 1);
-      const facet = Math.sin(i * 1.83) * 5;
+      const facet = Math.sin(angleAt(i) * 9 + world.seed) * 3;
       const color = [224 + sand * 23 + facet, 198 + sand * 27 + facet, 152 + sand * 17 + facet];
       triangle(a, b, c, color);
       triangle(a, c, d, color);
     }
   }
-  for (const spec of [
-    ...coastalCliffs(world.seed, buildings),
-    ...uplandCliffs(world.seed, buildings),
-  ]) {
+  for (const spec of uplandCliffs(world.seed, buildings)) {
     const rock = cliffRockGeometry(spec);
     for (let i = 0; i < rock.positions.length; i += 9) {
       const points = [0, 3, 6].map(

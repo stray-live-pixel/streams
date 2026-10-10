@@ -2,6 +2,8 @@ import { buildingCells, createWorld, type Building } from '../domain/index.js';
 import { terrainContourPoints, terrainHeight } from './terrain.js';
 import { cliffRockGeometry, type CliffSpec } from './cliffs.js';
 
+export const COAST_SEGMENTS = 192;
+
 const wrapAngle = (angle: number) => Math.atan2(Math.sin(angle), Math.cos(angle));
 export function beachInfluence(angle: number, seed: number) {
   const shift = 0.1 * Math.sin(seed);
@@ -182,12 +184,10 @@ function cliffContours(seed: number, buildings: Building[]): CliffContours {
   let contours = contourCache.get(key);
   if (!contours) {
     const world = createWorld(seed);
-    const landSegments: Section[] = [],
-      waterSegments: Section[] = [];
+    const landSegments: Section[] = [];
     for (const spec of coastalCliffs(seed, buildings)) {
       const mesh = cliffRockGeometry(spec);
       landSegments.push(...horizontalSection(mesh.positions, -0.008));
-      waterSegments.push(...horizontalSection(mesh.positions, -0.68));
     }
     contours = {
       land: new Float64Array(CONTOUR_SEGMENTS),
@@ -197,7 +197,6 @@ function cliffContours(seed: number, buildings: Building[]): CliffContours {
       const theta = (i / CONTOUR_SEGMENTS) * Math.PI * 2;
       const coast = world.coastRadius(theta);
       const landCut = outerSectionRadius(theta, landSegments);
-      const waterCut = outerSectionRadius(theta, waterSegments);
       const sand = beachInfluence(theta, seed);
       // No rock should leave a green shelf suspended over a fissure. An absent
       // section retreats slightly inland; open beaches keep their old contour.
@@ -207,8 +206,9 @@ function cliffContours(seed: number, buildings: Building[]): CliffContours {
       const blend = Math.max(0, Math.min(1, sand / 0.18));
       const beachBlend = blend * blend * (3 - 2 * blend);
       contours.land[i] = land * (1 - beachBlend) + coast * beachBlend;
-      const water = Number.isFinite(waterCut) ? Math.max(coast, waterCut) : coast;
-      contours.water[i] = water * (1 - sand) + (coast + 1.29) * sand;
+      // Скальный бок связан с дёрном и почти отвесен: под водой он
+      // расширяется всего на 5 см, а песок сохраняет пологий спуск.
+      contours.water[i] = contours.land[i] + 0.051 * (1 - sand) + 1.29 * sand;
     }
     if (contourCache.size >= 8) contourCache.delete(contourCache.keys().next().value!);
     contourCache.set(key, contours);
@@ -216,21 +216,54 @@ function cliffContours(seed: number, buildings: Building[]): CliffContours {
   return contours;
 }
 
-function sampleContour(angle: number, radii: Float64Array, outside = false) {
-  const value = ((((angle / (Math.PI * 2)) % 1) + 1) % 1) * CONTOUR_SEGMENTS;
-  const index = Math.floor(value),
-    t = value - index;
-  const next = radii[(index + 1) % CONTOUR_SEGMENTS];
-  // На разрезах нельзя интерполировать пену внутрь соседней выступающей скалы.
-  return outside ? Math.max(radii[index], next) : radii[index] * (1 - t) + next * t;
+/** Земля, камень и пена используют одну ломаную из 192 рёбер.
+ * Интерполяция радиуса сглаживала бы углы и открывала узкие зазоры. */
+function sampleContour(angle: number, radii: Float64Array) {
+  const count = COAST_SEGMENTS;
+  const step = (Math.PI * 2) / count;
+  const wrapped = ((angle % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+  const index = Math.floor(wrapped / step);
+  const anchor = (i: number) => {
+    const a = (i % count) * step;
+    const r = radii[(i % count) * (CONTOUR_SEGMENTS / count)];
+    return [Math.cos(a) * r, Math.sin(a) * r];
+  };
+  const [ax, az] = anchor(index),
+    [bx, bz] = anchor(index + 1);
+  return (ax * bz - az * bx) / (Math.cos(wrapped) * (bz - az) - Math.sin(wrapped) * (bx - ax));
 }
 
-/** Ватерлиния следует реальным сечениям глыб. Песчаные бухты остаются пологими. */
+/** Реальная ватерлиния общего скального бока и песчаных бухт. */
 export function cliffShorelineRadius(angle: number, seed: number, buildings: Building[] = []) {
-  return sampleContour(angle, cliffContours(seed, buildings).water, true);
+  return sampleContour(angle, cliffContours(seed, buildings).water);
 }
 
-/** Дёрн закрывает скрытые короны; выступы следуют сечению заглублённых глыб. */
+/** Общая кромка верхней земли и отвесного скального бока. */
 export function cliffLandRadius(angle: number, seed: number, buildings: Building[] = []) {
   return sampleContour(angle, cliffContours(seed, buildings).land);
+}
+
+/** Пять поперечных уровней берега: скалы почти отвесны, пляжи пологи. */
+export function coastSection(
+  angle: number,
+  band: number,
+  seed: number,
+  buildings: Building[] = [],
+): [number, number] {
+  const land = cliffLandRadius(angle, seed, buildings);
+  const sand = beachInfluence(angle, seed);
+  const progression = [0, 0.34, 0.7, 1, 1.4][band];
+  const depth = [0, -0.22, -0.47, -0.68, -1.15][band];
+  const variation =
+    band === 1
+      ? Math.sin(angle * 17 + seed) * 0.075
+      : band === 2
+        ? Math.cos(angle * 13 - seed) * 0.055
+        : 0;
+  const height = depth + variation * (1 - sand);
+  // Почти вертикальное ребро; редкие неглубокие сколы не превращаются
+  // в сплошные горизонтальные полки вокруг острова.
+  const chip = band === 1 || band === 2 ? Math.sin(angle * 37 + seed) * 0.028 : 0;
+  const rockOffset = -height * 0.075 + chip;
+  return [land + rockOffset * (1 - sand) + sand * progression * 1.29, height];
 }
