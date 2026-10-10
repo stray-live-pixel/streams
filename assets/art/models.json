@@ -339,6 +339,48 @@
         "В игре используется реальный свет, плоские нормали природных граней и более яркая тёплая палитра сцены; расстояния между объектами увеличены в √2, модели сохраняют пропорции и размещены по рельефу, подводные основания камней удлинены при сборке; геометрия и палитра исходного GLB не изменены."
       ],
       "source_sha256": "fc91fd5f8f9d1d4f6ce413b7881a3640f2fa387f34a56ecb2fef38ac13f4eb3b"
+    },
+    {
+      "id": "island-nature/cliff-rock",
+      "name": "Береговая скальная глыба",
+      "tags": [
+        "остров",
+        "скалы",
+        "low-poly"
+      ],
+      "status": "design-iteration",
+      "game_ready": true,
+      "source": "src/scene/cliffs.ts",
+      "geometry_source": "src/scene/cliffs.ts",
+      "preview": "assets/models/island-nature/in-game-preview.png",
+      "reference": "assets/art/coastal-reference/coast-3.png",
+      "references": [
+        "assets/art/coastal-reference/coast-1.png",
+        "assets/art/coastal-reference/coast-2.png",
+        "assets/art/coastal-reference/coast-3.png"
+      ],
+      "generators": [
+        "src/scene/cliffs.ts",
+        "src/scene/cliff-layout.ts"
+      ],
+      "runtime_export": null,
+      "game_integration": "src/scene/environment.ts",
+      "metrics": {
+        "triangles_per_block": 42,
+        "vertices_per_block": 126,
+        "scene_seed": 123456789,
+        "scene_triangles": 18457,
+        "scene_vertices": 55371,
+        "measured_at": "2026-10-11"
+      },
+      "notes": [
+        "Процедурная замкнутая глыба на основе формы rock-large; отдельного GLB или blend пока нет.",
+        "Короны заглублены под траву. Варьируются ширина, глубина, наклон, высота плеча и боковые скосы.",
+        "Контур дерна покрывает сечение скрытых корон; прибой следует сечению на Y=-0.68.",
+        "Проверено в браузере; художественное согласование владельцем ещё не завершено."
+      ],
+      "source_sha256": "51f36644ffb2c13d3d0795c7b77f2b0a62d2f4fcac97a74560a10812d1e6ab05",
+      "layout_sha256": "6e75d0f58dcc0ea9ab43e177e04d6b3e3f8d385f4bbd46e219d4e71ee4313ebd"
     }
   ]
 }

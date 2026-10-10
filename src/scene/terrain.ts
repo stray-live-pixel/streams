@@ -17,9 +17,9 @@ type ReliefHill = {
 const profileSteps = [
   [0, 0],
   [0.18, 0.05],
-  [0.31, 0.46],
-  [0.46, 0.5],
-  [0.6, 0.94],
+  [0.31, 0.07],
+  [0.46, 0.53],
+  [0.6, 0.98],
   [0.8, 1],
   [1, 1],
 ];
@@ -58,7 +58,7 @@ function reliefRadius(angle: number, phase: number) {
   const anchor = (i: number) => {
     const a = (i % 16) * step;
     const r =
-      1 + 0.055 * Math.sin((i % 16) * 2.4 + phase) + 0.025 * Math.cos((i % 16) * 0.8 + phase);
+      1 + 0.105 * Math.sin((i % 16) * 2.4 + phase) + 0.04 * Math.cos((i % 16) * 0.8 + phase);
     return [Math.cos(a) * r, Math.sin(a) * r];
   };
   const [ax, az] = anchor(index),
@@ -68,7 +68,7 @@ function reliefRadius(angle: number, phase: number) {
 
 function reliefWidth(angle: number, hill: ReliefHill) {
   // Примерно четверть периметра — пологий травяной подъём. Остальные
-  // три четверти образуют два крутых среза с небольшой полкой между ними.
+  // три четверти образуют крутой срез с выступающими каменными глыбами.
   const ramp = 1 - smooth((Math.abs(wrapAngle(angle - hill.ramp)) - Math.PI / 4) / 0.16);
   return 0.22 + ramp * 0.27;
 }

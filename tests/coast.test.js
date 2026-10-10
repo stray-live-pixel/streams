@@ -1,5 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { coastalCliffs, cliffLandRadius } from '../src/scene/cliff-layout.ts';
+import { cliffRockGeometry } from '../src/scene/cliffs.ts';
 import { createWorld } from '../src/domain/index.ts';
 import {
   beachInfluence,
@@ -16,35 +18,27 @@ test('береговой скат остаётся снаружи строите
       const angle = (i / 128) * Math.PI * 2;
       const land = world.coastRadius(angle);
       const waterline = shorelineRadius(angle, seed, land);
-      assert(waterline > land + 0.08 && waterline < land + 1.45);
+      assert(waterline >= land - 1e-6 && waterline < land + 1.65);
       assert.equal(waterline, shorelineRadius(angle, seed));
     }
   }
 });
 
-test('нижняя кромка геометрии согласована с контуром прибоя и не имеет разрывов', () => {
+test('подложка острова замкнута ниже воды, геометрия конечна и воспроизводима', () => {
   const world = createWorld(3210380753);
   const data = environmentGeometry(world, []);
   const edge = new Set();
   for (let i = 0; i < data.positions.length; i += 3) {
     const [x, y, z] = data.positions.slice(i, i + 3);
     assert(Number.isFinite(x) && Number.isFinite(y) && Number.isFinite(z));
-    if (y !== -1.05) continue;
+    if (y !== -1.15) continue;
     const angle = Math.atan2(z - 6, x - 6);
-    assert(
-      Math.abs(
-        Math.hypot(x - 6, z - 6) -
-          shorelineRadius(angle, world.seed) -
-          beachInfluence(angle, world.seed) * 0.52,
-      ) < 1e-8,
-    );
-    edge.add(`${x.toFixed(8)},${z.toFixed(8)}`);
+    const sand = beachInfluence(angle, world.seed);
+    const radius = cliffLandRadius(angle, world.seed) + sand * 1.4 * 1.29;
+    if (Math.abs(Math.hypot(x - 6, z - 6) - radius) < 1e-6)
+      edge.add(`${x.toFixed(8)},${z.toFixed(8)}`);
   }
-  assert.equal(
-    edge.size,
-    192,
-    'Вся нижняя кромка замкнута, включая шов первого и последнего сегментов',
-  );
+  assert.equal(edge.size, 192, 'Нижняя кромка включает все сегменты и замыкающий шов');
   assert.deepEqual(data.positions, environmentGeometry(world, []).positions);
 });
 
@@ -144,7 +138,7 @@ test('два песчаных берега полого продолжаются
       assert(rings[1][1] < -0.21 && rings[1][1] > -0.23);
       assert(rings[2][1] < -0.46 && rings[2][1] > -0.48);
       assert.equal(rings[3][1], -0.68);
-      assert.equal(rings[4][1], -1.05);
+      assert.equal(rings[4][1], -1.15);
       for (let i = 1; i < rings.length; i++) {
         assert(rings[i][0] > rings[i - 1][0] + 0.3, 'У пляжа нет вертикальной стенки');
         assert(rings[i][1] < rings[i - 1][1], 'Пляж спускается к морю без ступеней');
@@ -173,7 +167,7 @@ test('примерно три четверти высоких склонов и�
       );
       if (triangle.some((point) => point[1] < 0)) break;
       for (const [x, y, z] of triangle) {
-        assert(Math.abs(y - terrainHeight(x, z, seed)) < 1e-9);
+        assert(y === 0 || Math.abs(y - terrainHeight(x, z, seed)) < 1e-9);
         terrainVertices.add(`${x.toFixed(8)},${z.toFixed(8)}`);
       }
     }
@@ -185,8 +179,8 @@ test('примерно три четверти высоких склонов и�
         );
     let steepSides = 0;
     for (let angle = 0; angle < 32; angle++) {
-      const low = points[angle * 7 + 1];
-      const high = points[angle * 7 + 2];
+      const low = points[angle * 7 + 2];
+      const high = points[angle * 7 + 4];
       const grade =
         (terrainHeight(...high, seed) - terrainHeight(...low, seed)) /
         Math.hypot(high[0] - low[0], high[1] - low[1]);
@@ -199,32 +193,35 @@ test('примерно три четверти высоких склонов и�
   }
 });
 
-test('сама скальная кромка содержит глубокие расселины, а прибой повторяет их контур', () => {
+test('прибой следует реальному сечению объёмных скал, а пляжи остаются открыты', () => {
   for (const seed of [0, 1, 3210380753]) {
-    const world = createWorld(seed);
-    const geometry = environmentGeometry(world, []);
-    const waterline = new Map();
-    for (let i = 0; i < geometry.positions.length; i += 3) {
-      const [x, y, z] = geometry.positions.slice(i, i + 3);
-      if (y !== -0.68) continue;
-      const angle = Math.atan2(z - 6, x - 6);
-      const radius = Math.hypot(x - 6, z - 6);
-      assert(Math.abs(radius - shorelineRadius(angle, seed)) < 1e-8);
-      waterline.set(`${x.toFixed(8)},${z.toFixed(8)}`, radius);
+    const cliffs = coastalCliffs(seed);
+    assert(cliffs.length > 15);
+    assert(new Set(cliffs.map((rock) => rock.width.toFixed(2))).size > 10);
+    for (const spec of cliffs) {
+      assert(beachInfluence(Math.atan2(spec.z - 6, spec.x - 6), seed) <= 0.18);
+      const mesh = cliffRockGeometry(spec);
+      let cuts = 0;
+      for (let i = 0; i < mesh.positions.length; i += 9) {
+        const points = [0, 3, 6].map((offset) => mesh.positions.slice(i + offset, i + offset + 3));
+        for (let edge = 0; edge < 3; edge++) {
+          const a = points[edge],
+            b = points[(edge + 1) % 3];
+          if (a[1] < -0.68 === b[1] < -0.68) continue;
+          const t = (-0.68 - a[1]) / (b[1] - a[1]);
+          const x = a[0] + (b[0] - a[0]) * t - 6;
+          const z = a[2] + (b[2] - a[2]) * t - 6;
+          const angle = Math.atan2(z, x);
+          if (beachInfluence(angle, seed) > 0.001) continue;
+          assert(
+            shorelineRadius(angle, seed) >= Math.hypot(x, z) - 0.055,
+            'Ватерлиния не проходит внутри скального выступа',
+          );
+          cuts++;
+        }
+      }
+      if (beachInfluence(Math.atan2(spec.z - 6, spec.x - 6), seed) < 0.001) assert(cuts > 0);
     }
-    assert.equal(waterline.size, 192, 'Мелкие плоские грани образуют весь контур ватерлинии');
-    let clefts = 0;
-    for (let group = 0; group < 24; group++) {
-      const recess = ((group * 8) / 192) * Math.PI * 2;
-      const front = ((group * 8 + 3) / 192) * Math.PI * 2;
-      if (beachInfluence(recess, seed) > 0.05 || beachInfluence(front, seed) > 0.05) continue;
-      const depth =
-        shorelineRadius(front, seed) -
-        world.coastRadius(front) -
-        (shorelineRadius(recess, seed) - world.coastRadius(recess));
-      assert(depth > 0.36, 'Вырез уходит за выступ скалы, а не обозначен цветом или нормалью');
-      clefts++;
-    }
-    assert(clefts >= 12, 'Скальные участки содержат последовательность отдельных выступов');
+    assert(coastalCliffs(seed, [{ t: 'port', x: 11, z: 6 }]).length < cliffs.length);
   }
 });

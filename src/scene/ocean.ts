@@ -182,7 +182,7 @@ export function shoreDistancePixels(
       const angle = Math.atan2(pz - 6, px - 6);
       let distance =
         Math.hypot(px - 6, pz - 6) -
-        shorelineRadius(angle, board.seed ?? 0, world.coastRadius(angle));
+        shorelineRadius(angle, board.seed ?? 0, world.coastRadius(angle), buildings);
       for (const rock of rocks) {
         if (Math.abs(px - rock.x) > 2 || Math.abs(pz - rock.z) > 2) continue;
         distance = Math.min(

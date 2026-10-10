@@ -3,6 +3,15 @@ import { buildingCells, createWorld, type Building } from '../domain/index.js';
 import nature from '../../.generated/nature-models.json';
 import type { Board } from './types.js';
 import { terrainContourPoints, terrainHeight } from './terrain.js';
+import {
+  beachInfluence,
+  coastalCliffs,
+  uplandCliffs,
+  cliffShorelineRadius,
+  cliffLandRadius,
+} from './cliff-layout.js';
+import { cliffRockGeometry } from './cliffs.js';
+export { beachInfluence } from './cliff-layout.js';
 
 type Point = [number, number, number];
 type NatureId = keyof typeof nature;
@@ -26,52 +35,15 @@ function randomSequence(seed: number) {
   };
 }
 const clamp = (value: number, low: number, high: number) => Math.max(low, Math.min(high, value));
-const wrapAngle = (angle: number) => Math.atan2(Math.sin(angle), Math.cos(angle));
-/** Две открытые песчаные бухты с мягкими переходами к каменным мысам. */
-export const beachInfluence = (angle: number, seed: number) => {
-  const shift = 0.1 * Math.sin(seed);
-  const influence = Math.max(
-    Math.exp(-Math.pow(wrapAngle(angle - 1.1 - shift) / 0.4, 4)),
-    Math.exp(-Math.pow(wrapAngle(angle - 3.85 + shift) / 0.38, 4)),
-  );
-  return influence < 0.0001 ? 0 : influence;
-};
-
 const COAST_SEGMENTS = 192;
-const columnShape = [0, 0.3, 0.82, 1, 0.93, 0.76, 0.45, 0.07];
-function rockColumn(index: number, seed: number) {
-  const i = ((index % COAST_SEGMENTS) + COAST_SEGMENTS) % COAST_SEGMENTS;
-  const group = Math.floor(i / 8);
-  const phase = ((seed >>> 0) / 4294967296) * Math.PI * 2;
-  return {
-    front: columnShape[i % 8],
-    reach: 0.62 + 0.15 * Math.sin(group * 2.399 + phase) + 0.06 * Math.cos(group * 1.73 - phase),
-  };
-}
-
-/** Общая для береговой геометрии и прибоя кромка на уровне воды.
- * Граница доступной для строительства суши остаётся внутри скального контура. */
-export function shorelineRadius(angle: number, seed: number, _landRadius?: number) {
-  const count = COAST_SEGMENTS;
-  const step = (Math.PI * 2) / count;
-  const wrapped = ((angle % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
-  const index = Math.floor(wrapped / step);
-  const world = createWorld(seed);
-  const anchor = (i: number): [number, number] => {
-    const a = (i % count) * step;
-    const sand = beachInfluence(a, seed);
-    const column = rockColumn(i, seed);
-    // Широкие выступы чередуются с узкими расселинами глубиной до 0.8 м.
-    // Это сам контур суши, поэтому вода и пена заходят внутрь вырезов.
-    const stoneEdge = 0.13 + column.front * column.reach;
-    const radius = world.coastRadius(a) + stoneEdge * (1 - sand) + 1.29 * sand;
-    return [Math.cos(a) * radius, Math.sin(a) * radius];
-  };
-  const [ax, az] = anchor(index),
-    [bx, bz] = anchor(index + 1);
-  // Пересечение луча с прямой стороной скалы, а не радиальная интерполяция:
-  // вода и скальный массив используют один ломаный контур с расселинами.
-  return (ax * bz - az * bx) / (Math.cos(wrapped) * (bz - az) - Math.sin(wrapped) * (bx - ax));
+/** Общий контур прибоя по реальному сечению скальных глыб. */
+export function shorelineRadius(
+  angle: number,
+  seed: number,
+  _landRadius?: number,
+  buildings: Building[] = [],
+) {
+  return cliffShorelineRadius(angle, seed, buildings);
 }
 
 // Цвета мешей сохраняются в исходных GLB. Эта палитра задаёт их прочтение
@@ -151,6 +123,9 @@ export function environmentLayout(board: Board, buildings: Building[]): NatureIn
         0.4 + random() * 0.5,
       );
   }
+  // Сохраняем последовательность случайных чисел старого декора, чтобы
+  // деревья не переезжали при замене береговой геометрии на цельные глыбы.
+  instances.length = 0;
   // Несколько отдельных скал в море и редкие внутренние каменные группы.
   for (let i = 0; i < 12; i++) {
     const angle = random() * Math.PI * 2,
@@ -216,6 +191,22 @@ export function environmentLayout(board: Board, buildings: Building[]): NatureIn
     add('rock-large', x, -0.025, z, 0.65);
     add('rock-small', x + 0.43, 0, z + 0.25, 0.8);
     add('bush', x - 0.45, 0.01, z + 0.25, 0.8);
+  }
+  // Низкие валуны у основания собирают отдельные скальные группы,
+  // а не повторяют один ряд одинаковых верхних камней.
+  const talusRandom = randomSequence(world.seed ^ 0x541ea);
+  for (let i = 0; i < 22; i++) {
+    const angle = ((i + talusRandom() * 0.65) / 22) * Math.PI * 2;
+    if (beachInfluence(angle, world.seed) > 0.12) continue;
+    const radius = world.coastRadius(angle) + 0.68 + talusRandom() * 0.25;
+    add(
+      'rock-large',
+      6 + Math.cos(angle) * radius,
+      -1.03,
+      6 + Math.sin(angle) * radius,
+      0.76 + talusRandom() * 0.34,
+      0.76 + talusRandom() * 0.14,
+    );
   }
   return instances;
 }
@@ -322,14 +313,19 @@ export function environmentGeometry(board: Board, buildings: Building[], spread 
   const angleAt = (i: number) => ((i % segments) / segments) * Math.PI * 2;
   const boundary: Point[] = Array.from({ length: segments }, (_, i) => {
     const angle = angleAt(i),
-      radius = world.coastRadius(angle);
+      radius = cliffLandRadius(angle, world.seed, buildings);
     const x = 6 + Math.cos(angle) * radius,
       z = 6 + Math.sin(angle) * radius;
-    return [x, terrainHeight(x, z, world.seed, buildings), z];
+    return [x, 0, z];
   });
   // Независимые точки по всей площади: треугольники больше не расходятся
   // лучами из центра. Береговые точки входят в ту же триангуляцию.
-  const contours = terrainContourPoints(world.seed).filter(([x, z]) => world.contains(x, z, 0.2));
+  const insideTurf = (x: number, z: number) =>
+    Math.hypot(x - 6, z - 6) <
+    cliffLandRadius(Math.atan2(z - 6, x - 6), world.seed, buildings) - 0.12;
+  const contours = terrainContourPoints(world.seed).filter(
+    ([x, z]) => world.contains(x, z, 0.2) && insideTurf(x, z),
+  );
   const groundPoints: Point[] = [
     ...boundary,
     ...contours.map(([x, z]): Point => [x, terrainHeight(x, z, world.seed, buildings), z]),
@@ -340,6 +336,7 @@ export function environmentGeometry(board: Board, buildings: Building[], spread 
       const pz = z + (random() - 0.5) * 0.29;
       if (
         world.contains(px, pz, 0.2) &&
+        insideTurf(px, pz) &&
         !contours.some(([x, z]) => Math.hypot(x - px, z - pz) < 0.12)
       )
         groundPoints.push([px, terrainHeight(px, pz, world.seed, buildings), pz]);
@@ -365,37 +362,21 @@ export function environmentGeometry(board: Board, buildings: Building[], spread 
     triangle(points[0], points[2], points[1], color);
   }
 
-  const phase = ((world.seed >>> 0) / 4294967296) * Math.PI * 2;
   const radial = (angle: number, r: number, y: number): Point => [
     6 + Math.cos(angle) * r,
     y,
     6 + Math.sin(angle) * r,
   ];
-  // Скальный массив сам является берегом, а не декоративной россыпью
-  // перед гладкой стенкой. Ломаные уступы доходят до ватерлинии.
+  // Тонкая внутренняя подложка закрывает остров под глыбами. Наружный
+  // силуэт формируют сами камни, без выдвинутых зелёных круглых полок.
   const ledge = (i: number, band: number): Point => {
     const angle = angleAt(i),
-      coast = world.coastRadius(angle);
-    const edge = shorelineRadius(angle, world.seed, coast);
+      coast = cliffLandRadius(angle, world.seed, buildings);
     const sand = beachInfluence(angle, world.seed);
-    const column = rockColumn(i, world.seed);
-    const fold = Math.sin(Math.floor((i % segments) / 8) * 2.399 + phase);
     if (band === 0) return boundary[i % segments];
-    if (band === 1)
-      return radial(
-        angle,
-        coast + (edge - coast) * ((0.72 + column.front * 0.17) * (1 - sand) + 0.34 * sand),
-        (-0.045 - (1 - column.front) * 0.14 - (fold + 1) * 0.015) * (1 - sand) - 0.22 * sand,
-      );
-    if (band === 2)
-      return radial(
-        angle,
-        coast + (edge - coast) * (0.97 * (1 - sand) + 0.7 * sand),
-        (-0.35 - (fold + 1) * 0.065 - (1 - column.front) * 0.1) * (1 - sand) - 0.47 * sand,
-      );
-    // Ватерлиния точно повторяет глубокие вырезы между колоннами.
-    if (band === 3) return radial(angle, edge, -0.68);
-    return radial(angle, edge + sand * 0.52, -1.05);
+    const progression = [0, 0.34, 0.7, 1, 1.4][band];
+    const depth = [0, -0.22, -0.47, -0.68, -1.15][band];
+    return radial(angle, coast + sand * progression * 1.29, depth);
   };
   for (let i = 0; i < segments; i++) {
     const sand =
@@ -405,16 +386,23 @@ export function environmentGeometry(board: Board, buildings: Building[], spread 
         b = ledge(i + 1, band);
       const c = ledge(i + 1, band + 1),
         d = ledge(i, band + 1);
-      const facet =
-        Math.sin(Math.floor(i / 8) * 2.399 + band * 0.55 + phase) * 12 +
-        Math.cos((i % 8) * 0.9 + band) * 6;
-      const rock = [235 + facet, 210 + facet * 0.85, 166 + facet * 0.6];
-      const sandColor = [247 + facet * 0.4, 225 + facet * 0.4, 169 + facet * 0.3];
-      const grass = [183 + facet * 0.3, 201 + facet * 0.3, 80 + facet * 0.25];
-      const stone = rock.map((value, j) => value * (1 - sand) + sandColor[j] * sand);
-      // Цельный дерн покрывает верх выступа; под его кромкой открывается каменный срез.
-      triangle(a, b, c, band === 0 && sand < 0.3 ? grass : stone);
-      triangle(a, c, d, band === 0 && sand < 0.3 ? grass : stone);
+      const facet = Math.sin(i * 1.83) * 5;
+      const color = [224 + sand * 23 + facet, 198 + sand * 27 + facet, 152 + sand * 17 + facet];
+      triangle(a, b, c, color);
+      triangle(a, c, d, color);
+    }
+  }
+  for (const spec of [
+    ...coastalCliffs(world.seed, buildings),
+    ...uplandCliffs(world.seed, buildings),
+  ]) {
+    const rock = cliffRockGeometry(spec);
+    for (let i = 0; i < rock.positions.length; i += 9) {
+      const points = [0, 3, 6].map(
+        (offset) => rock.positions.slice(i + offset, i + offset + 3) as Point,
+      );
+      const color = rock.colors.slice((i / 3) * 4, (i / 3) * 4 + 3).map((value) => value * 255);
+      triangle(points[0], points[1], points[2], color);
     }
   }
   const layout = environmentLayout(board, buildings);
