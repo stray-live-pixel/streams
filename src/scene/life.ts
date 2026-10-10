@@ -7,6 +7,8 @@ import type { Scene } from '@babylonjs/core/scene.js';
 import { buildingObjectId, type GameModel } from '../domain/index.js';
 import { objectSettings } from '../objects/index.js';
 import type { Passenger } from './types.js';
+import { sceneCoordinate } from './space.js';
+import { buildingElevation, terrainHeight } from './terrain.js';
 
 export const lifeColors = {
   coats: ['#af6248', '#437e86', '#dec18b', '#677a4d'],
@@ -53,17 +55,24 @@ export function createCityLife(scene: Scene) {
         // На дороге гуляем в границах одного участка; без дорог — у фасада дома.
         const tile = streets.length ? streets[i % streets.length] : homes[i % homes.length];
         const walk = reducedMotion ? 0 : Math.sin(seconds * 0.7 + i * 2);
+        const x = tile.x + 0.5 + walk * 0.32,
+          z = tile.z + (streets.length ? 0.5 : 0.94);
         node.position.set(
-          tile.x + 0.5 + walk * 0.32,
-          0.075,
-          tile.z + (streets.length ? 0.5 : 0.94),
+          sceneCoordinate(x),
+          0.075 + terrainHeight(x, z, model!.islandSeed, model!.buildings),
+          sceneCoordinate(z),
         );
         node.rotation.y = walk > 0 ? Math.PI / 2 : -Math.PI / 2;
       });
       passengers.forEach((node, i) => {
         const p = arrivals[i];
         node.setEnabled(!!p);
-        if (p) node.position.set(p.x, 0.085, p.z);
+        if (p)
+          node.position.set(
+            sceneCoordinate(p.x),
+            0.085 + terrainHeight(p.x, p.z, model?.islandSeed ?? 0, model?.buildings ?? []),
+            sceneCoordinate(p.z),
+          );
       });
       smoke.forEach((mesh, i) => {
         const home = homes[Math.floor(i / 3)];
@@ -73,9 +82,9 @@ export function createCityLife(scene: Scene) {
         const tall = (home.x * 3 + home.z) % 2 === 1;
         const scale = objectSettings(buildingObjectId(home)).scale;
         mesh.position.set(
-          home.x + 0.5 + (0.17 + phase * 0.18) * scale,
-          ((tall ? 1.45 : 1.18) + phase * 0.7) * scale,
-          home.z + 0.5 - 0.18 * scale,
+          sceneCoordinate(home.x + 0.5) + (0.17 + phase * 0.18) * scale,
+          buildingElevation(home, model!.islandSeed) + ((tall ? 1.45 : 1.18) + phase * 0.7) * scale,
+          sceneCoordinate(home.z + 0.5) - 0.18 * scale,
         );
         mesh.scaling.setAll(0.5 + phase * 1.8);
         mesh.visibility = 1 - phase;

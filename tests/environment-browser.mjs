@@ -99,7 +99,9 @@ try {
   const b = await frame('day-b'),
     second = await state();
   assert(second.water.time > first.water.time + 1);
-  assert(second.water.triangles > 2000 && second.water.triangles < 4000);
+  assert.equal(second.water.triangles, 4608);
+  assert.equal(second.lensBlur, true);
+  assert(Math.abs(second.islandSpread ** 2 - 2) < 1e-12);
   assert(
     second.water.reflectionUpdates - first.water.reflectionUpdates <=
       Math.ceil((second.water.time - first.water.time) * 4) + 1,

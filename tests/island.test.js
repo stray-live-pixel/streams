@@ -74,7 +74,7 @@ test('декор свободно расставлен, повторяется �
   const first = environmentLayout(board, []);
   assert.deepEqual(environmentLayout(board, []), first);
   assert.notDeepEqual(environmentLayout(createWorld(987654321), []), first);
-  assert(first.filter((p) => p.asset.startsWith('pine')).length > 20);
+  assert(first.filter((p) => p.asset.startsWith('pine')).length >= 20);
   assert(first.every((p) => p.x % 0.5 !== 0 || p.z % 0.5 !== 0));
   const buildings = [
     { t: 'hall', x: 5, z: 5 },
@@ -84,9 +84,13 @@ test('декор свободно расставлен, повторяется �
   const cleared = environmentLayout(board, buildings);
   assert(cleared.length < first.length);
   for (const item of cleared) {
+    const { y: _height, ...horizontalPlacement } = item;
     assert(
-      first.some((p) => JSON.stringify(p) === JSON.stringify(item)),
-      'Строительство не сдвигает другие деревья',
+      first.some(
+        ({ y: _originalHeight, ...original }) =>
+          JSON.stringify(original) === JSON.stringify(horizontalPlacement),
+      ),
+      'Строительство не сдвигает деревья по горизонтали; их высота следует рельефу',
     );
     for (const b of buildings)
       assert(

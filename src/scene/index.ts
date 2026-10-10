@@ -16,6 +16,9 @@ import { islandGeometry, shipGeometry } from './geometry.js';
 import { FxaaPostProcess } from '@babylonjs/core/PostProcesses/fxaaPostProcess.js';
 import { createLighting } from './lighting.js';
 import { createOcean } from './ocean.js';
+import { createLens } from './lens.js';
+import { terrainHeight } from './terrain.js';
+import { sceneCoordinate, boardCoordinate, ISLAND_SPREAD } from './space.js';
 import { createCityLife } from './life.js';
 import { harborLayout } from './harbor.js';
 import { voyageFrame } from './voyage.js';
@@ -77,6 +80,7 @@ export function createScene({
   camera.minZ = 0.1;
   camera.maxZ = 650;
   new FxaaPostProcess('soft-edges', 1, camera);
+  const lens = createLens(camera);
   const lighting = createLighting(scene, camera, (label) => onTimeChanged?.(label));
   const ocean = createOcean(scene, camera);
   const material = new StandardMaterial('palette', scene);
@@ -100,7 +104,8 @@ export function createScene({
     scale = 1,
     dirty = true,
     frameId = 0;
-  const ground = new Plane(0, 1, 0, 0);
+  const upperGround = new Plane(0, 1, 0, -4);
+  const lowerGround = new Plane(0, 1, 0, 0.02);
   const signal = new AbortController();
   surface.addEventListener(
     'webglcontextlost',
@@ -159,7 +164,7 @@ export function createScene({
   const observer = new ResizeObserver(resize);
   observer.observe(viewport);
   resize();
-  function project(x: number, y: number, z: number) {
+  function projectWorld(x: number, y: number, z: number) {
     const p = Vector3.Project(
       new Vector3(x, y, z),
       Matrix.Identity(),
@@ -168,11 +173,42 @@ export function createScene({
     );
     return { x: p.x, y: p.y };
   }
+  function heightAt(x: number, z: number) {
+    return terrainHeight(x, z, board.seed ?? 0, model?.buildings ?? []);
+  }
+  function project(x: number, y: number, z: number) {
+    return projectWorld(sceneCoordinate(x), y + heightAt(x, z), sceneCoordinate(z));
+  }
   function pick(x: number, y: number): Tile | null {
     const ray = scene.createPickingRay(x, y, Matrix.Identity(), camera);
-    const distance = ray.intersectsPlane(ground);
-    if (distance === null) return null;
-    const hit = ray.origin.add(ray.direction.scale(distance));
+    if (ray.direction.y >= -0.0001) return null;
+    const start = ray.intersectsPlane(upperGround) ?? 0,
+      end = ray.intersectsPlane(lowerGround);
+    if (end === null) return null;
+    const difference = (distance: number) => {
+      const point = ray.origin.add(ray.direction.scale(distance));
+      return point.y - heightAt(boardCoordinate(point.x), boardCoordinate(point.z));
+    };
+    let previous = Math.max(0, start),
+      distance = end;
+    // Берём первое пересечение: пологие холмы могут перекрывать дальнюю землю.
+    for (let i = 1; i <= 64; i++) {
+      const next = Math.max(0, start) + ((end - Math.max(0, start)) * i) / 64;
+      if (difference(next) <= 0) {
+        let low = previous,
+          high = next;
+        for (let j = 0; j < 14; j++) {
+          const middle = (low + high) / 2;
+          if (difference(middle) > 0) low = middle;
+          else high = middle;
+        }
+        distance = (low + high) / 2;
+        break;
+      }
+      previous = next;
+    }
+    const point = ray.origin.add(ray.direction.scale(distance));
+    const hit = { x: boardCoordinate(point.x), z: boardCoordinate(point.z) };
     const tile = { x: Math.floor(hit.x), z: Math.floor(hit.z) };
     return board.isLand(tile.x, tile.z) ? tile : null;
   }
@@ -268,7 +304,7 @@ export function createScene({
         board.shoreDirection(arrival.event.port.x, arrival.event.port.z) ?? [0, 1],
         harborLayout(arrival.event.port, board).distance + 1.45,
       );
-      ship.position.set(result.x, -0.25, result.z);
+      ship.position.set(sceneCoordinate(result.x), -0.25, sceneCoordinate(result.z));
       ship.rotation.y = result.rotation;
       passengers = result.passengers;
       dirty = true;
@@ -335,6 +371,7 @@ export function createScene({
       }
       lighting.setQuality(settings.quality);
       ocean.setQuality(settings.quality);
+      lens.setQuality(settings.quality);
       dirty = true;
     },
     setModel(next: GameModel) {
@@ -388,9 +425,11 @@ export function createScene({
       return {
         ...lighting.diagnostics,
         water: ocean.diagnostics,
+        islandSpread: ISLAND_SPREAD,
+        lensBlur: true,
         renderMilliseconds,
         settled: !dirty,
-        sunScreen: project(...(lighting.diagnostics.sunPosition as [number, number, number])),
+        sunScreen: projectWorld(...(lighting.diagnostics.sunPosition as [number, number, number])),
       };
     },
     get cameraState() {
@@ -426,6 +465,7 @@ export function createScene({
       observer.disconnect();
       ocean.dispose();
       lighting.dispose();
+      lens.dispose();
       scene.dispose();
       renderer.dispose();
       surface.remove();

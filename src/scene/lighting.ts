@@ -52,10 +52,10 @@ export function createLighting(scene: Scene, camera: Camera, onLabel: (label: st
   const ambient = new HemisphericLight('sky-light', Vector3.Up(), scene);
   ambient.groundColor = new Color3(0.36, 0.32, 0.23);
   sunlight.autoUpdateExtends = false;
-  sunlight.orthoLeft = -11;
-  sunlight.orthoRight = 11;
-  sunlight.orthoTop = 11;
-  sunlight.orthoBottom = -11;
+  sunlight.orthoLeft = -14;
+  sunlight.orthoRight = 14;
+  sunlight.orthoTop = 14;
+  sunlight.orthoBottom = -14;
   sunlight.shadowMinZ = 1;
   sunlight.shadowMaxZ = 75;
   const shadows = new ShadowGenerator(2048, sunlight);
@@ -109,18 +109,18 @@ export function createLighting(scene: Scene, camera: Camera, onLabel: (label: st
       sunlight.intensity = (0.28 + 0.64 * daylight) * (1 - 0.14 * twilight);
       sunlight.diffuse = Color3.Lerp(
         new Color3(0.5, 0.64, 0.92),
-        Color3.Lerp(new Color3(1, 0.98, 0.85), new Color3(1, 0.62, 0.3), twilight),
+        Color3.Lerp(new Color3(1, 0.96, 0.8), new Color3(1, 0.62, 0.3), twilight),
         daylight,
       );
-      ambient.intensity = 0.5 + 0.3 * daylight;
+      ambient.intensity = 0.5 + 0.35 * daylight;
       ambient.diffuse = Color3.Lerp(
         new Color3(0.42, 0.52, 0.78),
-        new Color3(1, 0.99, 0.93),
+        new Color3(1, 0.98, 0.88),
         daylight,
       );
       ambient.groundColor = Color3.Lerp(
         new Color3(0.24, 0.31, 0.45),
-        new Color3(0.59, 0.55, 0.37),
+        new Color3(0.67, 0.59, 0.38),
         daylight,
       );
       skyMaterial

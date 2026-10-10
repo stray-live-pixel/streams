@@ -131,6 +131,11 @@ try {
   await hold('ArrowUp', 150);
   await page.waitForTimeout(350);
   const tile = await page.evaluate(() => cityDebug.projectTile(6, 11));
+  assert.equal(
+    await page.evaluate(({ x, y }) => document.elementFromPoint(x, y)?.id, tile),
+    'world',
+    'Transparent gaps in the build toolbar must not cover the enlarged island',
+  );
   await page.mouse.click(tile.x, tile.y);
   assert((await page.evaluate(() => cityDebug.state)).buildings.some((b) => b.t === 'port'));
   await page.click('#home');

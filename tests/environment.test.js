@@ -24,8 +24,8 @@ test('вода имеет крупные цветовые грани и непр
   const high = waterGeometry(),
     low = waterGeometry(false);
   assert(high.indices.length > low.indices.length);
-  assert.equal(high.indices.length / 3, 2816);
-  assert.equal(low.indices.length / 3, 1728);
+  assert.equal(high.indices.length / 3, 4608);
+  assert.equal(low.indices.length / 3, 2048);
   assert.equal(high.uvs.length, (high.positions.length / 3) * 2);
   const positionKeys = new Map();
   const positionsByKey = new Map();
@@ -51,6 +51,14 @@ test('вода имеет крупные цветовые грани и непр
       const key = [positionKeys.get(u), positionKeys.get(v)].sort().join(',');
       edges.set(key, (edges.get(key) ?? 0) + 1);
     }
+    for (const [u, v] of [
+      [a, b],
+      [b, c],
+      [c, a],
+    ]) {
+      const length = Math.hypot(p[u * 3] - p[v * 3], p[u * 3 + 2] - p[v * 3 + 2]);
+      assert(length < 2.2, 'Даже у края воды нет гигантских вытянутых треугольников');
+    }
     assert.deepEqual(high.uvs.slice(a * 2, a * 2 + 2), high.uvs.slice(b * 2, b * 2 + 2));
     assert.deepEqual(high.uvs.slice(a * 2, a * 2 + 2), high.uvs.slice(c * 2, c * 2 + 2));
   }
@@ -59,8 +67,8 @@ test('вода имеет крупные цветовые грани и непр
     if (count === 1)
       for (const key of edge.split(','))
         assert(
-          Math.abs(positionsByKey.get(key)[0] - 6) === 192 ||
-            Math.abs(positionsByKey.get(key)[2] - 6) === 192,
+          Math.abs(positionsByKey.get(key)[0] - 6) === 24 ||
+            Math.abs(positionsByKey.get(key)[2] - 6) === 24,
           'Открытые рёбра допускаются только на внешнем периметре',
         );
   }
@@ -86,5 +94,5 @@ test('нормали мягко соединяют близкие грани, с
   assert(data.normals[0] > 0 && data.normals[1] > 0.8);
   assert.deepEqual(data.normals.slice(6), [0, 0, 1]);
   const land = environmentGeometry(createWorld(1234), []);
-  assert.equal(land.normals[1], 1, 'Земля освещается сверху в правой системе координат');
+  assert(land.normals[1] > 0.9, 'Верх рельефа освещается сверху в правой системе координат');
 });

@@ -16,6 +16,8 @@ import type { Board } from './types.js';
 import { harborLayout } from './harbor.js';
 import { environmentGeometry } from './environment.js';
 import { softenNormals } from './smoothing.js';
+import { buildingElevation, terrainHeight } from './terrain.js';
+import { ISLAND_SPREAD, sceneCoordinate } from './space.js';
 import assets from '../../.generated/models.json';
 
 // В игре только используемые ассеты; полную библиотеку подключает редактор.
@@ -57,6 +59,7 @@ function builder(
   capture?: ObjectPart[],
   overrides = true,
   realtimeLighting = false,
+  islandBuildings: Building[] = [],
 ) {
   const sceneVertices: number[] = [];
   function rgb(hex: string) {
@@ -349,11 +352,30 @@ function builder(
       model('fountain-center', x + 0.5, 0.065, z + 0.5, 0.18);
     } else model('lantern', x + 0.9, 0.07, z + 0.1, 0.38);
   }
-  return { terrain, building, model, parts, shadow, streetDecoration, finish };
+  function onIsland(building: Building, draw: () => void) {
+    const start = sceneVertices.length;
+    draw();
+    const x = building.x + 0.5,
+      z = building.z + 0.5,
+      elevation = buildingElevation(building, board.seed ?? 0);
+    // Расстояния между участками растут вместе с островом, дома сохраняют
+    // габариты. Настилы дорог и гавани растягиваются, чтобы оставаться связными.
+    const spread = building.t === 'road' || building.t === 'port' ? ISLAND_SPREAD : 1;
+    for (let i = start; i < sceneVertices.length; i += 6) {
+      const ground =
+        building.t === 'road'
+          ? terrainHeight(sceneVertices[i], sceneVertices[i + 2], board.seed ?? 0, islandBuildings)
+          : elevation;
+      sceneVertices[i] = sceneCoordinate(x) + (sceneVertices[i] - x) * spread;
+      sceneVertices[i + 1] += ground;
+      sceneVertices[i + 2] = sceneCoordinate(z) + (sceneVertices[i + 2] - z) * spread;
+    }
+  }
+  return { terrain, building, model, parts, shadow, streetDecoration, finish, onIsland };
 }
 /** Полностью пересобирается только при изменении списка построек. */
 export function islandGeometry(buildings: Building[], board: Board, completed = false) {
-  const b = builder(board, completed, assets, undefined, true, true);
+  const b = builder(board, completed, assets, undefined, true, true, buildings);
   // Маленькая площадь использует построенную улицу, не захватывая свободные клетки.
   const roads = new Set(buildings.filter((p) => p.t === 'road').map((p) => `${p.x},${p.z}`));
   const roadNeighbors = (road: Building) =>
@@ -373,20 +395,25 @@ export function islandGeometry(buildings: Building[], board: Board, completed = 
   };
   for (const building of buildings) {
     // Композиция дороги с декором уже содержит настил: второй дал бы мерцание.
-    if (building.t !== 'road' || !roadTemplate(building)) b.building(building);
+    if (building.t !== 'road' || !roadTemplate(building))
+      b.onIsland(building, () => b.building(building));
   }
   for (const road of buildings.filter((p) => p.t === 'road')) {
     const neighbors = roadNeighbors(road);
     const decoration = roadTemplate(road);
-    if (decoration && (neighbors >= 3 || (road.x + road.z) % 3 === 0)) {
-      b.parts(decoration, road.x + 0.5, road.z + 0.5);
-    } else if (neighbors >= 3) {
-      b.streetDecoration(road.x, road.z, true);
-    } else if ((road.x + road.z) % 3 === 0) {
-      b.streetDecoration(road.x, road.z, false);
-    }
+    b.onIsland(road, () => {
+      if (decoration && (neighbors >= 3 || (road.x + road.z) % 3 === 0)) {
+        b.parts(decoration, road.x + 0.5, road.z + 0.5);
+      } else if (neighbors >= 3) {
+        b.streetDecoration(road.x, road.z, true);
+      } else if ((road.x + road.z) % 3 === 0) {
+        b.streetDecoration(road.x, road.z, false);
+      }
+    });
   }
-  return softenNormals(environmentGeometry(board, buildings).merge(b.finish(), true));
+  const environment = environmentGeometry(board, buildings, ISLAND_SPREAD);
+  // У природных граней сохраняем плоские нормали: резные скалы должны читаться.
+  return environment.merge(softenNormals(b.finish()), true);
 }
 /** Корабль — отдельный объект; анимация не пересоздаёт геометрию острова. */
 export function shipGeometry(realtimeLighting = false) {

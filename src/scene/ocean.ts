@@ -13,6 +13,7 @@ import type { Building } from '../domain/index.js';
 import { createWorld } from '../domain/index.js';
 import { environmentLayout, shorelineRadius } from './environment.js';
 import type { Board } from './types.js';
+import { ISLAND_SPREAD } from './space.js';
 
 export const WATER_LEVEL = -0.68;
 export const SHORE_TEXTURE_SIZE = 256;
@@ -23,17 +24,21 @@ float noise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.0-2.0*f);return mix(mix(
 const waveCode = `
 float heightAt(vec2 p){
  float uneven=noise(p*.24+seed)*2.3;
- return sin(dot(p,vec2(.93,.36))*1.7+time*.85+uneven)*.047
- +sin(dot(p,vec2(-.42,.91))*2.9-time*.57+uneven*.6)*.028
- +(noise(p*.9+vec2(time*.12,-time*.06)+seed)-.5)*.055;
+ return sin(dot(p,vec2(.93,.36))*1.35+time*.62+uneven)*.105
+ +sin(dot(p,vec2(-.42,.91))*2.05-time*.43+uneven*.6)*.060
+ +(noise(p*.65+vec2(time*.08,-time*.04)+seed)-.5)*.070;
 }`;
 export const waterVertex = `precision highp float;
-attribute vec3 position;attribute vec2 uv;uniform mat4 worldViewProjection;uniform float time;uniform float seed;
-varying vec3 vPosition;varying vec2 vFacet;varying vec4 vClip;
+attribute vec3 position;attribute vec2 uv;uniform mat4 worldViewProjection;uniform mat4 world;uniform float time;uniform float seed;
+varying vec3 vPosition;varying vec3 vWorldPosition;varying vec2 vFacet;varying vec4 vClip;
 ${shaderNoise}${waveCode}
 void main(){
- vec3 p=position;p.y+=heightAt(p.xz);
- vPosition=p;vFacet=uv;
+ vec3 p=position;
+ // Одинаковое смещение общих вершин: грани качаются без разрывов между ними.
+ p.y+=heightAt(position.xz);
+ p.x+=sin(position.z*.75+time*.43+seed)*.035;
+ p.z+=cos(position.x*.67-time*.37+seed)*.035;
+ vPosition=p;vWorldPosition=(world*vec4(p,1.0)).xyz;vFacet=uv;
  vClip=worldViewProjection*vec4(p,1.0);gl_Position=vClip;
 }`;
 export const waterFragment = `
@@ -41,30 +46,49 @@ export const waterFragment = `
 #extension GL_OES_standard_derivatives : enable
 #endif
 precision highp float;
-varying vec3 vPosition;varying vec2 vFacet;varying vec4 vClip;
+varying vec3 vPosition;varying vec3 vWorldPosition;varying vec2 vFacet;varying vec4 vClip;
 uniform float time;uniform float seed;uniform float daylight;uniform float reflectionStrength;
 uniform vec3 eyePosition;uniform vec3 lightDirection;uniform sampler2D coastSampler;uniform sampler2D reflectionSampler;
 ${shaderNoise}
+// Линейный шум по треугольникам сохраняет изломы вместо округления фронтов.
+float angularNoise(vec2 p){
+ vec2 i=floor(p),f=fract(p);
+ float a=hash(i),b=hash(i+vec2(1,0)),c=hash(i+vec2(0,1)),d=hash(i+vec2(1,1));
+ return f.x+f.y<1.0 ? a+(b-a)*f.x+(c-a)*f.y
+ : d+(c-d)*(1.0-f.x)+(b-d)*(1.0-f.y);
+}
+float shoreAt(vec2 p){
+ vec2 uv=(p+18.0)/48.0;
+ if(any(lessThan(uv,vec2(0)))||any(greaterThan(uv,vec2(1))))return 2.0;
+ vec2 distance=texture2D(coastSampler,uv).rg;
+ return (distance.r-distance.g)*2.0;
+}
+float angularShore(vec2 p){
+ const float cell=.28;
+ vec2 i=floor(p/cell)*cell,f=fract(p/cell);
+ float a=shoreAt(i),b=shoreAt(i+vec2(cell,0)),c=shoreAt(i+vec2(0,cell)),d=shoreAt(i+vec2(cell,cell));
+ return f.x+f.y<1.0 ? a+(b-a)*f.x+(c-a)*f.y
+ : d+(c-d)*(1.0-f.x)+(b-d)*(1.0-f.y);
+}
 void main(){
  vec2 p=vPosition.xz;
  // Производные одной грани дают плоскую нормаль, а общий центр — её постоянный оттенок.
  #if defined(GL_OES_standard_derivatives) || __VERSION__ >= 300
- vec3 normal=normalize(cross(dFdx(vPosition),dFdy(vPosition)));
+ vec3 normal=normalize(cross(dFdx(vWorldPosition),dFdy(vWorldPosition)));
  #else
  vec3 normal=vec3(0.0,1.0,0.0);
  #endif
  if(normal.y<0.0)normal=-normal;
- vec2 coastUV=(p+18.0)/48.0;float coast=texture2D(coastSampler,coastUV).r*2.0;
- if(any(lessThan(coastUV,vec2(0)))||any(greaterThan(coastUV,vec2(1))))coast=2.0;
+ float coast=max(0.0,angularShore(p));
  float facetTone=hash(vFacet+seed);
  float mottling=noise(vFacet*.32+seed);
- vec3 deep=mix(vec3(.16,.62,.66),vec3(.25,.72,.73),mottling);
- vec3 shallow=mix(vec3(.30,.75,.70),vec3(.43,.81,.72),mottling);
+ vec3 deep=mix(vec3(.17,.69,.73),vec3(.27,.78,.79),mottling);
+ vec3 shallow=mix(vec3(.32,.81,.74),vec3(.48,.87,.77),mottling);
  vec3 color=mix(shallow,deep,smoothstep(.0,1.8,coast));
  color*=mix(.95,1.05,facetTone);
  float diffuse=.88+.12*max(0.0,dot(normal,lightDirection));
  color*=diffuse*mix(.30,1.0,daylight);
- vec3 view=normalize(eyePosition-vPosition);
+ vec3 view=normalize(eyePosition-vWorldPosition);
  float fresnel=pow(1.0-max(0.0,dot(view,normal)),3.0);
  vec2 uv=vClip.xy/vClip.w*.5+.5+normal.xz*.012;
  vec4 reflected=texture2D(reflectionSampler,uv);
@@ -74,25 +98,30 @@ void main(){
  // Широкий мягкий отблеск оставляет главным цвет граней, без зеркального блеска.
  float glow=pow(max(0.0,dot(reflect(-lightDirection,normal),view)),8.0);
  color+=vec3(.70,.90,.83)*glow*.035*daylight;
- // Фронты идут от моря к нулевой изолинии расстояния, огибая берег и камни.
- float broken=noise(p*2.8+seed+vec2(time*.06,0));
- float phase=coast*1.7+time*.36+noise(p*.7+seed)*.16;
- float front=abs(fract(phase)-.16);
- float crest=1.0-smoothstep(.025,.13,front);
- float reach=1.0-smoothstep(.48,1.15,coast);
- float ribbons=crest*reach*smoothstep(.34,.60,broken);
- float impact=sin(time*2.26+noise(p*1.8)*1.7)*.5+.5;
- float wash=(1.0-smoothstep(.025,.12+impact*.10,coast))*impact*.56;
- float contact=(1.0-smoothstep(.015,.075,coast))*.56;
- float foam=max(ribbons,max(wash,contact))*mix(.55,1.0,broken);
+ // Медленные нерегулярные фронты идут к берегу. Все контуры линейные,
+ // поэтому прибой огибает скалы ломаными лентами, без гладких окружностей.
+ float slowTime=time/3.0;
+ float broken=angularNoise(p*2.1+seed);
+ float localRhythm=angularNoise(p*.32+seed);
+ float phase=coast*1.7+slowTime*(.30+localRhythm*.12)
+ +angularNoise(p*.8+seed)*.24;
+ float front=abs(fract(phase)-.19);
+ float crest=clamp((.068-front)/.028,0.0,1.0);
+ float reach=clamp((1.15-coast)/.65,0.0,1.0);
+ float gaps=clamp((broken-.32)*5.0,0.0,1.0);
+ float ribbons=crest*reach*gaps;
+ float impact=sin(slowTime*2.26+localRhythm*6.28)*.5+.5;
+ float wash=clamp((.12+impact*.10-coast)/.08,0.0,1.0)*impact*.56;
+ float contact=clamp((.075-coast)/.055,0.0,1.0)*.44;
+ float foam=max(ribbons,max(wash,contact))*mix(.50,1.0,broken);
  vec3 foamColor=mix(vec3(.34,.46,.58),vec3(.94,1.0,.93),daylight);
  color=mix(color,foamColor,foam*.84);
  gl_FragColor=vec4(color,1.0);
 }`;
 
-/** Непрерывная сетка: высокая плотность у острова, общие рёбра дальних колец. */
+/** Конечная равномерная сетка: одинаково небольшие грани вплоть до видимого края. */
 export function waterGeometry(high = true) {
-  const n = high ? 32 : 24,
+  const n = high ? 48 : 32,
     span = 48,
     positions: number[] = [],
     indices: number[] = [];
@@ -115,28 +144,6 @@ export function waterGeometry(high = true) {
       if ((x + z) % 2) indices.push(a, d, b, b, d, c);
       else indices.push(a, d, c, a, c, b);
     }
-  let border: number[] = [];
-  for (let x = 0; x < n; x++) border.push(x);
-  for (let z = 0; z < n; z++) border.push(z * (n + 1) + n);
-  for (let x = n; x > 0; x--) border.push(n * (n + 1) + x);
-  for (let z = n; z > 0; z--) border.push(z * (n + 1));
-  const base = [...border];
-  for (const scale of [1.7, 3.5, 8]) {
-    const outer = base.map((i) => {
-      const index = positions.length / 3;
-      positions.push(
-        6 + (positions[i * 3] - 6) * scale,
-        WATER_LEVEL,
-        6 + (positions[i * 3 + 2] - 6) * scale,
-      );
-      return index;
-    });
-    for (let i = 0; i < border.length; i++) {
-      const j = (i + 1) % border.length;
-      indices.push(border[i], outer[j], outer[i], border[i], border[j], outer[j]);
-    }
-    border = outer;
-  }
   const data = new VertexData();
   // Раздельные вершины сохраняют один оттенок на треугольник. Координаты общих
   // рёбер совпадают буквально, поэтому волновая деформация не создаёт щелей.
@@ -180,7 +187,7 @@ export function shoreDistancePixels(
         if (Math.abs(px - rock.x) > 2 || Math.abs(pz - rock.z) > 2) continue;
         distance = Math.min(
           distance,
-          Math.hypot(px - rock.x, (pz - rock.z) / 0.85) - rock.scale * 0.52,
+          Math.hypot(px - rock.x, (pz - rock.z) / 0.85) - (rock.scale * 0.52) / ISLAND_SPREAD,
         );
       }
       const index = (z * size + x) * 4;
@@ -193,6 +200,8 @@ export function shoreDistancePixels(
 
 export function createOcean(scene: Scene, camera: Camera) {
   const mesh = new Mesh('deforming-water', scene);
+  mesh.scaling.set(ISLAND_SPREAD, 1, ISLAND_SPREAD);
+  mesh.position.set(6 * (1 - ISLAND_SPREAD), 0, 6 * (1 - ISLAND_SPREAD));
   mesh.isPickable = false;
   mesh.alwaysSelectAsActiveMesh = true;
   waterGeometry().applyToMesh(mesh);
@@ -210,6 +219,7 @@ export function createOcean(scene: Scene, camera: Camera) {
       attributes: ['position', 'uv'],
       uniforms: [
         'worldViewProjection',
+        'world',
         'time',
         'seed',
         'daylight',
