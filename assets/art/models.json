@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "path_base": "repository_root",
+  "updated_at": "2026-10-10T21:15:56.504676+00:00",
+  "models": [
+    {
+      "id": "starter-port",
+      "name": "Стартовый порт",
+      "tags": [
+        "порт",
+        "причал",
+        "дом",
+        "low-poly",
+        "мягкие формы"
+      ],
+      "status": "design-iteration",
+      "game_ready": false,
+      "description": "Один фахверковый дом с боковым навесом, широкая набережная, правый пирс и грузовой подъёмник. Текущая модель ещё проходит визуальное согласование.",
+      "source": "assets/art/port-reference-simple/port.blend",
+      "preview": "assets/art/port-reference-simple/beauty.png",
+      "views": "assets/art/port-reference-simple/four-views.png",
+      "reference": "assets/art/port-reference-simple/design-reference.png",
+      "prompt": "assets/art/port-reference-simple/prompts.txt",
+      "generators": [
+        "assets/art/port-reference-simple/build_reference.py",
+        "assets/art/port-reference-simple/stylize_port.py"
+      ],
+      "audit": "assets/art/port-reference-simple/model-audit.json",
+      "runtime_export": null,
+      "game_integration": null,
+      "metrics": {
+        "evaluated_viewport_triangles": 53314,
+        "evaluated_viewport_vertices": 27180,
+        "visible_objects": 270,
+        "used_materials": 14,
+        "hidden_source_objects": 34
+      },
+      "notes": [
+        "Все ракурсы относятся к одной геометрии.",
+        "Старый блокинг сохранён скрытым внутри .blend, отдельно в каталоге не дублируется.",
+        "Рендеры — уже имеющиеся превью; для следующих проверок использовать viewport/Workbench/лёгкое Eevee.",
+        "Игровую оптимизацию выполнять после согласования внешнего вида."
+      ]
+    }
+  ]
+}
