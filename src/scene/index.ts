@@ -13,6 +13,9 @@ import type { Arrival, GameModel, Tile } from '../domain/index.js';
 import { buildingCells, proposedBuilding, placementIssue, createWorld } from '../domain/index.js';
 import type { SceneOptions, Passenger } from './types.js';
 import { islandGeometry, shipGeometry } from './geometry.js';
+import { FxaaPostProcess } from '@babylonjs/core/PostProcesses/fxaaPostProcess.js';
+import { createLighting } from './lighting.js';
+import { createOcean } from './ocean.js';
 import { createCityLife } from './life.js';
 import { harborLayout } from './harbor.js';
 import { voyageFrame } from './voyage.js';
@@ -35,7 +38,13 @@ export { createPerson, createSmoke, lifeColors } from './life.js';
  * Публичный адаптер 3D. Получает снимки и события, никогда не изменяет город.
  * board — переданная география: renderer не импортирует внутренности домена.
  */
-export function createScene({ canvas, board, onArrivalFinished, onError }: SceneOptions) {
+export function createScene({
+  canvas,
+  board,
+  onArrivalFinished,
+  onError,
+  onTimeChanged,
+}: SceneOptions) {
   const context = canvas.getContext('2d')!;
   const surface = document.createElement('canvas');
   surface.id = 'scene';
@@ -66,13 +75,18 @@ export function createScene({ canvas, board, onArrivalFinished, onError }: Scene
   const camera = new FreeCamera('city-camera', Vector3.Zero(), scene);
   camera.mode = Camera.ORTHOGRAPHIC_CAMERA;
   camera.minZ = 0.1;
-  camera.maxZ = 100;
+  camera.maxZ = 650;
+  new FxaaPostProcess('soft-edges', 1, camera);
+  const lighting = createLighting(scene, camera, (label) => onTimeChanged?.(label));
+  const ocean = createOcean(scene, camera);
   const material = new StandardMaterial('palette', scene);
-  material.disableLighting = true;
-  material.emissiveColor = Color3.White();
+  material.disableLighting = false;
+  material.diffuseColor = Color3.White();
+  material.specularColor = Color3.Black();
+  material.twoSidedLighting = false;
   material.backFaceCulling = false;
   const ship = new Mesh('arrival-ship', scene);
-  shipGeometry().applyToMesh(ship);
+  shipGeometry(true).applyToMesh(ship);
   ship.material = material;
   ship.setEnabled(false);
   let island: Mesh | null = null;
@@ -112,13 +126,14 @@ export function createScene({ canvas, board, onArrivalFinished, onError }: Scene
     camera.orthoRight = (width - cx) / scale;
     camera.orthoTop = cy / scale;
     camera.orthoBottom = -(height - cy) / scale;
+    const eyeHeight = Math.max(3.2, Math.sin(pitch) * 40);
     // Изометрический вид сохраняет размер домов при перемещении по острову.
     camera.position.set(
       x + Math.sin(yaw) * Math.cos(pitch) * 40,
-      Math.sin(pitch) * 40,
+      eyeHeight,
       z + Math.cos(yaw) * Math.cos(pitch) * 40,
     );
-    camera.setTarget(new Vector3(x, 0, z));
+    camera.setTarget(new Vector3(x, eyeHeight - Math.sin(pitch) * 40, z));
     camera.getViewMatrix(true);
     camera.getProjectionMatrix(true);
     scene.updateTransformMatrix(true);
@@ -202,22 +217,6 @@ export function createScene({ canvas, board, onArrivalFinished, onError }: Scene
       for (const cell of buildingCells(candidate))
         outline(cell.x, cell.z, allowed ? '#ebf9c344' : '#e8a08b77');
     }
-    // Тонкие блики остаются только на воде. Это декоративный слой, не клетки карты.
-    context.strokeStyle = '#e4f0dd66';
-    context.lineWidth = 1;
-    for (let i = 0; i < 30; i++) {
-      const x = ((i * 7) % 23) - 6,
-        z = ((i * 11) % 23) - 6;
-      if (board.isLand(Math.floor(x), Math.floor(z))) continue;
-      const drift =
-        !animateCity || motionPreference.matches ? 0 : Math.sin(seconds * 0.35 + i) * 0.3;
-      const a = project(x + drift, -0.3, z),
-        b = project(x + 0.45 + drift, -0.3, z);
-      context.beginPath();
-      context.moveTo(a.x, a.y);
-      context.lineTo(b.x, b.y);
-      context.stroke();
-    }
     if (model.won) {
       const port = model.buildings.find((b) => b.t === 'port');
       if (port) {
@@ -233,16 +232,28 @@ export function createScene({ canvas, board, onArrivalFinished, onError }: Scene
     }
   }
 
+  let environmentSeconds = 0;
+  let renderMilliseconds = 0;
   let previousFrame = 0;
   let previousMotion = 0;
+  let previousEnvironmentFrame = 0;
+  let cameraWasMoving = false;
+  let resourcesWereReady = false;
   function frame(now: number) {
     if (paused) return;
     const elapsed = previousMotion ? (now - previousMotion) / 1000 : 1 / 60;
     previousMotion = now;
-    if (motion.tick(elapsed)) {
+    const cameraMoving = motion.tick(elapsed);
+    if (cameraMoving) {
       updateCamera();
       hovered = null;
     }
+    // Последний неподвижный кадр отражения должен совпадать с новым ракурсом.
+    if (cameraWasMoving && !cameraMoving) {
+      ocean.invalidate();
+      dirty = true;
+    }
+    cameraWasMoving = cameraMoving;
     const reducedMotion = !animateCity || motionPreference.matches;
     if (now - previousFrame < (quality === 'low' ? 50 : 32) && !dirty) {
       frameId = requestAnimationFrame(frame);
@@ -269,11 +280,26 @@ export function createScene({ canvas, board, onArrivalFinished, onError }: Scene
     }
     const seconds = (now - pausedDuration) / 1000;
     life.update(seconds, passengers, reducedMotion);
-    if (dirty || (!!model?.pop && !reducedMotion)) {
+    if (!reducedMotion && previousEnvironmentFrame)
+      environmentSeconds += Math.min((now - previousEnvironmentFrame) / 1000, 0.1);
+    previousEnvironmentFrame = now;
+    const sun = lighting.update(environmentSeconds);
+    ocean.update(environmentSeconds, sun.daylight, sun.sun, now / 1000);
+    if (dirty || !reducedMotion) {
+      // Проверяем до рисования: после завершения компиляции нужен ещё один полный кадр.
+      const resourcesReady = !dirty || (scene.isReady() && lighting.isReady());
+      if (resourcesReady && !resourcesWereReady) {
+        // Частично готовые проходы не должны остаться последними в замороженной сцене.
+        lighting.invalidate();
+        ocean.invalidate();
+      }
+      resourcesWereReady = resourcesReady;
+      const renderStarted = performance.now();
       scene.render();
+      renderMilliseconds = performance.now() - renderStarted;
       // Babylon компилирует шейдеры асинхронно: первый render ещё может быть пустым.
       // Продолжаем кадры до готовности, затем экономим GPU на неподвижном острове.
-      dirty = !scene.isReady();
+      dirty = !resourcesReady;
     }
     overlays(seconds);
     frameId = requestAnimationFrame(frame);
@@ -289,6 +315,7 @@ export function createScene({ canvas, board, onArrivalFinished, onError }: Scene
       if (next) {
         motion.stop();
         previousMotion = 0;
+        previousEnvironmentFrame = 0;
         pausedAt = performance.now();
         cancelAnimationFrame(frameId);
         hovered = null;
@@ -306,6 +333,8 @@ export function createScene({ canvas, board, onArrivalFinished, onError }: Scene
         quality = settings.quality;
         resize();
       }
+      lighting.setQuality(settings.quality);
+      ocean.setQuality(settings.quality);
       dirty = true;
     },
     setModel(next: GameModel) {
@@ -322,10 +351,13 @@ export function createScene({ canvas, board, onArrivalFinished, onError }: Scene
         if (island) {
           island.dispose();
         }
-        shipGeometry().applyToMesh(ship);
+        shipGeometry(true).applyToMesh(ship);
         island = new Mesh('island', scene);
         islandGeometry(next.buildings, board, next.won).applyToMesh(island);
         island.material = material;
+        island.receiveShadows = true;
+        lighting.setCasters([island, ship]);
+        ocean.setIsland(board, next.buildings, island, ship);
         signature = key;
         dirty = true;
       }
@@ -339,6 +371,27 @@ export function createScene({ canvas, board, onArrivalFinished, onError }: Scene
       ship.setEnabled(false);
       hovered = null;
       resetCamera();
+      environmentSeconds = 0;
+      lighting.reset();
+      ocean.invalidate();
+    },
+    cycleTime() {
+      lighting.cycle();
+      ocean.invalidate();
+      dirty = true;
+    },
+    lookAtSky() {
+      const sun = lighting.lookDirection;
+      motion.look(Math.atan2(-sun.x, -sun.z), -Math.asin(sun.y));
+    },
+    get environmentState() {
+      return {
+        ...lighting.diagnostics,
+        water: ocean.diagnostics,
+        renderMilliseconds,
+        settled: !dirty,
+        sunScreen: project(...(lighting.diagnostics.sunPosition as [number, number, number])),
+      };
     },
     get cameraState() {
       return motion.state;
@@ -371,6 +424,8 @@ export function createScene({ canvas, board, onArrivalFinished, onError }: Scene
       cancelAnimationFrame(frameId);
       signal.abort();
       observer.disconnect();
+      ocean.dispose();
+      lighting.dispose();
       scene.dispose();
       renderer.dispose();
       surface.remove();

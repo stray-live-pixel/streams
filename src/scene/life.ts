@@ -19,8 +19,8 @@ export const lifeColors = {
 export function createCityLife(scene: Scene) {
   function material(name: string, color: string) {
     const result = new StandardMaterial(name, scene);
-    result.disableLighting = true;
-    result.emissiveColor = Color3.FromHexString(color);
+    result.diffuseColor = Color3.FromHexString(color);
+    result.specularColor = Color3.Black();
     return result;
   }
   const coats = lifeColors.coats.map((c, i) => material(`coat-${i}`, c));

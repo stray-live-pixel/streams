@@ -15,6 +15,7 @@ const screenshots = await mkdtemp(path.join(tmpdir(), 'harbor-island-'));
 try {
   const context = await browser.newContext({
     offline: true,
+    reducedMotion: 'reduce',
     viewport: { width: 1440, height: 810 },
   });
   const page = await context.newPage();
@@ -24,10 +25,10 @@ try {
   page.on('request', (r) => {
     if (/^https?:/.test(r.url())) requests.push(r.url());
   });
-  const ready = () =>
-    page.waitForFunction(() => {
+  const ready = async () => {
+    await page.waitForFunction(() => {
       const source = document.querySelector('#scene');
-      if (!source) return false;
+      if (!source || !cityDebug.environment?.settled) return false;
       const sample = document.createElement('canvas');
       sample.width = 144;
       sample.height = 81;
@@ -42,6 +43,10 @@ try {
       }
       return land > 650 && sea > 2500;
     });
+    await page.evaluate(
+      () => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))),
+    );
+  };
   const frame = () => page.locator('#scene').evaluate((c) => c.toDataURL());
   await page.goto(pathToFileURL(path.resolve('dist/index.html')).href);
   await page.click('#menu-start');

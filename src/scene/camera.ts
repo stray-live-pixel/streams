@@ -32,7 +32,7 @@ export function createCameraMotion() {
       Number(actions.has(positive)) - Number(actions.has(negative));
     const speed = actions.has('boost') ? 2 : 1;
     target.yaw += axis('right', 'left') * 1.35 * seconds * speed;
-    target.pitch = clamp(target.pitch + axis('tiltUp', 'tiltDown') * seconds * speed, 0.22, 1.2);
+    target.pitch = clamp(target.pitch + axis('tiltUp', 'tiltDown') * seconds * speed, -1.4, 1.2);
     target.zoom = clamp(
       target.zoom * Math.exp(axis('zoomIn', 'zoomOut') * 1.2 * seconds * speed),
       0.55,
@@ -71,14 +71,20 @@ export function createCameraMotion() {
         current.yaw +
         Math.atan2(Math.sin(target.yaw - current.yaw), Math.cos(target.yaw - current.yaw));
     },
+    look(yaw: number, pitch: number) {
+      inputs.clear();
+      target.yaw =
+        current.yaw + Math.atan2(Math.sin(yaw - current.yaw), Math.cos(yaw - current.yaw));
+      target.pitch = clamp(pitch, -1.4, 1.2);
+    },
     orbit(dx: number, dy: number) {
       target.yaw += dx * 0.006;
-      target.pitch = clamp(target.pitch + dy * 0.005, 0.22, 1.2);
+      target.pitch = clamp(target.pitch + dy * 0.005, -1.4, 1.2);
     },
     pan(dx: number, dy: number, pixelsPerUnit: number) {
       // Панорамирование меняет центр орбиты: после перемещения вращаемся вокруг нового места.
       const across = -dx / pixelsPerUnit;
-      const along = -dy / (pixelsPerUnit * Math.sin(current.pitch));
+      const along = -dy / (pixelsPerUnit * Math.max(0.18, Math.sin(current.pitch)));
       target.x += across * Math.cos(current.yaw) + along * Math.sin(current.yaw);
       target.z += -across * Math.sin(current.yaw) + along * Math.cos(current.yaw);
     },

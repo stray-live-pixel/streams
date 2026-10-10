@@ -13,6 +13,7 @@ export interface SceneOptions {
   board: Board;
   onArrivalFinished(): void;
   onError(message: string): void;
+  onTimeChanged?(label: string): void;
 }
 export interface Passenger extends Tile {
   id: number;

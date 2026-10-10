@@ -65,7 +65,7 @@ test('наклон и масштаб ограничены; сброс плавн
   camera.orbit(0, -1000);
   camera.zoom(-100);
   advance(camera, 2);
-  close(camera.state.pitch, 0.22);
+  close(camera.state.pitch, -1.4);
   close(camera.state.zoom, 0.55);
 });
 

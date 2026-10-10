@@ -13,6 +13,7 @@ export function createUI(
   document: Document,
   onCommand: CommandHandler,
   onCamera: (action: CameraAction | 'home', pressed?: boolean) => void,
+  onSky: (action: 'time' | 'look') => void = () => {},
 ) {
   // Типизированные помощники отделяют обязательную разметку от необязательных данных.
   function $<T extends HTMLElement = HTMLElement>(id: string): T {
@@ -25,6 +26,8 @@ export function createUI(
   let initialized = false;
   const listen = (id: string, callback: () => void) =>
     $(id).addEventListener('click', callback, { signal: controller.signal });
+  listen('time-of-day', () => onSky('time'));
+  listen('look-at-sky', () => onSky('look'));
   listen('next-day', () => onCommand({ type: 'next-day' }));
   listen('coach-action', () => onCommand({ type: 'continue' }));
   listen('help', () => $<HTMLDialogElement>('help-dialog').showModal());
@@ -233,6 +236,10 @@ export function createUI(
   }
   return {
     render,
+    setTimeLabel(label: string) {
+      $('time-of-day').textContent = label;
+      $('game-screen').dataset.dark = String(label.includes('Ночь'));
+    },
     notify(text: string) {
       $('toast').textContent = text;
       $('toast').classList.add('show');

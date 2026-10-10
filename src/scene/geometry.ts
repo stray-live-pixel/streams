@@ -15,6 +15,7 @@ import { buildingObjectId, type Building } from '../domain/index.js';
 import type { Board } from './types.js';
 import { harborLayout } from './harbor.js';
 import { environmentGeometry } from './environment.js';
+import { softenNormals } from './smoothing.js';
 import assets from '../../.generated/models.json';
 
 // В игре только используемые ассеты; полную библиотеку подключает редактор.
@@ -36,7 +37,7 @@ export function registerObjectAssets(models: Record<string, ModelData>) {
 
 // Композиции состоят из исходных деталей Kenney. Параметры — координаты,
 // масштаб и поворот; стоимость и правила зданий этому модулю неизвестны.
-// Материал без освещения выводит цвета палитры напрямую; повторная гамма-коррекция не нужна.
+// В игре палитру освещают источники сцены; мастерская сохраняет прежний запечённый свет.
 const hash = (x: number, z: number) => {
   const n = Math.sin(x * 127.1 + z * 311.7) * 43758.5453;
   return n - Math.floor(n);
@@ -55,6 +56,7 @@ function builder(
   models: Record<string, ModelData> = assets,
   capture?: ObjectPart[],
   overrides = true,
+  realtimeLighting = false,
 ) {
   const sceneVertices: number[] = [];
   function rgb(hex: string) {
@@ -65,9 +67,10 @@ function builder(
       v = c.map((x, i) => x - a[i]),
       n = [u[1] * v[2] - u[2] * v[1], u[2] * v[0] - u[0] * v[2], u[0] * v[1] - u[1] * v[0]],
       len = Math.hypot(...n) || 1;
-    let light = lit
-      ? 0.67 + 0.33 * Math.max(0, (-n[0] * 0.45 + n[1] * 0.82 + n[2] * 0.35) / len)
-      : 1;
+    let light =
+      !realtimeLighting && lit
+        ? 0.67 + 0.33 * Math.max(0, (-n[0] * 0.45 + n[1] * 0.82 + n[2] * 0.35) / len)
+        : 1;
     for (const [i, p] of [a, b, c].entries())
       sceneVertices.push(...p, ...colors[i].map((v) => (v / 255) * light));
   }
@@ -151,6 +154,7 @@ function builder(
     }
   }
   function shadow(x: number, z: number, rx: number, rz: number) {
+    if (realtimeLighting) return;
     for (let i = 0; i < 20; i++) {
       let a = (i * Math.PI) / 10,
         b = ((i + 1) * Math.PI) / 10;
@@ -334,7 +338,9 @@ function builder(
     geometry.colors = c;
     geometry.indices = Array.from({ length: p.length / 3 }, (_, i) => i);
     geometry.normals = [];
-    VertexData.ComputeNormals(p, geometry.indices, geometry.normals);
+    VertexData.ComputeNormals(p, geometry.indices, geometry.normals, {
+      useRightHandedSystem: realtimeLighting,
+    });
     return geometry;
   }
   function streetDecoration(x: number, z: number, fountain: boolean) {
@@ -347,7 +353,7 @@ function builder(
 }
 /** Полностью пересобирается только при изменении списка построек. */
 export function islandGeometry(buildings: Building[], board: Board, completed = false) {
-  const b = builder(board, completed);
+  const b = builder(board, completed, assets, undefined, true, true);
   // Маленькая площадь использует построенную улицу, не захватывая свободные клетки.
   const roads = new Set(buildings.filter((p) => p.t === 'road').map((p) => `${p.x},${p.z}`));
   const roadNeighbors = (road: Building) =>
@@ -380,11 +386,18 @@ export function islandGeometry(buildings: Building[], board: Board, completed = 
       b.streetDecoration(road.x, road.z, false);
     }
   }
-  return environmentGeometry(board, buildings).merge(b.finish(), true);
+  return softenNormals(environmentGeometry(board, buildings).merge(b.finish(), true));
 }
 /** Корабль — отдельный объект; анимация не пересоздаёт геометрию острова. */
-export function shipGeometry() {
-  const b = builder({ size: 0, isLand: () => false, shoreDirection: () => null });
+export function shipGeometry(realtimeLighting = false) {
+  const b = builder(
+    { size: 0, isLand: () => false, shoreDirection: () => null },
+    false,
+    assets,
+    undefined,
+    true,
+    realtimeLighting,
+  );
   const custom = gameObjectParts('game/ship');
   if (custom) b.parts(custom);
   else b.model('ship-small', 0, 0, 0, 0.19, 0.19, 0.19);

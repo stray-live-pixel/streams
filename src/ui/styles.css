@@ -85,6 +85,7 @@ dialog {
 }
 /* Верхняя строка и приколотая к карте ведомость ресурсов. */
 .header {
+  color: var(--color-scene-ink);
   position: fixed;
   top: 25px;
   left: var(--space-lg);
@@ -518,6 +519,7 @@ dialog {
   color: var(--color-ink-muted);
 }
 .save-note {
+  color: var(--color-scene-ink);
   position: fixed;
   font-size: 9px;
   bottom: 7px;
@@ -1594,4 +1596,22 @@ dialog:modal {
 #game-viewport:has(#intro-dialog[open])::after {
   background: var(--intro-backdrop);
   backdrop-filter: none;
+}
+
+.sky-controls {
+  position: fixed;
+  top: 207px;
+  right: 25px;
+  z-index: 2;
+  display: flex;
+  gap: 6px;
+}
+.sky-controls button {
+  padding: 7px 10px;
+  font-size: 11px;
+  border: var(--border-letter);
+  border-radius: 7px;
+  background: var(--surface-camera);
+  color: var(--color-ink);
+  box-shadow: var(--shadow-control);
 }

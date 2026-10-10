@@ -149,46 +149,24 @@ export function environmentLayout(board: Board, buildings: Building[]): NatureIn
   return instances;
 }
 
-/** Земля, вода и готовые природные меши объединяются в один статичный буфер.
- * Освещение цвета вершин не требует теневых карт или дорогого рендера. */
+/** Земля и готовые природные меши объединяются в один статичный буфер.
+ * Вода и небо имеют отдельные материалы и анимацию. */
 export function environmentGeometry(board: Board, buildings: Building[]) {
   const world = createWorld(board.seed ?? 0);
   const positions: number[] = [],
     colors: number[] = [];
-  function triangle(a: Point, b: Point, c: Point, color: number[], lit = false) {
-    const u = b.map((v, i) => v - a[i]),
-      v = c.map((n, i) => n - a[i]);
-    const normal = [
-      u[1] * v[2] - u[2] * v[1],
-      u[2] * v[0] - u[0] * v[2],
-      u[0] * v[1] - u[1] * v[0],
-    ];
-    const length = Math.hypot(...normal) || 1;
-    const light = lit
-      ? 0.77 +
-        0.26 * Math.max(0, (-normal[0] * 0.58 + normal[1] * 0.78 - normal[2] * 0.24) / length)
-      : 1;
+  function triangle(a: Point, b: Point, c: Point, color: number[]) {
+    // Материалы получают исходный цвет: свет и тени рассчитывает Babylon.
     for (const point of [a, b, c]) {
       positions.push(...point);
-      colors.push(...color.map((n) => Math.min(1, (n / 255) * light)), 1);
+      colors.push(...color.map((n) => Math.min(1, n / 255)), 1);
     }
   }
-  function quad(a: Point, b: Point, c: Point, d: Point, color: number[], lit = false) {
-    triangle(a, b, c, color, lit);
-    triangle(a, c, d, color, lit);
+  function quad(a: Point, b: Point, c: Point, d: Point, color: number[]) {
+    triangle(a, b, c, color);
+    triangle(a, c, d, color);
   }
   const random = randomSequence(world.seed ^ 0x29e0b51);
-  // Крупные спокойные грани воды; не сетка игрового поля.
-  for (let x = -55; x < 65; x += 2.6)
-    for (let z = -55; z < 65; z += 2.6) {
-      const tint = random() * 9;
-      const a: Point = [x, -0.68, z],
-        b: Point = [x + 2.6, -0.68, z],
-        c: Point = [x + 2.6, -0.68, z + 2.6],
-        d: Point = [x, -0.68, z + 2.6];
-      triangle(a, b, c, [70 + tint, 151 + tint, 164 + tint]);
-      triangle(a, c, d, [73 + tint, 154 + tint, 167 + tint]);
-    }
   const segments = 96,
     rings = 14;
   const angleAt = (i: number) => ((i % segments) / segments) * Math.PI * 2;
@@ -243,85 +221,26 @@ export function environmentGeometry(board: Board, buildings: Building[]) {
       bottom1,
       bottom0,
       sand > 0.35 ? [223, 204, 157] : [174 + random() * 12, 164 + random() * 10, 141],
-      sand <= 0.35,
     );
-    const shallow0 = radial(a, world.coastRadius(a) + 0.52 + sandA * 0.32, -0.674),
-      shallow1 = radial(b, world.coastRadius(b) + 0.52 + sandB * 0.32, -0.674);
-    quad(bottom0, bottom1, shallow1, shallow0, [105, 180, 183]);
-    // Линия пены прерывистая и повторяет контур берега.
-    if (i % 7 !== 0) {
-      const foam0 = radial(a, world.coastRadius(a) + 0.36 + sandA * 0.32, -0.666),
-        foam1 = radial(b, world.coastRadius(b) + 0.36 + sandB * 0.32, -0.666);
-      const outer0 = radial(a, world.coastRadius(a) + 0.39 + sandA * 0.32, -0.665),
-        outer1 = radial(b, world.coastRadius(b) + 0.39 + sandB * 0.32, -0.665);
-      quad(foam0, foam1, outer1, outer0, [193, 224, 204]);
-    }
   }
   const layout = environmentLayout(board, buildings);
-  function ellipse(x: number, y: number, z: number, rx: number, rz: number, color: number[]) {
-    const center: Point = [x, y, z];
-    for (let i = 0; i < 12; i++) {
-      const a = (i / 12) * Math.PI * 2,
-        b = ((i + 1) / 12) * Math.PI * 2;
-      triangle(
-        center,
-        [x + Math.cos(a) * rx, y, z + Math.sin(a) * rz],
-        [x + Math.cos(b) * rx, y, z + Math.sin(b) * rz],
-        color,
-      );
-    }
-  }
   for (const instance of layout) {
     const { asset, x, y, z, scale, stretch, rotation } = instance;
     const model = nature[asset],
       co = Math.cos(rotation),
       si = Math.sin(rotation);
-    if (asset.startsWith('pine') || asset === 'bush') {
-      ellipse(
-        x + scale * 0.18,
-        0.004,
-        z + scale * 0.07,
-        scale * 0.45,
-        scale * 0.33,
-        [141, 157, 78],
-      );
-      ellipse(
-        x + scale * 0.07,
-        0.007,
-        z + scale * 0.03,
-        scale * 0.23,
-        scale * 0.18,
-        [130, 147, 73],
-      );
-    }
-    if (y < -0.2) {
-      ellipse(x, -0.672, z, scale * 0.65, scale * 0.56, [100, 175, 179]);
-      // Пена вокруг выступающих из воды отдельных камней.
-      for (let i = 0; i < 10; i++) {
-        const a = (i / 10) * Math.PI * 2,
-          b = ((i + 0.65) / 10) * Math.PI * 2;
-        quad(
-          [x + Math.cos(a) * scale * 0.65, -0.665, z + Math.sin(a) * scale * 0.56],
-          [x + Math.cos(b) * scale * 0.65, -0.665, z + Math.sin(b) * scale * 0.56],
-          [x + Math.cos(b) * scale * 0.67, -0.665, z + Math.sin(b) * scale * 0.58],
-          [x + Math.cos(a) * scale * 0.67, -0.665, z + Math.sin(a) * scale * 0.58],
-          [192, 225, 211],
-        );
-      }
-    }
     const points: Point[] = model.p.map(([px, py, pz]) => [
       x + (px * co - pz * si) * scale,
       y + py * scale * stretch,
       z + (px * si + pz * co) * scale,
     ]);
-    for (const f of model.f)
-      triangle(points[f[0]], points[f[1]], points[f[2]], model.c[f[3]], true);
+    for (const f of model.f) triangle(points[f[0]], points[f[1]], points[f[2]], model.c[f[3]]);
   }
   const data = new VertexData();
   data.positions = positions;
   data.colors = colors;
   data.indices = Array.from({ length: positions.length / 3 }, (_, i) => i);
   data.normals = [];
-  VertexData.ComputeNormals(positions, data.indices, data.normals);
+  VertexData.ComputeNormals(positions, data.indices, data.normals, { useRightHandedSystem: true });
   return data;
 }

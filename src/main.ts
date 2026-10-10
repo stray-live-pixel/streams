@@ -22,10 +22,18 @@ let scene: CityScene | undefined;
 let disposeInput: (() => void) | undefined;
 let paused = true;
 const canvas = document.getElementById('world') as HTMLCanvasElement;
-const ui = createUI(document, dispatch, (action, pressed) => {
-  if (action === 'home') scene?.resetCamera();
-  else scene?.setCameraInput(`toolbar:${action}`, pressed ? action : null);
-});
+const ui = createUI(
+  document,
+  dispatch,
+  (action, pressed) => {
+    if (action === 'home') scene?.resetCamera();
+    else scene?.setCameraInput(`toolbar:${action}`, pressed ? action : null);
+  },
+  (action) => {
+    if (action === 'time') scene?.cycleTime();
+    else scene?.lookAtSky();
+  },
+);
 const menu = createMenu(document, settings, {
   start() {
     if (!ensureScene()) return false;
@@ -91,6 +99,7 @@ function ensureScene() {
       board: createWorld(game.snapshot().islandSeed),
       onArrivalFinished: () => dispatch({ type: 'arrival-finished' }),
       onError: (text) => ui.notify(text),
+      onTimeChanged: (label) => ui.setTimeLabel(label),
     });
     applySettings();
     scene.setModel(game.snapshot());
@@ -128,6 +137,9 @@ window.cityDebug = Object.freeze({
   get paused() {
     return paused;
   },
+  get environment() {
+    return scene?.environmentState ?? null;
+  },
   get camera() {
     return scene?.cameraState ?? null;
   },
@@ -159,6 +171,7 @@ declare global {
       readonly renderer: string;
       readonly paused: boolean;
       readonly camera: CityScene['cameraState'] | null;
+      readonly environment: CityScene['environmentState'] | null;
       projectTile(x: number, z: number): { x: number; y: number };
     };
   }

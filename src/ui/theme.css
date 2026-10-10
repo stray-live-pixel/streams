@@ -7,6 +7,7 @@
   --color-letterbox: #000;
   --color-sea: #8eb8b7;
   --color-ink: #344c40;
+  --color-scene-ink: var(--color-ink);
   --color-ink-muted: #74694e;
   --color-paper: #f7efd9;
   --color-paper-light: #fff9e9;
@@ -70,4 +71,8 @@
       color-mix(in srgb, var(--color-border) 3%, transparent) 3px 4px
     ),
     radial-gradient(ellipse at 15% 10%, var(--color-paper-light), var(--color-paper));
+}
+
+#game-screen[data-dark='true'] {
+  --color-scene-ink: var(--color-paper);
 }
