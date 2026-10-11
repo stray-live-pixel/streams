@@ -15,7 +15,7 @@ const corner = [
   { x: 0, z: 1 },
 ];
 function gameWithFootprint(footprint = corner) {
-  const state = initialState();
+  const state = initialState(0);
   state.step = STEP.FREE;
   state.money = 10000;
   state.buildings.push({ t: 'port', x: 6, z: 11 });
@@ -70,7 +70,7 @@ test('строительство заменяет дороги на всём у�
   assert.throws(() => restoreState(bad), /пересекаются/);
 });
 test('старые города сохраняют одну клетку, новые настройки не расширяют их задним числом', () => {
-  const state = initialState();
+  const state = initialState(0);
   state.version = 4;
   state.buildings.push({ t: 'house', x: 3, z: 3 });
   const game = createGame(state, { 'game/house/0': corner });

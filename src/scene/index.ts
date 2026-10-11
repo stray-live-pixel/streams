@@ -111,7 +111,8 @@ export function createScene({
   let model: GameModel | null = null;
   let hovered: Tile | null = null;
   let arrival: { event: Arrival; started: number } | null = null;
-  const motion = createCameraMotion();
+  const homeCenter = () => (board.size === 12 ? 5.5 : sceneCoordinate(board.size / 2 - 0.5));
+  const motion = createCameraMotion(homeCenter());
   let width = 0,
     height = 0,
     scale = 1,
@@ -140,7 +141,7 @@ export function createScene({
     const { x, z, yaw, pitch, zoom } = motion.state;
     const cx = width * (width < 760 ? 0.5 : 0.6),
       cy = height * (width < 760 ? 0.55 : 0.51);
-    scale = Math.min(width / 20, height / 18) * zoom;
+    scale = Math.min(width / 20, height / 18) * zoom * (12 / board.size);
     camera.orthoLeft = -cx / scale;
     camera.orthoRight = (width - cx) / scale;
     camera.orthoTop = cy / scale;
@@ -263,16 +264,7 @@ export function createScene({
     // The dock is part of the placement preview; no map-wide grid of available cells.
     if (candidate.t === 'port') {
       const layout = harborLayout(candidate, board);
-      const perimeter = [
-        [-0.45, 0],
-        [0.45, 0],
-        [0.45, layout.distance - 0.9],
-        [1.5, layout.distance - 0.9],
-        [1.5, layout.distance + 0.9],
-        [-1.5, layout.distance + 0.9],
-        [-1.5, layout.distance - 0.9],
-        [-0.45, layout.distance - 0.9],
-      ];
+      const perimeter = layout.outline;
       perimeter.forEach(([side, depth], i) => {
         const p = layout.point(side, depth),
           screen = project(p.x, 0.035, p.z);
@@ -298,8 +290,8 @@ export function createScene({
       const port = model.buildings.find((b) => b.t === 'port');
       if (port) {
         const h = harborLayout(port, board),
-          p = h.point(-0.7, h.distance);
-        const light = project(p.x, 1.77, p.z);
+          p = h.beacon;
+        const light = project(p.x, 0.07 + (1.55 - 0.07) * ISLAND_SPREAD, p.z);
         const glow = context.createRadialGradient(light.x, light.y, 0, light.x, light.y, 28);
         glow.addColorStop(0, '#fff6bbdd');
         glow.addColorStop(1, '#ffe49b00');
@@ -343,7 +335,8 @@ export function createScene({
         arrival.event,
         (now - arrival.started) / 1000,
         board.shoreDirection(arrival.event.port.x, arrival.event.port.z) ?? [0, 1],
-        harborLayout(arrival.event.port, board).distance + 1.45,
+        undefined,
+        harborLayout(arrival.event.port, board),
       );
       ship.position.set(sceneCoordinate(result.x), -0.25, sceneCoordinate(result.z));
       ship.rotation.y = result.rotation;
@@ -383,7 +376,7 @@ export function createScene({
   }
   frameId = requestAnimationFrame(frame);
   function resetCamera() {
-    motion.reset();
+    motion.reset(homeCenter());
   }
   return {
     setPaused(next: boolean) {
@@ -416,7 +409,10 @@ export function createScene({
       dirty = true;
     },
     setModel(next: GameModel) {
-      if (board.seed !== next.islandSeed) board = createWorld(next.islandSeed);
+      if (board.seed !== next.islandSeed) {
+        board = createWorld(next.islandSeed);
+        motion.reset(homeCenter());
+      }
       model = next;
       life.setModel(next);
       const key = JSON.stringify([
@@ -445,10 +441,10 @@ export function createScene({
         );
         contact.wrapU = Texture.CLAMP_ADDRESSMODE;
         contact.wrapV = Texture.CLAMP_ADDRESSMODE;
-        painted.setContactTexture(contact);
+        painted.setContactTexture(contact, board.size);
         island.material = material;
         island.receiveShadows = true;
-        lighting.setCasters([island, ship]);
+        lighting.setCasters([island, ship], board.size);
         ocean.setIsland(board, next.buildings, island, ship);
         signature = key;
         dirty = true;

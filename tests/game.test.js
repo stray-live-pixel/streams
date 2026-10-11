@@ -9,7 +9,7 @@ function chooseAndBuild(game, type, x, z) {
   return game.dispatch({ type: 'build', x, z });
 }
 function readyCity() {
-  const game = createGame();
+  const game = createGame(initialState(0));
   game.dispatch({ type: 'continue' });
   chooseAndBuild(game, 'port', 6, 11);
   chooseAndBuild(game, 'house', 7, 6);
@@ -18,7 +18,7 @@ function readyCity() {
   return game;
 }
 test('порт первый; внутренний участок и ранняя смена дня не принимаются', () => {
-  const g = createGame();
+  const g = createGame(initialState(0));
   g.dispatch({ type: 'continue' });
   assert.equal(g.snapshot().required, 'port');
   chooseAndBuild(g, 'port', 7, 6);
@@ -35,7 +35,7 @@ test('свободная планировка и дома без мгновен�
   assert.equal(g.snapshot().money, 230);
 });
 test('дороги бесплатны, обратимы и не продвигают обучение', () => {
-  const g = createGame();
+  const g = createGame(initialState(0));
   g.dispatch({ type: 'continue' });
   chooseAndBuild(g, 'port', 6, 11);
   chooseAndBuild(g, 'road', 7, 6);
@@ -94,7 +94,7 @@ test('снимок не позволяет изменить внутреннее
   assert.equal(g.snapshot().buildings.length, 5);
 });
 test('миграция старого города сохраняет жителей и возвращает к недостающему порту', () => {
-  const old = { ...initialState(), version: 2, step: 6, day: 8, pop: undefined };
+  const old = { ...initialState(0), version: 2, step: 6, day: 8, pop: undefined };
   old.buildings.push({ x: 7, z: 6, t: 'house' });
   const g = createGame(old);
   assert.equal(g.snapshot().pop, 10);
@@ -107,10 +107,10 @@ test('повреждённые сохранения отклоняются', () 
   for (const broken of [
     null,
     {},
-    { ...initialState(), pop: 100 },
-    { ...initialState(), money: -1 },
-    { ...initialState(), step: 10 },
-    { ...initialState(), buildings: [{ x: 5, z: 5, t: 'constructor' }] },
+    { ...initialState(0), pop: 100 },
+    { ...initialState(0), money: -1 },
+    { ...initialState(0), step: 10 },
+    { ...initialState(0), buildings: [{ x: 5, z: 5, t: 'constructor' }] },
   ]) {
     assert.throws(() => restoreState(broken));
   }
@@ -128,7 +128,7 @@ test('ошибка localStorage не прерывает игру и не уда�
   }));
   assert.match(storage.load().error, /загрузить/);
   assert.equal(removed, false);
-  assert.match(storage.save(initialState()), /не разрешил/);
+  assert.match(storage.save(initialState(0)), /не разрешил/);
 });
 test('совместимый ключ сохранений и полный цикл записи', () => {
   const data = new Map();
@@ -155,7 +155,7 @@ test('сброс отменяет рейс и возвращает началь�
   assert.equal(g.snapshot().busy, false);
 });
 test('50 жителей открывают финал: маяк строится отдельной командой один раз', () => {
-  const s = initialState();
+  const s = initialState(0);
   s.step = STEP.FREE;
   s.money = 10000;
   s.food = 1000;
@@ -204,7 +204,7 @@ test('маяк недоступен без ресурсов, питания ил
   assert.equal(createGame(base).dispatch({ type: 'light-beacon' }).changed, false);
 });
 test('старую победу сохраняем без повторной платы, новый финал после сброса исчезает', () => {
-  const old = { ...initialState(), version: 3, won: true, day: 12, step: 6 };
+  const old = { ...initialState(0), version: 3, won: true, day: 12, step: 6 };
   old.buildings.push({ x: 6, z: 11, t: 'port' });
   const g = createGame(old);
   assert.equal(g.snapshot().won, true);

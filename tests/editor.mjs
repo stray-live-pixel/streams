@@ -51,7 +51,8 @@ try {
   assert.equal(await page.locator('#object-project').count(), 0);
   assert.equal(await page.locator('#object-export, #object-import').count(), 0);
   assert.equal(await page.evaluate(() => localStorage.length), 0);
-  assert.equal(await page.locator('#objects-list button').count(), 259);
+  assert.equal(await page.locator('#objects-list button').count(), 260);
+  assert.equal(await page.locator('[data-object="custom/starter-port"]').count(), 1);
   const choose = async (id) => {
     await page.selectOption('#objects-group', '');
     await page.fill('#objects-search', '');
@@ -249,7 +250,7 @@ try {
   assert.deepEqual(errors, []);
   assert.deepEqual(external, []);
   console.log(
-    'Editor: camera flight, 239 assets, proportional scale, custom footprint, gizmos, history, direct file save, main commit and reload PASS',
+    'Editor: camera flight, 240 assets including Blender port, proportional scale, custom footprint, gizmos, history, direct file save, main commit and reload PASS',
   );
   console.log(`Screenshots: ${screenshots}`);
 } finally {

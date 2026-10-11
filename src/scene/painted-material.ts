@@ -18,6 +18,7 @@ export class PaintedScenery extends MaterialPluginBase {
   readonly transitionTexture: Texture;
   readonly gouacheTexture: Texture;
   private contactTexture: Texture;
+  private contactSpan = 16;
   constructor(material: StandardMaterial) {
     super(material, 'painted-scenery', 200, {}, true, true);
     this.natureTexture = new Texture(terrainTextures.paint, material.getScene());
@@ -53,10 +54,11 @@ export class PaintedScenery extends MaterialPluginBase {
     this.contactTexture.name = 'empty-nature-contact';
   }
   /** Takes ownership; replacing the island also releases its old contact map. */
-  setContactTexture(texture: Texture) {
+  setContactTexture(texture: Texture, mapSize = 12) {
     if (texture === this.contactTexture) return;
     this.contactTexture.dispose();
     this.contactTexture = texture;
+    this.contactSpan = mapSize + 4;
   }
   override isReadyForSubMesh() {
     return (
@@ -80,11 +82,15 @@ export class PaintedScenery extends MaterialPluginBase {
   }
   override getUniforms() {
     return {
-      ubo: [{ name: 'paintDaylight', size: 1, type: 'float' }],
-      fragment: 'uniform float paintDaylight;',
+      ubo: [
+        { name: 'paintDaylight', size: 1, type: 'float' },
+        { name: 'contactSpan', size: 1, type: 'float' },
+      ],
+      fragment: 'uniform float paintDaylight; uniform float contactSpan;',
     };
   }
   override bindForSubMesh(buffer: UniformBuffer, scene: Scene) {
+    buffer.updateFloat('contactSpan', this.contactSpan);
     buffer.setTexture('paintedNatureSampler', this.natureTexture);
     buffer.setTexture('shoreTransitionSampler', this.transitionTexture);
     buffer.setTexture('paintedContactSampler', this.contactTexture);
@@ -158,7 +164,7 @@ vec3 meadowPaint(vec3 p) {
   return mix(vec3(.55,.67,.28),brush*vec3(.91,.98,1.04),.86);
 }
 float groundContact(vec3 p,vec3 normal) {
-  vec2 contactUV=(p.xz-vec2(6.0))/1.41421356237/16.0+vec2(.5);
+  vec2 contactUV=((p.xz-vec2(6.0))/1.41421356237+vec2(8.0))/contactSpan;
   return texture2D(paintedContactSampler,contactUV).r*smoothstep(.32,.82,normal.y);
 }
 vec3 contactShade(vec3 color,float amount) {

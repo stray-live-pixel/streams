@@ -66,13 +66,13 @@ try {
   await page.click('#confirm-reset');
   await ready();
   const second = await page.evaluate(() => cityDebug.state);
-  assert.notEqual(second.islandSeed, first.islandSeed);
-  assert.notEqual(await frame(), firstFrame, 'Новая история действительно меняет 3D-остров');
+  assert.equal(second.islandSeed, first.islandSeed);
+  assert.equal(await frame(), firstFrame, 'Новая история начинает ту же статичную карту');
   await page.screenshot({ path: path.join(screenshots, 'another-island.png') });
   // Выбранный на новой географии порт проходит и визуальное попадание, и доменные правила.
   await page.click('#coach-action');
   await page.click('[data-type="port"]');
-  const location = await page.evaluate(() => cityDebug.projectTile(6, 11));
+  const location = await page.evaluate(() => cityDebug.projectTile(12, 23));
   await page.mouse.click(location.x, location.y);
   assert((await page.evaluate(() => cityDebug.state.buildings)).some((b) => b.t === 'port'));
   await ready();
@@ -81,11 +81,10 @@ try {
   await page.evaluate(() => {
     const old = { ...cityDebug.state, version: 5 };
     delete old.islandSeed;
-    old.buildings = old.buildings.map(({ legacy, ...b }) => ({
-      ...b,
-      x: Math.round(b.x),
-      z: Math.round(b.z),
-    }));
+    old.buildings = [
+      { t: 'hall', x: 5, z: 5 },
+      { t: 'port', x: 6, z: 11 },
+    ];
     localStorage.setItem('ostrov-simple-v2', JSON.stringify(old));
   });
   await page.reload();
@@ -97,7 +96,7 @@ try {
   assert.deepEqual(requests, []);
   await context.close();
   console.log(
-    `Procedural island: real WebGL land/water, stable save, different new game, port picking, old-city migration and offline assets PASS. Screenshots: ${screenshots}`,
+    `Static island: real WebGL land/water, stable save, identical new game, port picking, old-city migration and offline assets PASS. Screenshots: ${screenshots}`,
   );
 } finally {
   await browser.close();

@@ -30,13 +30,13 @@ float heightAt(vec2 p){
  +(noise(p*.65+vec2(time*.05,-time*.03)+seed)-.5)*.035;
 }`;
 export const waterVertex = `precision highp float;
-attribute vec3 position;attribute vec2 uv;uniform mat4 worldViewProjection;uniform mat4 world;uniform float time;uniform float seed;uniform sampler2D coastSampler;
+attribute vec3 position;attribute vec2 uv;uniform mat4 worldViewProjection;uniform mat4 world;uniform float waterOrigin;uniform float waterSpan;uniform float time;uniform float seed;uniform sampler2D coastSampler;
 varying vec3 vPosition;varying vec3 vWorldPosition;varying vec2 vPaintPosition;varying vec4 vClip;
 ${shaderNoise}${waveCode}
 void main(){
  vec3 p=position;
  // Одинаковое смещение общих вершин: грани качаются без разрывов между ними.
- vec2 shoreline=texture2D(coastSampler,(position.xz+18.0)/48.0).rg;
+ vec2 shoreline=texture2D(coastSampler,(position.xz-waterOrigin)/waterSpan).rg;
  float distance=(shoreline.r-shoreline.g)*2.0;
  // The long offshore waves lose height as they run into the shallows.
  p.y+=heightAt(position.xz)*mix(.22,1.0,smoothstep(-.2,1.3,distance));
@@ -51,7 +51,7 @@ export const waterFragment = `
 #endif
 precision highp float;
 varying vec3 vPosition;varying vec3 vWorldPosition;varying vec2 vPaintPosition;varying vec4 vClip;
-uniform float time;uniform float seed;uniform float daylight;uniform float reflectionStrength;
+uniform float waterOrigin;uniform float waterSpan;uniform float time;uniform float seed;uniform float daylight;uniform float reflectionStrength;
 uniform vec3 eyePosition;uniform vec3 lightDirection;uniform sampler2D coastSampler;uniform sampler2D reflectionSampler;uniform sampler2D paintedNatureSampler;uniform sampler2D seabedSampler;
 uniform sampler2D gouacheSampler;
 ${shaderNoise}
@@ -63,7 +63,7 @@ float angularNoise(vec2 p){
  : d+(c-d)*(1.0-f.x)+(b-d)*(1.0-f.y);
 }
 float shoreAt(vec2 p){
- vec2 uv=(p+18.0)/48.0;
+ vec2 uv=(p-waterOrigin)/waterSpan;
  if(any(lessThan(uv,vec2(0)))||any(greaterThan(uv,vec2(1))))return 2.0;
  vec2 distance=texture2D(coastSampler,uv).rg;
  return (distance.r-distance.g)*2.0;
@@ -96,7 +96,7 @@ void main(){
  vec3 normal=normalize(vec3(.05*cos(p.x*.7+time*.31),1.0,.04*sin(p.y*.8-time*.25)));
  float signedCoast=angularShore(p);
  float coast=max(0.0,signedCoast);
- float beach=texture2D(coastSampler,(p+18.0)/48.0).b;
+ float beach=texture2D(coastSampler,(p-waterOrigin)/waterSpan).b;
  beach=smoothstep(.2,.85,beach);
  vec2 warp=vec2(noise(vPaintPosition*.23),noise(vPaintPosition.yx*.19+13.7));
  vec2 brushUV=mat2(.8,-.6,.6,.8)*vPaintPosition*.19+warp*.65+vec2(seed*.013,.37);
@@ -179,9 +179,11 @@ void main(){
 }`;
 
 /** Конечная равномерная сетка: одинаково небольшие грани вплоть до видимого края. */
-export function waterGeometry(high = true) {
-  const n = high ? 48 : 32,
-    span = 48,
+export function waterGeometry(high = true, mapSize = 12) {
+  const ratio = mapSize / 12;
+  const n = Math.round((high ? 48 : 32) * Math.sqrt(ratio)),
+    span = 48 * ratio,
+    origin = mapSize / 2 - span / 2,
     positions: number[] = [],
     indices: number[] = [];
   const jitter = (x: number, z: number) => (Math.sin(x * 127.1 + z * 311.7) * 43758.5453) % 1;
@@ -189,9 +191,9 @@ export function waterGeometry(high = true) {
     for (let x = 0; x <= n; x++) {
       const edge = x === 0 || z === 0 || x === n || z === n;
       positions.push(
-        -18 + (x * span) / n + (edge ? 0 : jitter(x, z) * 0.24),
+        origin + (x * span) / n + (edge ? 0 : jitter(x, z) * 0.24),
         WATER_LEVEL,
-        -18 + (z * span) / n + (edge ? 0 : jitter(z, x) * 0.24),
+        origin + (z * span) / n + (edge ? 0 : jitter(z, x) * 0.24),
       );
     }
   for (let z = 0; z < n; z++)
@@ -232,17 +234,19 @@ export function shoreDistancePixels(
   size = SHORE_TEXTURE_SIZE,
 ) {
   const world = createWorld(board.seed ?? 0);
+  const span = 4 * board.size;
+  const origin = board.size / 2 - span / 2;
   const rocks = environmentLayout(board, buildings).filter(
     (o) => o.y < -0.2 && o.y > -1.25 && o.scale > 0.35,
   );
   const data = new Uint8Array(size * size * 4);
   for (let z = 0; z < size; z++)
     for (let x = 0; x < size; x++) {
-      const px = -18 + ((x + 0.5) / size) * 48,
-        pz = -18 + ((z + 0.5) / size) * 48;
-      const angle = Math.atan2(pz - 6, px - 6);
+      const px = origin + ((x + 0.5) / size) * span,
+        pz = origin + ((z + 0.5) / size) * span;
+      const angle = Math.atan2(pz - world.center, px - world.center);
       let distance =
-        Math.hypot(px - 6, pz - 6) -
+        Math.hypot(px - world.center, pz - world.center) -
         shorelineRadius(angle, board.seed ?? 0, world.coastRadius(angle), buildings);
       for (const rock of rocks) {
         if (Math.abs(px - rock.x) > 2 || Math.abs(pz - rock.z) > 2) continue;
@@ -297,6 +301,8 @@ export function createOcean(
         'worldViewProjection',
         'world',
         'time',
+        'waterOrigin',
+        'waterSpan',
         'seed',
         'daylight',
         'eyePosition',
@@ -320,11 +326,14 @@ export function createOcean(
   material.setTexture('seabedSampler', seabed);
   material.setFloat('seed', 0);
   material.setFloat('time', 0);
+  material.setFloat('waterOrigin', -18);
+  material.setFloat('waterSpan', 48);
   material
     .setFloat('daylight', 1)
     .setFloat('reflectionStrength', 0.055)
     .setVector3('lightDirection', Vector3.Up())
     .setVector3('eyePosition', camera.position);
+  let mapSize = 12;
   let field: RawTexture | null = null,
     lastReflection = -100,
     quality: 'high' | 'low' = 'high',
@@ -338,6 +347,11 @@ export function createOcean(
   });
   return {
     setIsland(board: Board, buildings: Building[], island: Mesh, ship: Mesh) {
+      if (mapSize !== board.size) {
+        mapSize = board.size;
+        waterGeometry(quality === 'high', mapSize).applyToMesh(mesh);
+      }
+      material.setFloat('waterOrigin', -1.5 * mapSize).setFloat('waterSpan', 4 * mapSize);
       field?.dispose();
       field = RawTexture.CreateRGBATexture(
         shoreDistancePixels(board, buildings),
@@ -388,7 +402,7 @@ export function createOcean(
     setQuality(value: 'high' | 'low') {
       if (value === quality) return;
       quality = value;
-      waterGeometry(value === 'high').applyToMesh(mesh);
+      waterGeometry(value === 'high', mapSize).applyToMesh(mesh);
       reflection.resize(value === 'high' ? 256 : 128);
       seabed.resize(value === 'high' ? 512 : 256);
       lastReflection = -100;

@@ -130,7 +130,7 @@ try {
   await hold('e', 180);
   await hold('ArrowUp', 150);
   await page.waitForTimeout(350);
-  const tile = await page.evaluate(() => cityDebug.projectTile(6, 11));
+  const tile = await page.evaluate(() => cityDebug.projectTile(12, 23));
   assert.equal(
     await page.evaluate(({ x, y }) => document.elementFromPoint(x, y)?.id, tile),
     'world',

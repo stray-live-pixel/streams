@@ -8,6 +8,7 @@ import { Color3 } from '@babylonjs/core/Maths/math.color.js';
 import { Vector3 } from '@babylonjs/core/Maths/math.vector.js';
 import type { Scene } from '@babylonjs/core/scene.js';
 import type { Camera } from '@babylonjs/core/Cameras/camera.js';
+import { sceneCoordinate } from './space.js';
 import type { Mesh } from '@babylonjs/core/Meshes/mesh.js';
 
 export type TimeOfDay = 'auto' | 'dawn' | 'day' | 'dusk' | 'night';
@@ -48,6 +49,7 @@ void main(){
 }`;
 
 export function createLighting(scene: Scene, camera: Camera, onLabel: (label: string) => void) {
+  let mapSize = 12;
   const sunlight = new DirectionalLight('sunlight', new Vector3(-1, -1, -0.4), scene);
   const ambient = new HemisphericLight('sky-light', Vector3.Up(), scene);
   ambient.groundColor = new Color3(0.36, 0.32, 0.23);
@@ -105,7 +107,11 @@ export function createLighting(scene: Scene, camera: Camera, onLabel: (label: st
       const { daylight, twilight } = current;
       const direction = current.sun.y > -0.04 ? current.sun : current.sun.scale(-1);
       sunlight.direction.copyFrom(direction.scale(-1));
-      sunlight.position.copyFrom(new Vector3(6, 0, 6).add(direction.scale(35)));
+      sunlight.position.copyFrom(
+        new Vector3(sceneCoordinate(mapSize / 2), 0, sceneCoordinate(mapSize / 2)).add(
+          direction.scale(35),
+        ),
+      );
       // Leave headroom for painted highlights instead of clipping the meadow
       // and sand into one yellow plane. Cool fill keeps shaded facets legible.
       sunlight.intensity = (0.28 + 0.63 * daylight) * (1 - 0.14 * twilight);
@@ -144,7 +150,10 @@ export function createLighting(scene: Scene, camera: Camera, onLabel: (label: st
       }
       return current;
     },
-    setCasters(meshes: Mesh[]) {
+    setCasters(meshes: Mesh[], size = 12) {
+      mapSize = size;
+      sunlight.orthoLeft = sunlight.orthoBottom = -(size + 2);
+      sunlight.orthoRight = sunlight.orthoTop = size + 2;
       shadows.getShadowMap()!.renderList = meshes;
       shadows.getShadowMap()!.resetRefreshCounter();
     },

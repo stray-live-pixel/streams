@@ -3,15 +3,18 @@
  * contains принимает непрерывные координаты; isLand сохраняет старую клеточную географию
  * для миграции сохранений. Форма участка задаётся в локальных единицах.
  */
-export const MAP_SIZE = 12;
+import { DEFAULT_MAP, mapCenter, mapScale } from './maps.js';
+
+export const MAP_SIZE = DEFAULT_MAP.size;
+const LEGACY_SIZE = 12;
 export function isLand(x: number, z: number) {
   return (
     Number.isInteger(x) &&
     Number.isInteger(z) &&
     x >= 0 &&
     z >= 0 &&
-    x < MAP_SIZE &&
-    z < MAP_SIZE &&
+    x < LEGACY_SIZE &&
+    z < LEGACY_SIZE &&
     !(x < 2 && z < 2) &&
     !(x > 9 && z < 2) &&
     !(x > 9 && z > 9) &&
@@ -33,10 +36,20 @@ export function shoreDirection(x: number, z: number): [number, number] | null {
   );
 }
 
-/** География новой игры воспроизводится по seed; ноль сохраняет прежние города. */
+/** Новая карта читает фиксированный контур; прежние seed нужны только для сохранений. */
 export function createWorld(seed = 0) {
+  const size = 12 * mapScale(seed);
+  const center = mapCenter(seed);
   const phase = ((seed >>> 0) / 4294967296) * Math.PI * 2;
   const coastRadius = (angle: number) => {
+    if (seed === DEFAULT_MAP.key) {
+      const samples = DEFAULT_MAP.coast;
+      const at = ((((angle / (Math.PI * 2)) % 1) + 1) % 1) * samples.length;
+      const index = Math.floor(at);
+      return (
+        samples[index] + (samples[(index + 1) % samples.length] - samples[index]) * (at - index)
+      );
+    }
     const dx = Math.cos(angle),
       dz = Math.sin(angle);
     if (seed === 0) {
@@ -65,8 +78,8 @@ export function createWorld(seed = 0) {
     );
   };
   const contains = (x: number, z: number, margin = 0) => {
-    const dx = x - 6,
-      dz = z - 6;
+    const dx = x - center,
+      dz = z - center;
     return Math.hypot(dx, dz) + margin <= coastRadius(Math.atan2(dz, dx));
   };
   const land =
@@ -77,8 +90,8 @@ export function createWorld(seed = 0) {
           Number.isInteger(z) &&
           x >= 0 &&
           z >= 0 &&
-          x < MAP_SIZE &&
-          z < MAP_SIZE &&
+          x < size &&
+          z < size &&
           contains(x + 0.5, z + 0.5, 0.12);
   const shore = (x: number, z: number): [number, number] | null => {
     if (!Number.isFinite(x) || !Number.isFinite(z) || !contains(x + 0.5, z + 0.5, -0.2))
@@ -92,7 +105,9 @@ export function createWorld(seed = 0) {
     // В новой бухте выбираем сторону открытого моря, а не скользящий вдоль берега выход.
     // Для старых сохранений оставляем прежний порядок и ориентацию причалов.
     if (seed !== 0)
-      directions.sort((a, b) => (b[0] - a[0]) * (x + 0.5 - 6) + (b[1] - a[1]) * (z + 0.5 - 6));
+      directions.sort(
+        (a, b) => (b[0] - a[0]) * (x + 0.5 - center) + (b[1] - a[1]) * (z + 0.5 - center),
+      );
     return (
       directions.find(
         ([dx, dz]) =>
@@ -101,6 +116,6 @@ export function createWorld(seed = 0) {
       ) ?? null
     );
   };
-  return { size: MAP_SIZE, seed, isLand: land, shoreDirection: shore, coastRadius, contains };
+  return { size, seed, center, isLand: land, shoreDirection: shore, coastRadius, contains };
 }
 export type IslandWorld = ReturnType<typeof createWorld>;

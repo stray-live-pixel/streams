@@ -12,6 +12,7 @@ export interface Building extends Tile {
 }
 export interface CityState {
   version: number;
+  /** Fixed map key for v8; legacy uint32 seed for older islands. */
   islandSeed: number;
   pop: number;
   money: number;

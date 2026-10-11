@@ -11,12 +11,12 @@ export type CameraAction =
   | 'zoomOut'
   | 'boost';
 
-const initial = () => ({
+const initial = (center = 5.5) => ({
   yaw: -0.68,
   pitch: Math.atan2(0.52, 0.86),
   zoom: 1,
-  x: 5.5,
-  z: 5.5,
+  x: center,
+  z: center,
 });
 export type CameraState = ReturnType<typeof initial>;
 const clamp = (n: number, min: number, max: number) => Math.max(min, Math.min(max, n));
@@ -25,9 +25,9 @@ const clamp = (n: number, min: number, max: number) => Math.max(min, Math.min(ma
 const minPitch = -Math.PI / 2 + 0.001;
 
 /** Независимая от FPS орбитальная камера. Цель движения отделена от текущего ракурса. */
-export function createCameraMotion() {
-  let current = initial();
-  let target = initial();
+export function createCameraMotion(center = 5.5) {
+  let current = initial(center);
+  let target = initial(center);
   const inputs = new Map<string, CameraAction>();
 
   function move(actions: ReadonlySet<CameraAction>, seconds: number) {
@@ -70,9 +70,10 @@ export function createCameraMotion() {
       inputs.clear();
       target = { ...current };
     },
-    reset() {
+    reset(nextCenter = center) {
+      center = nextCenter;
       inputs.clear();
-      target = initial();
+      target = initial(center);
       // Возвращаемся кратчайшим путём даже после нескольких полных оборотов.
       target.yaw =
         current.yaw +

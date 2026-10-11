@@ -11,11 +11,7 @@ import { objectFootprints } from './objects/index.js';
 const disposeViewport = fitGameViewport(document.getElementById('game-viewport')!);
 const storage = createStorage(() => window.localStorage);
 const loaded = storage.load();
-const game = createGame(
-  loaded.state,
-  objectFootprints(),
-  () => crypto.getRandomValues(new Uint32Array(1))[0] || 1,
-);
+const game = createGame(loaded.state, objectFootprints());
 let settings = storage.loadSettings();
 let hasGame = loaded.state !== null;
 let scene: CityScene | undefined;

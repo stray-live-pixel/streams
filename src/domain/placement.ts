@@ -32,7 +32,7 @@ export function footprintSamples(building: Building): Tile[] {
   );
 }
 
-/** One layout shared by validation and rendering: dry landing and a wet T-shaped dock. */
+/** Dry landing and the full wet envelope of the Blender quay and its right-hand pier. */
 export function portLayout(port: Tile, world: PlacementWorld) {
   const direction = world.shoreDirection(port.x, port.z) ?? [0, 1];
   const [dx, dz] = direction;
@@ -43,8 +43,8 @@ export function portLayout(port: Tile, world: PlacementWorld) {
   let distance = 1.8;
   for (; distance < 6; distance += 0.3) {
     if (
-      [-1.5, -0.75, 0, 0.75, 1.5].every((side) =>
-        [-0.9, 0, 0.9].every((depth) => {
+      [-2.2, -1.1, 0, 1.1, 2.2].every((side) =>
+        [-1.35, 0, 1.65].every((depth) => {
           const p = point(side, distance + depth);
           return !world.contains(p.x, p.z);
         }),
