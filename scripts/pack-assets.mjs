@@ -98,9 +98,15 @@ export async function packAssets(root) {
   const natureTexture = await readFile(
     path.join(root, 'assets/art/terrain/nature-paint-atlas.png'),
   );
+  const transitionTexture = await readFile(
+    path.join(root, 'assets/art/terrain/shore-transition-atlas.png'),
+  );
   await writeFile(
     path.join(root, '.generated/terrain-textures.json'),
-    JSON.stringify({ paint: `data:image/png;base64,${natureTexture.toString('base64')}` }),
+    JSON.stringify({
+      paint: `data:image/png;base64,${natureTexture.toString('base64')}`,
+      transition: `data:image/png;base64,${transitionTexture.toString('base64')}`,
+    }),
   );
   await writeFile(path.join(root, '.generated/models.json'), JSON.stringify(models));
   const natureModels = await readFile(path.join(root, 'assets/models/island-nature/models.json'));

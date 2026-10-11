@@ -150,9 +150,8 @@ test('береговые глыбы имеют четыре неровных я�
         heights.size >= 22,
         'Плечи разных ярусов не лежат на одинаковых горизонтальных срезах',
       );
-      function sectionWidth(level) {
+      function sectionWidth(level, p = mesh.positions) {
         const points = [];
-        const p = mesh.positions;
         for (let i = 0; i < p.length; i += 9)
           for (let edge = 0; edge < 3; edge++) {
             const a = i + edge * 3,
@@ -167,10 +166,12 @@ test('береговые глыбы имеют четыре неровных я�
       }
       const cap = mesh.positions.slice(-7 * 9);
       const narrowLevel = Math.min(...cap.filter((_, i) => i % 3 === 1)) - 0.04;
-      assert(
-        sectionWidth(-0.65) > sectionWidth(narrowLevel) * 1.25,
-        'К воде глыба становится шире',
-      );
+      assert(sectionWidth(-0.65) > sectionWidth(narrowLevel), 'К воде глыба становится шире');
+      // Local shape must retain the strong taper even when a low beach bends
+      // its crown. Absolute world-height cuts sample different local layers.
+      const local = cliffRockGeometry({ ...rock, elevation: undefined }).positions;
+      const localCrown = Math.min(...local.slice(-7 * 9).filter((_, i) => i % 3 === 1)) - 0.04;
+      assert(sectionWidth(-0.65, local) > sectionWidth(localCrown, local) * 1.25);
       assert(mesh.positions.every(Number.isFinite));
       assert(mesh.normals.every(Number.isFinite));
     }

@@ -19,6 +19,25 @@ try {
   });
   const errors = [];
   page.on('pageerror', (error) => errors.push(error.message));
+  // This test targets viewport scaling, including one known-valid dock site.
+  // Random relief can change visibility of the hard-coded dock target.
+  await page.addInitScript(() => {
+    localStorage.setItem(
+      'ostrov-simple-v2',
+      JSON.stringify({
+        version: 7,
+        islandSeed: 0,
+        pop: 0,
+        money: 600,
+        food: 30,
+        day: 1,
+        step: 0,
+        won: false,
+        endingSeen: false,
+        buildings: [{ t: 'hall', x: 5, z: 5 }],
+      }),
+    );
+  });
   await page.goto(pathToFileURL(path.resolve('dist/index.html')).href);
 
   async function checkFrame(width, height) {
