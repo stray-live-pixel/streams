@@ -56,7 +56,7 @@
       "source": "assets/models/island-nature/pine-tall.glb",
       "geometry_source": "assets/models/island-nature/models.json",
       "geometry_key": "pine-tall",
-      "preview": "assets/models/island-nature/painted-preview.png",
+      "preview": "assets/models/island-nature/pine-texture-preview.png",
       "reference": "assets/art/island-reference.png",
       "generators": [
         "scripts/create-nature-models.mjs"
@@ -73,7 +73,8 @@
         "В игре экземпляры имеют свободные координаты, поворот и масштаб, затем объединяются в один буфер.",
         "Превью показывает набор в игровом окружении, не отдельный объект.",
         "В игре используется реальный свет, плоские нормали природных граней и более яркая тёплая палитра сцены; расстояния между объектами увеличены в √2, модели сохраняют пропорции и размещены по рельефу, подводные основания камней удлинены при сборке; геометрия и палитра исходного GLB не изменены.",
-        "Игровые материалы используют общий рисованный атлас: широкие мазки луга, песка, скал, хвои, коры и лепестков; мелкое зерно убрано. Исходный GLB и его статистика не менялись."
+        "Игровые материалы используют общий рисованный атлас: широкие мазки луга, песка, скал, хвои, коры и лепестков; мелкое зерно убрано. Исходный GLB и его статистика не менялись.",
+        "Хвоя окрашивается непосредственно сгенерированной текстурой без чередования цветов граней; локальная нормализованная высота кроны даёт слегка более светлую верхушку. Исходный GLB и геометрия сохранены. Текстура смешивается с трёх направлений по нормали, чтобы не вытягивать мазки в прямые полосы."
       ],
       "source_sha256": "efa027b0889675a0d88216f4fcb1187ccdefffa6ce5b339475b1fb734081c5cb",
       "runtime_texture": "assets/art/terrain/nature-paint-atlas.png",
@@ -92,7 +93,7 @@
       "source": "assets/models/island-nature/pine-wide.glb",
       "geometry_source": "assets/models/island-nature/models.json",
       "geometry_key": "pine-wide",
-      "preview": "assets/models/island-nature/painted-preview.png",
+      "preview": "assets/models/island-nature/pine-texture-preview.png",
       "reference": "assets/art/island-reference.png",
       "generators": [
         "scripts/create-nature-models.mjs"
@@ -109,7 +110,8 @@
         "В игре экземпляры имеют свободные координаты, поворот и масштаб, затем объединяются в один буфер.",
         "Превью показывает набор в игровом окружении, не отдельный объект.",
         "В игре используется реальный свет, плоские нормали природных граней и более яркая тёплая палитра сцены; расстояния между объектами увеличены в √2, модели сохраняют пропорции и размещены по рельефу, подводные основания камней удлинены при сборке; геометрия и палитра исходного GLB не изменены.",
-        "Игровые материалы используют общий рисованный атлас: широкие мазки луга, песка, скал, хвои, коры и лепестков; мелкое зерно убрано. Исходный GLB и его статистика не менялись."
+        "Игровые материалы используют общий рисованный атлас: широкие мазки луга, песка, скал, хвои, коры и лепестков; мелкое зерно убрано. Исходный GLB и его статистика не менялись.",
+        "Хвоя окрашивается непосредственно сгенерированной текстурой без чередования цветов граней; локальная нормализованная высота кроны даёт слегка более светлую верхушку. Исходный GLB и геометрия сохранены. Текстура смешивается с трёх направлений по нормали, чтобы не вытягивать мазки в прямые полосы."
       ],
       "source_sha256": "42a085d81e197aeb00130c2d7cd1a992b0848e987fe32c4aef2c16d27a0c3c74",
       "runtime_texture": "assets/art/terrain/nature-paint-atlas.png",
@@ -128,7 +130,7 @@
       "source": "assets/models/island-nature/pine-young.glb",
       "geometry_source": "assets/models/island-nature/models.json",
       "geometry_key": "pine-young",
-      "preview": "assets/models/island-nature/painted-preview.png",
+      "preview": "assets/models/island-nature/pine-texture-preview.png",
       "reference": "assets/art/island-reference.png",
       "generators": [
         "scripts/create-nature-models.mjs"
@@ -145,7 +147,8 @@
         "В игре экземпляры имеют свободные координаты, поворот и масштаб, затем объединяются в один буфер.",
         "Превью показывает набор в игровом окружении, не отдельный объект.",
         "В игре используется реальный свет, плоские нормали природных граней и более яркая тёплая палитра сцены; расстояния между объектами увеличены в √2, модели сохраняют пропорции и размещены по рельефу, подводные основания камней удлинены при сборке; геометрия и палитра исходного GLB не изменены.",
-        "Игровые материалы используют общий рисованный атлас: широкие мазки луга, песка, скал, хвои, коры и лепестков; мелкое зерно убрано. Исходный GLB и его статистика не менялись."
+        "Игровые материалы используют общий рисованный атлас: широкие мазки луга, песка, скал, хвои, коры и лепестков; мелкое зерно убрано. Исходный GLB и его статистика не менялись.",
+        "Хвоя окрашивается непосредственно сгенерированной текстурой без чередования цветов граней; локальная нормализованная высота кроны даёт слегка более светлую верхушку. Исходный GLB и геометрия сохранены. Текстура смешивается с трёх направлений по нормали, чтобы не вытягивать мазки в прямые полосы."
       ],
       "source_sha256": "380926c22a1bd235b047c51ca773fb2aac2be9c7f7a2c1cdc82120ab6ba216df",
       "runtime_texture": "assets/art/terrain/nature-paint-atlas.png",
@@ -422,8 +425,8 @@
       "layout_sha256": "3b810c3fbc357b9578352de303e82ed48b90d869e5388d68cf980308a364ce47",
       "surface_color_sha256": "28366c5ef1e09656b9a6f0de1f3461fb677d902c6bb1a9525352e8859f2b97de",
       "coast_height_sha256": "cb1e3840f97a303f01bfac06d0cbc89960d7c76524ef59b10d035ff81cad3286",
-      "painted_material_sha256": "56c9f64f19fb7b983e259a8ea141353156fc75aa0673bb883a791c15094578f5",
-      "environment_sha256": "e13943df6f4cc806f93a5bf6478c178bdbace32e0bbe3a6164a8cd7b7f8ae0e7",
+      "painted_material_sha256": "cd05d4c6f5a1dfa3fe9b07bac01654a11c056af2ce95288bac96f11ec08cc8d6",
+      "environment_sha256": "25790b748443b19527a3a28c71871102d8048015e85ff471ef137e8f8216334b",
       "runtime_texture": "assets/art/terrain/nature-paint-atlas.png",
       "material_metadata": "assets/art/terrain/materials.json"
     },
@@ -465,8 +468,8 @@
         "assets/art/coastal-reference/painted-beach-target.png"
       ],
       "coast_height_sha256": "cb1e3840f97a303f01bfac06d0cbc89960d7c76524ef59b10d035ff81cad3286",
-      "painted_material_sha256": "56c9f64f19fb7b983e259a8ea141353156fc75aa0673bb883a791c15094578f5",
-      "environment_sha256": "e13943df6f4cc806f93a5bf6478c178bdbace32e0bbe3a6164a8cd7b7f8ae0e7",
+      "painted_material_sha256": "cd05d4c6f5a1dfa3fe9b07bac01654a11c056af2ce95288bac96f11ec08cc8d6",
+      "environment_sha256": "25790b748443b19527a3a28c71871102d8048015e85ff471ef137e8f8216334b",
       "runtime_texture": "assets/art/terrain/nature-paint-atlas.png",
       "material_metadata": "assets/art/terrain/materials.json"
     }
