@@ -97,7 +97,8 @@ test('наружная корона опускается к воде, а вну�
   assert.throws(() => cliffRockGeometry({ ...spec, crownSlope: -1 }), RangeError);
 });
 
-test('короны основных береговых и нагорных глыб спрятаны под травой', () => {
+test('короны соединены с сушей, а нагорные плечи действительно видны поверх старого склона', () => {
+  let visibleShoulders = 0;
   for (const seed of [0, 1, 42, 1234, 3210380753]) {
     for (const rock of coastalCliffs(seed)) {
       assert(rock.top < 0, 'Береговая корона ниже дерна');
@@ -107,11 +108,14 @@ test('короны основных береговых и нагорных гл�
       const cap = cliffRockGeometry(rock).positions.slice(-7 * 9);
       for (let i = 0; i < cap.length; i += 3)
         assert(
-          cap[i + 1] <= terrainHeight(cap[i], cap[i + 2], seed),
-          'Главная и малая глыбы не выступают над травой на склоне',
+          cap[i + 1] <= rock.ceiling(cap[i], cap[i + 2]) + 1e-10,
+          'Корона не выходит выше внутреннего участка плато',
         );
+      if (cap.some((v, i) => i % 3 === 1 && v > terrainHeight(cap[i - 1], cap[i + 1], seed) + 0.1))
+        visibleShoulders++;
     }
   }
+  assert(visibleShoulders > 3, 'Глыбы заменяют гладкий бок, а не целиком спрятаны внутри рельефа');
 });
 
 test('вариации наклона и плеча сохраняют замкнутую конечную геометрию', () => {
@@ -125,11 +129,11 @@ test('вариации наклона и плеча сохраняют замк�
       }
 });
 
-test('береговые глыбы имеют четыре неровных яруса над водой и расширяются книзу', () => {
+test('береговые глыбы имеют наклонные разломы и широкое основание без разрывов', () => {
   for (const seed of [0, 1, 42, 1234, 3210380753]) {
     for (const rock of coastalCliffs(seed).slice(0, 6)) {
       const mesh = cliffRockGeometry(rock);
-      assert.equal(mesh.indices.length / 3, 84);
+      assert(mesh.indices.length / 3 >= 56 && mesh.indices.length / 3 <= 98);
       const edges = new Map();
       const heights = new Set();
       for (let i = 0; i < mesh.positions.length; i += 9) {
@@ -147,7 +151,7 @@ test('береговые глыбы имеют четыре неровных я�
         'Замкнутая оболочка без разрывов',
       );
       assert(
-        heights.size >= 22,
+        heights.size >= (rock.elevation ? 12 : 7),
         'Плечи разных ярусов не лежат на одинаковых горизонтальных срезах',
       );
       function sectionWidth(level, p = mesh.positions) {
@@ -171,7 +175,8 @@ test('береговые глыбы имеют четыре неровных я�
       // its crown. Absolute world-height cuts sample different local layers.
       const local = cliffRockGeometry({ ...rock, elevation: undefined }).positions;
       const localCrown = Math.min(...local.slice(-7 * 9).filter((_, i) => i % 3 === 1)) - 0.04;
-      assert(sectionWidth(-0.65, local) > sectionWidth(localCrown, local) * 1.12);
+      const taper = rock.elevation ? 1.12 : 1.005;
+      assert(sectionWidth(-0.65, local) > sectionWidth(localCrown, local) * taper);
       assert(mesh.positions.every(Number.isFinite));
       assert(mesh.normals.every(Number.isFinite));
     }

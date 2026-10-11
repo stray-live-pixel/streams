@@ -23,6 +23,10 @@ import { createLighting } from './lighting.js';
 import { createOcean } from './ocean.js';
 import { createLens } from './lens.js';
 import { PaintedScenery } from './painted-material.js';
+import { RawTexture } from '@babylonjs/core/Materials/Textures/rawTexture.js';
+import { Texture } from '@babylonjs/core/Materials/Textures/texture.js';
+import { contactShadowPixels, CONTACT_TEXTURE_SIZE } from './contact-shadows.js';
+import { exposedRockHeight } from './rock-support.js';
 import { coastalSurfaceHeight } from './cliff-layout.js';
 import { sceneCoordinate, boardCoordinate, ISLAND_SPREAD } from './space.js';
 import { createCityLife } from './life.js';
@@ -184,7 +188,10 @@ export function createScene({
     return { x: p.x, y: p.y };
   }
   function heightAt(x: number, z: number) {
-    return coastalSurfaceHeight(x, z, board.seed ?? 0, model?.buildings ?? []);
+    return Math.max(
+      coastalSurfaceHeight(x, z, board.seed ?? 0, model?.buildings ?? []),
+      exposedRockHeight(x, z, board.seed ?? 0, model?.buildings ?? []),
+    );
   }
   function project(x: number, y: number, z: number) {
     return projectWorld(sceneCoordinate(x), y + heightAt(x, z), sceneCoordinate(z));
@@ -427,6 +434,18 @@ export function createScene({
         shipData.applyToMesh(ship);
         island = new Mesh('island', scene);
         islandGeometry(next.buildings, board, next.won).applyToMesh(island);
+        const contact = RawTexture.CreateRGBATexture(
+          contactShadowPixels(board, next.buildings),
+          CONTACT_TEXTURE_SIZE,
+          CONTACT_TEXTURE_SIZE,
+          scene,
+          false,
+          false,
+          Texture.BILINEAR_SAMPLINGMODE,
+        );
+        contact.wrapU = Texture.CLAMP_ADDRESSMODE;
+        contact.wrapV = Texture.CLAMP_ADDRESSMODE;
+        painted.setContactTexture(contact);
         island.material = material;
         island.receiveShadows = true;
         lighting.setCasters([island, ship]);
@@ -453,6 +472,10 @@ export function createScene({
       ocean.invalidate();
       dirty = true;
     },
+    setArtisticStrength(value: number) {
+      lens.setArtisticStrength(value);
+      dirty = true;
+    },
     lookAtSky() {
       const sun = lighting.lookDirection;
       motion.look(Math.atan2(-sun.x, -sun.z), -Math.asin(sun.y));
@@ -463,6 +486,7 @@ export function createScene({
         water: ocean.diagnostics,
         islandSpread: ISLAND_SPREAD,
         lensBlur: true,
+        ...lens.diagnostics,
         renderMilliseconds,
         settled: !dirty,
         sunScreen: projectWorld(...(lighting.diagnostics.sunPosition as [number, number, number])),

@@ -15,7 +15,8 @@ import {
 } from './cliff-layout.js';
 import { cliffRockGeometry } from './cliffs.js';
 import { grassPigment, rockPigment } from './surface-color.js';
-import { pineGeometry } from './foliage.js';
+import { pineGeometry, bushGeometry } from './foliage.js';
+import { exposedRockHeight } from './rock-support.js';
 export { beachInfluence } from './cliff-layout.js';
 
 type Point = [number, number, number];
@@ -104,11 +105,22 @@ export function environmentLayout(board: Board, buildings: Building[]): NatureIn
   const add = (asset: NatureId, x: number, y: number, z: number, scale: number, stretch = 1) => {
     const rotation = random() * Math.PI * 2;
     if (['bush', 'grass', 'flowers'].includes(asset) && sandCover(x, z) > 0.46) return;
+    const ground = terrainHeight(x, z, world.seed, buildings);
+    // Protruding rock shoulders replace the old grassy slope. Do not leave
+    // the previous plant bases buried inside their visible stone volume.
+    // Keep the original exclusion too: clearing a rock for a building must
+    // not spawn a new tree next to a house that was absent before building.
+    if (
+      (asset.startsWith('pine') || ['bush', 'grass', 'flowers'].includes(asset)) &&
+      (exposedRockHeight(x, z, world.seed) > terrainHeight(x, z, world.seed) + 0.06 ||
+        exposedRockHeight(x, z, world.seed, buildings) > ground + 0.06)
+    )
+      return;
     if (clear(x, z, asset.startsWith('pine') ? scale * 0.38 : scale * 0.22))
       instances.push({
         asset,
         x,
-        y: y > -0.1 ? y + terrainHeight(x, z, world.seed, buildings) : y,
+        y: y > -0.1 ? y + ground : y,
         z,
         scale,
         stretch,
@@ -228,6 +240,19 @@ export function environmentLayout(board: Board, buildings: Building[]): NatureIn
       0.76 + talusRandom() * 0.34,
       0.76 + talusRandom() * 0.14,
     );
+    if (i % 2 === 0) {
+      // Submerged slabs give the clear shallows actual depth and silhouettes.
+      // Their top remains below the troughs of the animated sea.
+      const submergedRadius = radius + 0.55 + talusRandom() * 0.55;
+      add(
+        'rock-flat',
+        6 + Math.cos(angle + 0.045) * submergedRadius,
+        -1.45,
+        6 + Math.sin(angle + 0.045) * submergedRadius,
+        0.65 + talusRandom() * 0.45,
+        0.8,
+      );
+    }
   }
   // Loose vegetation groups soften the turf rim without repeating a hedge.
   // The same placement clearance keeps both beaches and future docks open.
@@ -422,7 +447,9 @@ export function environmentGeometry(board: Board, buildings: Building[], spread 
         covering = 0.5 * (grassAt(point[0], point[2]) * (1 - sand) + 2 * sand);
       } else if (surface === 8 || surface === 9) {
         const gap = terrainHeight(point[0], point[2], world.seed, buildings) - point[1];
-        covering = clamp(1 - gap / 0.32, 0, 1);
+        // Only the turf contact carries grass. A shoulder protruding outward
+        // from an inland cliff is exposed stone, even above the old slope.
+        covering = clamp(1 - Math.abs(gap) / 0.23, 0, 1);
         if (surface === 9) covering = Math.max(covering, clamp((-point[1] - 0.35) / 0.45, 0, 1));
       }
       surfaces.push(surface, crownHeights?.[index] ?? covering);
@@ -566,7 +593,11 @@ export function environmentGeometry(board: Board, buildings: Building[], spread 
   for (const instance of layout) {
     const { asset, x, y, z, scale, stretch, rotation } = instance;
     const pine = asset.startsWith('pine');
-    const model = pine ? pineGeometry(asset, x, z, world.seed) : nature[asset],
+    const model = pine
+        ? pineGeometry(asset, x, z, world.seed)
+        : asset === 'bush'
+          ? bushGeometry(x, z, world.seed)
+          : nature[asset],
       co = Math.cos(rotation),
       si = Math.sin(rotation);
     const crownTop = pine ? Math.max(...model.p.map((point) => point[1])) : 1;

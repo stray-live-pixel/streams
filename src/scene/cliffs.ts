@@ -128,37 +128,53 @@ export function cliffRockGeometry(spec: CliffSpec): CliffGeometry {
   }
 
   if (profile === 'layered') {
-    // A fracture belongs to the whole boulder, not to one triangle. Keep the
-    // same seven corners through its height, with broad tilted shoulders.
-    // Independent radial noise in each course made thin zigzags and spikes.
-    const outline = Array.from({ length: 7 }, (_, i) => {
-      const p = source[7 + i];
-      const scale = 0.94 + random() * 0.12;
-      return [p[0] * scale, p[2] * scale] as const;
-    });
-    const tiltX = (random() - 0.5) * 0.12;
-    const tiltZ = (random() - 0.5) * 0.12;
-    const mainShoulder = 0.53 + (shoulderHeight - 0.5) * 0.7;
-    const shiftX = (random() - 0.5) * 0.12;
-    const shiftZ = (random() - 0.5) * 0.1;
-    const upperWidth = 0.97 + random() * 0.08;
-    const ledgeHeight = 0.73 + (random() - 0.5) * 0.1;
-    const layers = [
-      [0, 1.09],
-      [0.29, 1.16],
-      [mainShoulder, 1.1],
-      [ledgeHeight, upperWidth],
-      [0.9, 0.95],
-      [1, crownScale],
+    // A chamfered slab has long broad faces and a few short broken corners.
+    // The old almost-circular outline repeated at six heights looked like a
+    // stack of barrels. Three slanted fracture courses describe one mass.
+    const corners = [
+      [0.5, 0.22],
+      [0.25, 0.47],
+      [-0.37, 0.43],
+      [-0.51, 0.02],
+      [-0.3, -0.45],
+      [0.25, -0.49],
+      [0.49, -0.24],
     ];
-    const stratified = layers.map(([height, scale]) =>
-      outline.map(([px, pz]): Point => [
-        px * scale + shiftX * Math.sin(Math.PI * height),
-        height + (tiltX * px + tiltZ * pz) * Math.sin(Math.PI * height),
-        pz * scale + shiftZ * Math.sin(Math.PI * height),
-      ]),
+    const cutCorner = Math.floor(random() * 7);
+    const outline = corners.map(([px, pz], i) => {
+      const cut = i === cutCorner ? 0.77 : 0.94 + random() * 0.1;
+      return [px * cut, pz * cut] as const;
+    });
+    const fracture = outline.map(([px, pz], i) => ({
+      low: 0.27 + (shoulderHeight - 0.5) * 0.15 + px * 0.14 - pz * 0.2 + random() * 0.07,
+      high: 0.72 + px * -0.12 + pz * 0.16 + random() * 0.06,
+      // One recessed corner produces a broad vertical cleft, not fine noise.
+      cut: i === cutCorner ? 0.88 : 0.97 + random() * 0.06,
+    }));
+    const shiftX = (random() - 0.5) * 0.16;
+    const shiftZ = (random() - 0.5) * 0.12;
+    const hasLedge = (seed >>> 0) % 3 !== 0;
+    const scales = hasLedge ? [1.06, 1.24, 1.07, 1.02, crownScale] : [1.06, 1.2, 1.04, crownScale];
+    rings.splice(
+      0,
+      rings.length,
+      ...scales.map((scale, layer) =>
+        outline.map(([px, pz], i): Point => {
+          const height =
+            layer === 0
+              ? 0
+              : layer === scales.length - 1
+                ? 1
+                : layer === 1
+                  ? fracture[i].low
+                  : hasLedge && layer === 2
+                    ? fracture[i].low + 0.11
+                    : fracture[i].high;
+          const cut = layer > 0 && layer < scales.length - 1 ? fracture[i].cut : 1;
+          return [px * scale * cut + shiftX * height, height, pz * scale * cut + shiftZ * height];
+        }),
+      ),
     );
-    rings.splice(0, rings.length, ...stratified);
   }
 
   const points = rings.flat();
@@ -166,12 +182,19 @@ export function cliffRockGeometry(spec: CliffSpec): CliffGeometry {
   const maxX = Math.max(...points.map((p) => p[0]));
   const minZ = Math.min(...points.map((p) => p[2]));
   const maxZ = Math.max(...points.map((p) => p[2]));
+  const crownReach =
+    (-2 * (Math.min(...rings.at(-1)!.map((p) => p[2])) - (minZ + maxZ) * 0.5)) / (maxZ - minZ);
   const cos = Math.cos(rotation);
   const sin = Math.sin(rotation);
   const transform = ([px, py, pz]: Point): Point => {
     const tx = ((px - (minX + maxX) * 0.5) / (maxX - minX)) * width;
     const tz = ((pz - (minZ + maxZ) * 0.5) / (maxZ - minZ)) * depth;
-    const crown = top - crownSlope * Math.max(0, Math.min(1, (-tz / depth) * 2));
+    const seaward = (-tz / depth) * 2;
+    // Turf reaches the rock shoulder; only the outside lip is bevelled.
+    // Sloping the whole seaward half left the grass far behind the block and
+    // made the joined shoreline look like separate round green lids.
+    const crownFalloff = profile === 'layered' ? (seaward / crownReach - 0.74) / 0.26 : seaward;
+    const crown = top - crownSlope * Math.max(0, Math.min(1, crownFalloff));
     // Shear moves the crown and its shoulders together, keeping the buried
     // foot planted. This changes the profile without a second stepped ring.
     const shiftedZ = tz + py * lean * depth;
