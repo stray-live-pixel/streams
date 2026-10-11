@@ -99,7 +99,7 @@ export function createScene({
   material.twoSidedLighting = false;
   material.backFaceCulling = false;
   const painted = new PaintedScenery(material);
-  const ocean = createOcean(scene, camera, painted.natureTexture);
+  const ocean = createOcean(scene, camera, painted.natureTexture, painted.gouacheTexture);
   const ship = new Mesh('arrival-ship', scene);
   const shipData = shipGeometry(true);
   shipData.uvs = new Array((shipData.positions!.length / 3) * 2).fill(0);

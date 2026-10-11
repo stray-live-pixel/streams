@@ -19,6 +19,7 @@ import { softenNormals } from './smoothing.js';
 import { buildingElevation, terrainHeight } from './terrain.js';
 import { ISLAND_SPREAD, sceneCoordinate } from './space.js';
 import assets from '../../.generated/models.json';
+import { buildingSurface } from './building-surface.js';
 
 // В игре только используемые ассеты; полную библиотеку подключает редактор.
 let objectAssets: Record<string, ModelData> = {
@@ -62,10 +63,18 @@ function builder(
   islandBuildings: Building[] = [],
 ) {
   const sceneVertices: number[] = [];
+  const surfaces: number[] = [];
   function rgb(hex: string) {
     return hex.match(/[0-9a-f]{2}/gi)!.map((v) => parseInt(v, 16));
   }
-  function triangle(a: number[], b: number[], c: number[], colors: number[][], lit = true) {
+  function triangle(
+    a: number[],
+    b: number[],
+    c: number[],
+    colors: number[][],
+    lit = true,
+    surface = 0,
+  ) {
     let u = b.map((v, i) => v - a[i]),
       v = c.map((x, i) => x - a[i]),
       n = [u[1] * v[2] - u[2] * v[1], u[2] * v[0] - u[0] * v[2], u[0] * v[1] - u[1] * v[0]],
@@ -74,8 +83,10 @@ function builder(
       !realtimeLighting && lit
         ? 0.67 + 0.33 * Math.max(0, (-n[0] * 0.45 + n[1] * 0.82 + n[2] * 0.35) / len)
         : 1;
-    for (const [i, p] of [a, b, c].entries())
+    for (const [i, p] of [a, b, c].entries()) {
       sceneVertices.push(...p, ...colors[i].map((v) => (v / 255) * light));
+      surfaces.push(surface, 0);
+    }
   }
   function quad(a: number[], b: number[], c: number[], d: number[], color: number[]) {
     triangle(a, b, c, [color, color, color], false);
@@ -136,7 +147,15 @@ function builder(
         z + p[0] * sx * si + p[2] * sz * co,
       ]);
     for (let f of a.f) {
-      triangle(points[f[0]], points[f[1]], points[f[2]], faceColors(a, f, tint));
+      const colors = faceColors(a, f, tint);
+      triangle(
+        points[f[0]],
+        points[f[1]],
+        points[f[2]],
+        colors,
+        true,
+        realtimeLighting ? buildingSurface(name, colors) : 0,
+      );
     }
   }
   function parts(items: ObjectPart[], x = 0, z = 0) {
@@ -152,7 +171,15 @@ function builder(
         return [v.x + x, v.y, v.z + z];
       });
       for (const f of data.f) {
-        triangle(points[f[0]], points[f[1]], points[f[2]], faceColors(data, f, part.tint));
+        const colors = faceColors(data, f, part.tint);
+        triangle(
+          points[f[0]],
+          points[f[1]],
+          points[f[2]],
+          colors,
+          true,
+          realtimeLighting ? buildingSurface(part.asset, colors) : 0,
+        );
       }
     }
   }
@@ -339,6 +366,7 @@ function builder(
     const geometry = new VertexData();
     geometry.positions = p;
     geometry.colors = c;
+    geometry.uvs = surfaces;
     geometry.indices = Array.from({ length: p.length / 3 }, (_, i) => i);
     geometry.normals = [];
     VertexData.ComputeNormals(p, geometry.indices, geometry.normals, {
@@ -414,7 +442,6 @@ export function islandGeometry(buildings: Building[], board: Board, completed = 
   const environment = environmentGeometry(board, buildings, ISLAND_SPREAD);
   // У природных граней сохраняем плоские нормали: резные скалы должны читаться.
   const built = softenNormals(b.finish());
-  built.uvs = new Array((built.positions!.length / 3) * 2).fill(0);
   return environment.merge(built, true);
 }
 /** Корабль — отдельный объект; анимация не пересоздаёт геометрию острова. */

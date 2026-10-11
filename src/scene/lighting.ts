@@ -65,7 +65,7 @@ export function createLighting(scene: Scene, camera: Camera, onLabel: (label: st
   shadows.filteringQuality = ShadowGenerator.QUALITY_HIGH;
   shadows.bias = 0.0008;
   shadows.normalBias = 0.025;
-  shadows.setDarkness(0.06);
+  shadows.setDarkness(0.13);
   shadows.getShadowMap()!.refreshRate = 0;
   const sky = CreateSphere('sky-dome', { diameter: 600, segments: 12 }, scene);
   sky.infiniteDistance = true;

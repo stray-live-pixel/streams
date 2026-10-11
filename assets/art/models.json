@@ -78,7 +78,7 @@
       "material_metadata": "assets/art/terrain/materials.json",
       "archived_source": "assets/models/island-nature/pine-tall.glb",
       "archived_source_sha256": "efa027b0889675a0d88216f4fcb1187ccdefffa6ce5b339475b1fb734081c5cb",
-      "source_sha256": "360ea41b86b5e497fe759dca142530d99e3f3939c5efbaa2724b3c24545302cf",
+      "source_sha256": "339e1c6ae193e0e75a924c84ef52cace1efd24eb75b6ec12a80eec18c18f4226",
       "review_status": "awaiting-user-art-review",
       "blender_ready": false
     },
@@ -117,7 +117,7 @@
       "material_metadata": "assets/art/terrain/materials.json",
       "archived_source": "assets/models/island-nature/pine-wide.glb",
       "archived_source_sha256": "42a085d81e197aeb00130c2d7cd1a992b0848e987fe32c4aef2c16d27a0c3c74",
-      "source_sha256": "360ea41b86b5e497fe759dca142530d99e3f3939c5efbaa2724b3c24545302cf",
+      "source_sha256": "339e1c6ae193e0e75a924c84ef52cace1efd24eb75b6ec12a80eec18c18f4226",
       "review_status": "awaiting-user-art-review",
       "blender_ready": false
     },
@@ -156,7 +156,7 @@
       "material_metadata": "assets/art/terrain/materials.json",
       "archived_source": "assets/models/island-nature/pine-young.glb",
       "archived_source_sha256": "380926c22a1bd235b047c51ca773fb2aac2be9c7f7a2c1cdc82120ab6ba216df",
-      "source_sha256": "360ea41b86b5e497fe759dca142530d99e3f3939c5efbaa2724b3c24545302cf",
+      "source_sha256": "339e1c6ae193e0e75a924c84ef52cace1efd24eb75b6ec12a80eec18c18f4226",
       "review_status": "awaiting-user-art-review",
       "blender_ready": false
     },
@@ -305,7 +305,7 @@
         "Сгенерированная растительная текстура общая с атласом природы; геометрия объединена с окружением.",
         "Архивные GLB/JSON сохранены. Новый вариант проверен в игре, ожидает оценки пользователя и не имеет отдельного экспорта Blender."
       ],
-      "source_sha256": "360ea41b86b5e497fe759dca142530d99e3f3939c5efbaa2724b3c24545302cf",
+      "source_sha256": "339e1c6ae193e0e75a924c84ef52cace1efd24eb75b6ec12a80eec18c18f4226",
       "runtime_texture": "assets/art/terrain/nature-paint-atlas.png",
       "material_metadata": "assets/art/terrain/materials.json",
       "review_status": "awaiting-user-art-review",
@@ -454,7 +454,7 @@
       "layout_sha256": "ce215bda5b56cd85dd58539f900a2925f8573a90416424b0578b66d6d46d5a0f",
       "surface_color_sha256": "28366c5ef1e09656b9a6f0de1f3461fb677d902c6bb1a9525352e8859f2b97de",
       "coast_height_sha256": "31ad8aeb95914a5b6ddf275dcbc9bee4c141b194ea56e46897436f45d3e07e52",
-      "painted_material_sha256": "98057035f252d82f757bfdc396c135e6a5b51a9398fcd96f768b0320a37a804e",
+      "painted_material_sha256": "fa5afc8416f3506c9c162aabfeb7a2692c5bf9c4b217b3e09865e9cd5c7805ae",
       "environment_sha256": "4c44bc50a93e053e043df2f5be4186faf58aca077de485a5b9630d37fcc3db4a",
       "runtime_texture": "assets/art/terrain/nature-paint-atlas.png",
       "material_metadata": "assets/art/terrain/materials.json",
@@ -516,7 +516,7 @@
         "assets/art/coastal-reference/painted-beach-target.png"
       ],
       "coast_height_sha256": "31ad8aeb95914a5b6ddf275dcbc9bee4c141b194ea56e46897436f45d3e07e52",
-      "painted_material_sha256": "98057035f252d82f757bfdc396c135e6a5b51a9398fcd96f768b0320a37a804e",
+      "painted_material_sha256": "fa5afc8416f3506c9c162aabfeb7a2692c5bf9c4b217b3e09865e9cd5c7805ae",
       "environment_sha256": "4c44bc50a93e053e043df2f5be4186faf58aca077de485a5b9630d37fcc3db4a",
       "runtime_texture": "assets/art/terrain/nature-paint-atlas.png",
       "material_metadata": "assets/art/terrain/materials.json",
@@ -569,7 +569,7 @@
       "game_ready": true,
       "blender_ready": false,
       "source": "src/scene/ocean.ts",
-      "source_sha256": "f29f7d40f67d3b7c1746d013ffe8e068b33b7d4fb78fbfc43b171b5f94796c35",
+      "source_sha256": "942500eb384c72b1bba81ffe0ce649f0c1dcf2d7e48b7dbc73e0ed3be8b874f7",
       "generators": [
         "src/scene/ocean.ts",
         "src/scene/environment.ts"
@@ -588,7 +588,8 @@
       "notes": [
         "Анимированная вода использует отдельные вершины граней при совпадающих геометрических рёбрах. Прибой сочетает тонкий фронт, плотную кромку и прозрачный отход волны.",
         "Для глубины добавлены полностью подводные плоские камни; их исходный GLB сохранён. Проекция дна обновляется при изменении острова, тяжёлые рендеры не нужны.",
-        "Проверено в игровом WebGL; отдельный Blender-экспорт текущей сцены не подготовлен."
+        "Проверено в игровом WebGL; отдельный Blender-экспорт текущей сцены не подготовлен.",
+        "Окраска по треугольникам заменена непрерывной сгенерированной гуашевой фактурой, закреплённой на исходной сетке; движение волн мягче."
       ]
     }
   ],
@@ -604,22 +605,22 @@
     "instances": 336,
     "submerged_rock_instances": 8,
     "source_hashes": {
-      "src/scene/foliage.ts": "360ea41b86b5e497fe759dca142530d99e3f3939c5efbaa2724b3c24545302cf",
+      "src/scene/foliage.ts": "339e1c6ae193e0e75a924c84ef52cace1efd24eb75b6ec12a80eec18c18f4226",
       "src/scene/cliffs.ts": "653802f3b71e71e4133953355da1bc30577aa2e60bbc7921b4b77da9fa6dd97a",
       "src/scene/cliff-layout.ts": "ce215bda5b56cd85dd58539f900a2925f8573a90416424b0578b66d6d46d5a0f",
       "src/scene/environment.ts": "4c44bc50a93e053e043df2f5be4186faf58aca077de485a5b9630d37fcc3db4a",
-      "src/scene/painted-material.ts": "98057035f252d82f757bfdc396c135e6a5b51a9398fcd96f768b0320a37a804e",
+      "src/scene/painted-material.ts": "fa5afc8416f3506c9c162aabfeb7a2692c5bf9c4b217b3e09865e9cd5c7805ae",
       "src/scene/terrain.ts": "fce0d2848c1b762cefa6ddf4a9812cdb77949443e66cdcdc2a59b9273bdb0f54",
       "src/scene/contact-shadows.ts": "4685bd015ea0dcf423d9282c4c8dd39bf38b4297e377a89c16c4efe7e80a3434",
-      "src/scene/ocean.ts": "f29f7d40f67d3b7c1746d013ffe8e068b33b7d4fb78fbfc43b171b5f94796c35",
+      "src/scene/ocean.ts": "942500eb384c72b1bba81ffe0ce649f0c1dcf2d7e48b7dbc73e0ed3be8b874f7",
       "src/scene/rock-support.ts": "ab40664602b900fe819001bbdfa7e3ae7c746a0bd54073f710f9c591516d4106",
       "src/scene/lens.ts": "4d18d45127c9533293da5d793648f74b6501838021b516d795841977da040882",
-      "src/scene/lighting.ts": "c2e7c7c2a9952ddc79b9f130f36ef6097453bf22da5bbee022fe242692145736"
+      "src/scene/lighting.ts": "d979e1fadcd74d5c2e23c6f9aaace5d153f70e1d354408e5bbdea5a63331501e"
     },
     "notes": [
       "Текущая итерация проверена в игровом WebGL; это не утверждение художественного согласования.",
       "Архивные GLB и исходная палитра сохранены. Процедурная сцена не экспортирована в Blender.",
-      "Превью обновлены после интеграции: дневной WebGL-кадр с обработкой камеры и второй ракурс растительности, seed 3210380753."
+      "Превью: дневной WebGL, seed 123456789, три постройки. Ракурсы фиксирует scripts/capture-art.mjs. Мобильная производительность не проверена."
     ],
     "artistic_filter": {
       "name": "soft-painted-palette",
@@ -633,20 +634,40 @@
       "assets/models/island-nature/painted-preview.png",
       "assets/models/island-nature/pine-texture-preview.png"
     ],
-    "preview_seed": 3210380753,
+    "preview_seed": 123456789,
     "preview_buildings": [
       {
         "t": "hall",
         "x": 5,
         "z": 5
+      },
+      {
+        "t": "port",
+        "x": 6,
+        "z": 11
+      },
+      {
+        "t": "house",
+        "x": 8,
+        "z": 6
       }
     ],
     "checks": [
-      "npm run check: 97 tests, build, formatting",
+      "npm run check: 99 tests, build, formatting",
       "npm run typecheck",
       "npm run test:e2e: all browser suites including WebGL 1 and free placement",
-      "Frozen daytime/nighttime A/B of camera processing",
+      "Daytime overview, harbor, zoom and rotated view; texture coordinates fixed to surfaces",
       "git diff --check"
-    ]
+    ],
+    "gouache_materials": {
+      "metadata": "assets/art/gouache/materials.json",
+      "shared_texture": "assets/art/gouache/water-and-buildings.jpg",
+      "size": [
+        1024,
+        1024
+      ],
+      "extra_render_targets": 0,
+      "report": "docs/gouache-style.md"
+    }
   }
 }
