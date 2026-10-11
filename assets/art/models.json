@@ -407,11 +407,12 @@
         "triangles_per_block": 42,
         "vertices_per_block": 126,
         "scene_seed": 123456789,
-        "scene_triangles": 22374,
-        "scene_vertices": 67122,
+        "scene_triangles": 23085,
+        "scene_vertices": 69255,
         "measured_at": "2026-10-11",
         "triangles_per_coastal_block": 84,
-        "vertices_per_coastal_block": 252
+        "vertices_per_coastal_block": 252,
+        "coastal_blocks": 35
       },
       "notes": [
         "Процедурная замкнутая глыба на основе формы rock-large; отдельного GLB или blend пока нет.",
@@ -419,16 +420,19 @@
         "Береговые глыбы имеют четыре видимых яруса с неровной высотой углов и расширением к воде; трава отступает внутрь каменного верха. Общая заглублённая основа закрывает стыки, прибой следует сечениям камня.",
         "Проверено в браузере; художественное согласование владельцем ещё не завершено.",
         "Берег поднят общим полем высот с низкими пляжами и подходом к порту. Уступы ограничены высотой травы. Мокрая кромка вычисляется плагином StandardMaterial, крупные минеральные мазки берутся из встроенного рисованного атласа. Художественное согласование нового вида ещё не получено.",
-        "Игровые материалы используют общий рисованный атлас: широкие мазки луга, песка, скал, хвои, коры и лепестков; мелкое зерно убрано. Геометрия и статистика описаны отдельно выше."
+        "Игровые материалы используют общий рисованный атлас: широкие мазки луга, песка, скал, хвои, коры и лепестков; мелкое зерно убрано. Геометрия и статистика описаны отдельно выше.",
+        "Широкие плечи бухт плавно снижаются к песку, переходные глыбы ниже; контур сглаживается только у песчаных секторов. Рисованный атлас переходов смешивает траву, камень и песок по склону и глубине короны."
       ],
       "source_sha256": "1c1fa5a40cc16ae7be9f1b154134bf766b74e29d5b8ebd089c56b686459a1565",
-      "layout_sha256": "3b810c3fbc357b9578352de303e82ed48b90d869e5388d68cf980308a364ce47",
+      "layout_sha256": "69a781dcfd4f1aea52260adf570da47983a79b4b315c919bc85c136b8edba187",
       "surface_color_sha256": "28366c5ef1e09656b9a6f0de1f3461fb677d902c6bb1a9525352e8859f2b97de",
-      "coast_height_sha256": "cb1e3840f97a303f01bfac06d0cbc89960d7c76524ef59b10d035ff81cad3286",
-      "painted_material_sha256": "cd05d4c6f5a1dfa3fe9b07bac01654a11c056af2ce95288bac96f11ec08cc8d6",
-      "environment_sha256": "25790b748443b19527a3a28c71871102d8048015e85ff471ef137e8f8216334b",
+      "coast_height_sha256": "7cc79366697c703a5498e68d77ad614d994a4f2663be443cc5474116a43c98c4",
+      "painted_material_sha256": "4a4352ba512ac2057fe26cfe46cf149c5142b6394a2c6e2ff426a8508948445b",
+      "environment_sha256": "d5de8d2c308ea83e8c42731445dc84d1b4583a23f5c9ebf3af5d745d7b18ab34",
       "runtime_texture": "assets/art/terrain/nature-paint-atlas.png",
-      "material_metadata": "assets/art/terrain/materials.json"
+      "material_metadata": "assets/art/terrain/materials.json",
+      "transition_texture": "assets/art/terrain/shore-transition-atlas.png",
+      "transition_metadata": "assets/art/terrain/shore-transition-materials.json"
     },
     {
       "id": "island-nature/coast-surface",
@@ -448,30 +452,34 @@
       "runtime_export": null,
       "game_integration": "src/scene/environment.ts",
       "metrics": {
-        "triangles": 2664,
-        "vertices": 7992,
+        "triangles": 2784,
+        "vertices": 8352,
         "segments": 192,
         "measured_at": "2026-10-11",
         "scene_seed": 123456789
       },
-      "source_sha256": "3b810c3fbc357b9578352de303e82ed48b90d869e5388d68cf980308a364ce47",
+      "source_sha256": "69a781dcfd4f1aea52260adf570da47983a79b4b315c919bc85c136b8edba187",
       "notes": [
         "Общий шов с травой немного утоплен внутрь корон; заглублённая основа закрывает стыки ярусных глыб. Ватерлиния учитывает камни, два песчаных берега сохранены.",
         "Процедурная часть сцены; отдельного blend/GLB нет. Художественная итерация ожидает оценки владельца.",
         "Берег поднят общим полем высот с низкими пляжами и подходом к порту. Уступы ограничены высотой травы. Мокрая кромка вычисляется плагином StandardMaterial, крупные минеральные мазки берутся из встроенного рисованного атласа. Художественное согласование нового вида ещё не получено.",
         "Игровые материалы используют общий рисованный атлас: широкие мазки луга, песка, скал, хвои, коры и лепестков; мелкое зерно убрано. Геометрия и статистика описаны отдельно выше.",
-        "Песчаные сектора имеют 17 поперечных колец с продолжением под водой. Кромка луга смешивается с песком в мировых координатах, без отдельной нависающей плоскости."
+        "Песчаные сектора имеют 17 поперечных колец с продолжением под водой. Кромка луга смешивается с песком в мировых координатах, без отдельной нависающей плоскости.",
+        "Широкие плечи бухт плавно снижаются к песку, переходные глыбы ниже; контур сглаживается только у песчаных секторов. Рисованный атлас переходов смешивает траву, камень и песок по склону и глубине короны."
       ],
       "surface_color_sha256": "28366c5ef1e09656b9a6f0de1f3461fb677d902c6bb1a9525352e8859f2b97de",
       "references": [
         "assets/art/coastal-reference/painted-coast-target.png",
         "assets/art/coastal-reference/painted-beach-target.png"
       ],
-      "coast_height_sha256": "cb1e3840f97a303f01bfac06d0cbc89960d7c76524ef59b10d035ff81cad3286",
-      "painted_material_sha256": "cd05d4c6f5a1dfa3fe9b07bac01654a11c056af2ce95288bac96f11ec08cc8d6",
-      "environment_sha256": "25790b748443b19527a3a28c71871102d8048015e85ff471ef137e8f8216334b",
+      "coast_height_sha256": "7cc79366697c703a5498e68d77ad614d994a4f2663be443cc5474116a43c98c4",
+      "painted_material_sha256": "4a4352ba512ac2057fe26cfe46cf149c5142b6394a2c6e2ff426a8508948445b",
+      "environment_sha256": "d5de8d2c308ea83e8c42731445dc84d1b4583a23f5c9ebf3af5d745d7b18ab34",
       "runtime_texture": "assets/art/terrain/nature-paint-atlas.png",
-      "material_metadata": "assets/art/terrain/materials.json"
+      "material_metadata": "assets/art/terrain/materials.json",
+      "layout_sha256": "69a781dcfd4f1aea52260adf570da47983a79b4b315c919bc85c136b8edba187",
+      "transition_texture": "assets/art/terrain/shore-transition-atlas.png",
+      "transition_metadata": "assets/art/terrain/shore-transition-materials.json"
     }
   ]
 }

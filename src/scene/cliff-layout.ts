@@ -46,18 +46,19 @@ export function coastalCliffs(seed: number, buildings: Building[] = []): CliffSp
     const crownScale = 0.66 + next() * 0.24;
     const lean = 0.01 + next() * 0.04;
     const rotation = angle + Math.PI / 2 + (next() - 0.5) * 0.65;
-    if (beachInfluence(angle, seed) > 0.18 || !portClear(x, z, seed, buildings)) continue;
+    const beach = beachInfluence(angle, seed);
+    if (beach > 0.72 || !portClear(x, z, seed, buildings)) continue;
     result.push({
       x,
       z,
       width,
       depth,
-      top,
+      top: top - beach * 0.22,
       bottom,
       shoulderHeight,
       profile: 'layered',
       elevation: (px, pz) => coastalElevation(px, pz, seed, buildings),
-      crownSlope: 0.16 + 0.06 * Math.sin(i * 2.3),
+      crownSlope: (0.16 + 0.06 * Math.sin(i * 2.3)) * (1 - beach * 0.65),
       crownScale,
       lean,
       rotation,
@@ -216,7 +217,9 @@ function cliffContours(seed: number, buildings: Building[]): CliffContours {
       // оставляет каменный скос снаружи и убирает зелёные козырьки.
       // Во впадинах край отступает внутрь, пляжи сохраняют свой контур.
       const land = Number.isFinite(landCut) ? landCut - 0.045 : coast - 0.3;
-      const blend = Math.max(0, Math.min(1, sand / 0.18));
+      // The whole cove shoulder is a transition, not an abrupt switch from
+      // an upright cliff to a full-width sand fan at one angular threshold.
+      const blend = Math.max(0, Math.min(1, sand));
       const beachBlend = blend * blend * (3 - 2 * blend);
       contours.land[i] = land * (1 - beachBlend) + coast * beachBlend;
       // Each height follows the actual boulder section instead of extruding
@@ -239,6 +242,24 @@ function cliffContours(seed: number, buildings: Building[]): CliffContours {
       }
       contours.water[i] = contours.bands[3][i];
     }
+    // Remove needle-like radial notches at the ends of coves. Away from sand,
+    // preserve the actual boulder sections and their deliberate fractures.
+    for (let pass = 0; pass < 3; pass++) {
+      for (const ring of contours.bands) {
+        const previous = ring.slice();
+        for (let i = 0; i < CONTOUR_SEGMENTS; i++) {
+          const sand = beachInfluence((i / CONTOUR_SEGMENTS) * Math.PI * 2, seed);
+          const influence = 4 * sand * (1 - sand);
+          if (!influence) continue;
+          let sum = 0;
+          for (let offset = -6; offset <= 6; offset++)
+            sum += previous[(i + offset + CONTOUR_SEGMENTS) % CONTOUR_SEGMENTS];
+          ring[i] += (sum / 13 - previous[i]) * influence;
+        }
+      }
+    }
+    contours.land.set(contours.bands[0]);
+    contours.water.set(contours.bands[3]);
     if (contourCache.size >= 8) contourCache.delete(contourCache.keys().next().value!);
     contourCache.set(key, contours);
   }

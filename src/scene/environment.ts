@@ -109,8 +109,15 @@ export function environmentLayout(board: Board, buildings: Building[]): NatureIn
   // Камни идут нерегулярными группами по берегу, а не по клеткам.
   for (let i = 0; i < 100; i++) {
     const angle = (i / 100) * Math.PI * 2 + (random() - 0.5) * 0.045;
-    const c = world.coastRadius(angle),
-      sand = beachInfluence(angle, world.seed);
+    const c = world.coastRadius(angle);
+    // This discarded legacy pass only advances the decoration random stream.
+    // Keep its original beach mask so reshaping coves does not reshuffle trees.
+    const shift = 0.1 * Math.sin(world.seed);
+    const wrap = (value: number) => Math.atan2(Math.sin(value), Math.cos(value));
+    const sand = Math.max(
+      Math.exp(-Math.pow(wrap(angle - 1.1 - shift) / 0.4, 4)),
+      Math.exp(-Math.pow(wrap(angle - 3.85 + shift) / 0.38, 4)),
+    );
     const scale = 0.52 + random() * 0.62;
     const distance = c + (random() - 0.5) * 0.25;
     const x = 6 + Math.cos(angle) * distance,
@@ -329,6 +336,19 @@ export function environmentGeometry(board: Board, buildings: Building[], spread 
   const positions: number[] = [],
     colors: number[] = [],
     surfaces: number[] = [];
+  const groundCover = new Map<string, number>();
+  const grassAt = (x: number, z: number) => {
+    const key = `${x},${z}`;
+    let value = groundCover.get(key);
+    if (value === undefined) {
+      const h = (px: number, pz: number) => terrainHeight(px, pz, world.seed, buildings);
+      const slope =
+        Math.hypot(h(x + 0.07, z) - h(x - 0.07, z), h(x, z + 0.07) - h(x, z - 0.07)) / 0.14;
+      value = 1 - clamp((slope - 0.65) / 1.15, 0, 1);
+      groundCover.set(key, value);
+    }
+    return value;
+  };
   function triangle(
     a: Point,
     b: Point,
@@ -349,7 +369,17 @@ export function environmentGeometry(board: Board, buildings: Building[], spread 
         0.8 + 0.3 * Math.sin(angle * 13 + (world.seed % 19)) + 0.13 * Math.cos(angle * 23);
       const sand =
         surface === 2 ? beachInfluence(angle, world.seed) * clamp(1 - inland / duneWidth, 0, 1) : 0;
-      surfaces.push(surface, crownHeights?.[index] ?? sand);
+      let covering = sand;
+      if (surface === 2) {
+        // One continuous material crosses triangle boundaries: 0 is exposed
+        // rock, 0.5 meadow, 1 sand. The slope is sampled per shared vertex.
+        covering = 0.5 * (grassAt(point[0], point[2]) * (1 - sand) + 2 * sand);
+      } else if (surface === 8 || surface === 9) {
+        const gap = terrainHeight(point[0], point[2], world.seed, buildings) - point[1];
+        covering = clamp(1 - gap / 0.32, 0, 1);
+        if (surface === 9) covering = Math.max(covering, clamp((-point[1] - 0.35) / 0.45, 0, 1));
+      }
+      surfaces.push(surface, crownHeights?.[index] ?? covering);
       colors.push(...pigment.map((n) => Math.min(1, n / 255)), 1);
     }
   }
@@ -410,7 +440,7 @@ export function environmentGeometry(board: Board, buildings: Building[], spread 
       points[1],
       steep > 0.95 ? color : grassPigment(x, z, color),
       steep > 0.95,
-      steep > 0.95 ? 1 : 2,
+      2,
     );
   }
 
@@ -438,8 +468,9 @@ export function environmentGeometry(board: Board, buildings: Building[], spread 
       const facet = Math.sin(angleAt(i) * 9 + world.seed) * 3;
       const color = [224 + sand * 23 + facet, 198 + sand * 27 + facet, 152 + sand * 17 + facet];
       if (sand < 0.4) {
-        triangle(a, b, c, color, true);
-        triangle(a, c, d, color, true);
+        const surface = sand > 0.025 ? 9 : 8;
+        triangle(a, b, c, color, true, surface);
+        triangle(a, c, d, color, true, surface);
       } else {
         // A gently rippled sandy slope. Sharing every edge keeps the beach
         // joined to both headlands, without long fan-shaped lighting bands.
@@ -474,7 +505,15 @@ export function environmentGeometry(board: Board, buildings: Building[], spread 
         (offset) => rock.positions.slice(i + offset, i + offset + 3) as Point,
       );
       const color = rock.colors.slice((i / 3) * 4, (i / 3) * 4 + 3).map((value) => value * 255);
-      triangle(points[0], points[1], points[2], color, true);
+      const angle = Math.atan2(spec.z - 6, spec.x - 6);
+      triangle(
+        points[0],
+        points[1],
+        points[2],
+        color,
+        true,
+        beachInfluence(angle, world.seed) > 0.025 ? 9 : 8,
+      );
     }
   }
   const layout = environmentLayout(board, buildings);

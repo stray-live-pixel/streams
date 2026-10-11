@@ -1,0 +1,25 @@
+{
+  "name": "Painterly shore transitions",
+  "generated_with": "built-in image_gen",
+  "source": "shore-transition-atlas.png",
+  "sha256": "71e79788aa9b1c19bdef2b671a110cb2b94340b68dc717cc613876e3db7d60a9",
+  "layout": {
+    "columns": 2,
+    "rows": 2,
+    "top": [
+      "meadow and ochre",
+      "sandstone and sand"
+    ],
+    "bottom": [
+      "stone and lichen",
+      "brush mask"
+    ]
+  },
+  "prompt": "Use case: stylized-concept. Asset type: production 2x2 square terrain material atlas for a cozy low-poly island game, diffuse albedo only, perfectly top-down flat material swatches with no perspective or scene. Four exactly equal square tiles without borders or text: TOP LEFT soft meadow transition pigment, sage and yellow-olive green with irregular warm ochre soil patches, broad soft-edged broken brush dabs; TOP RIGHT warm creamy sandstone and pale beach-sand transition pigment with muted peach ochre washes and a few soft taupe masses; BOTTOM LEFT warm pale stone with sparse muted olive lichen and ochre earth blending in large cloudlike painted masses; BOTTOM RIGHT a grayscale black-to-white irregular brush mask, middle gray background with broad overlapping dark and light organic blotches, useful to blend terrain materials. All four tiles feel hand-painted in gouache and oil like a warm sunny anime background, generous large calm color areas, barely any fine detail, diffuse lighting only. No cast shadows, no shiny highlights, no individual grass blades, no recognizable rocks drawn in perspective, no outlines, no diagonal hatching, no parallel stripes, no squares within each tile, no grain or tiny stipple. Seam-friendly texture filling every tile edge, no gutters, no labels. Square image.",
+  "integration": [
+    "src/scene/painted-material.ts",
+    "src/scene/environment.ts",
+    "scripts/pack-assets.mjs"
+  ],
+  "sampling": "Mirrored world-space sampling; meadow and lichen tiles tint boundaries and the grayscale tile modulates coverage. Sandstone tile reserved for later tuning. No external texture requests."
+}
