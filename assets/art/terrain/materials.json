@@ -1,0 +1,29 @@
+{
+  "name": "Broad brush nature materials",
+  "generated_with": "built-in image_gen",
+  "source": "nature-paint-atlas.png",
+  "reference": "../coastal-reference/painted-beach-target.png",
+  "layout": {
+    "columns": 3,
+    "rows": 2,
+    "top": [
+      "meadow",
+      "sand",
+      "stone"
+    ],
+    "bottom": [
+      "foliage",
+      "bark",
+      "petal modulation"
+    ]
+  },
+  "prompt": "Six equal material squares in a 3 by 2 atlas, no borders or labels. Warm anime background / gouache and oil-painted cartoon art. Large quiet colour masses and broad angular brush dabs, subtle tonal variation and flat diffuse illumination. Top row: golden yellow-green meadow, pale buttery sand, warm sandstone with muted mauve-taupe mineral washes. Bottom row: forest and sage green foliage, honey brown bark with broad russet bands, neutral cream modulation for petals. No tiny detail, grain, speckles, thin strokes, hatching, hairline cracks, veins, photorealism or baked lighting.",
+  "integration": [
+    "src/scene/painted-material.ts",
+    "src/scene/environment.ts",
+    "src/scene/ocean.ts",
+    "scripts/pack-assets.mjs"
+  ],
+  "sampling": "One embedded atlas; mirror sampling inside each tile with a gutter; world-space pigment; matte material with ordinary scene light.",
+  "sha256": "32d176fbc065bc4b05e9d5ae5b9a573f1fc99cd502c1c8cbf0d58b41f46475f0"
+}

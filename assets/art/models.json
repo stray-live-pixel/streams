@@ -56,7 +56,7 @@
       "source": "assets/models/island-nature/pine-tall.glb",
       "geometry_source": "assets/models/island-nature/models.json",
       "geometry_key": "pine-tall",
-      "preview": "assets/models/island-nature/in-game-preview.png",
+      "preview": "assets/models/island-nature/painted-preview.png",
       "reference": "assets/art/island-reference.png",
       "generators": [
         "scripts/create-nature-models.mjs"
@@ -72,9 +72,12 @@
         "GLB и игровой JSON получены из одной геометрии; Y вверх, основание в нуле.",
         "В игре экземпляры имеют свободные координаты, поворот и масштаб, затем объединяются в один буфер.",
         "Превью показывает набор в игровом окружении, не отдельный объект.",
-        "В игре используется реальный свет, плоские нормали природных граней и более яркая тёплая палитра сцены; расстояния между объектами увеличены в √2, модели сохраняют пропорции и размещены по рельефу, подводные основания камней удлинены при сборке; геометрия и палитра исходного GLB не изменены."
+        "В игре используется реальный свет, плоские нормали природных граней и более яркая тёплая палитра сцены; расстояния между объектами увеличены в √2, модели сохраняют пропорции и размещены по рельефу, подводные основания камней удлинены при сборке; геометрия и палитра исходного GLB не изменены.",
+        "Игровые материалы используют общий рисованный атлас: широкие мазки луга, песка, скал, хвои, коры и лепестков; мелкое зерно убрано. Исходный GLB и его статистика не менялись."
       ],
-      "source_sha256": "efa027b0889675a0d88216f4fcb1187ccdefffa6ce5b339475b1fb734081c5cb"
+      "source_sha256": "efa027b0889675a0d88216f4fcb1187ccdefffa6ce5b339475b1fb734081c5cb",
+      "runtime_texture": "assets/art/terrain/nature-paint-atlas.png",
+      "material_metadata": "assets/art/terrain/materials.json"
     },
     {
       "id": "island-nature/pine-wide",
@@ -89,7 +92,7 @@
       "source": "assets/models/island-nature/pine-wide.glb",
       "geometry_source": "assets/models/island-nature/models.json",
       "geometry_key": "pine-wide",
-      "preview": "assets/models/island-nature/in-game-preview.png",
+      "preview": "assets/models/island-nature/painted-preview.png",
       "reference": "assets/art/island-reference.png",
       "generators": [
         "scripts/create-nature-models.mjs"
@@ -105,9 +108,12 @@
         "GLB и игровой JSON получены из одной геометрии; Y вверх, основание в нуле.",
         "В игре экземпляры имеют свободные координаты, поворот и масштаб, затем объединяются в один буфер.",
         "Превью показывает набор в игровом окружении, не отдельный объект.",
-        "В игре используется реальный свет, плоские нормали природных граней и более яркая тёплая палитра сцены; расстояния между объектами увеличены в √2, модели сохраняют пропорции и размещены по рельефу, подводные основания камней удлинены при сборке; геометрия и палитра исходного GLB не изменены."
+        "В игре используется реальный свет, плоские нормали природных граней и более яркая тёплая палитра сцены; расстояния между объектами увеличены в √2, модели сохраняют пропорции и размещены по рельефу, подводные основания камней удлинены при сборке; геометрия и палитра исходного GLB не изменены.",
+        "Игровые материалы используют общий рисованный атлас: широкие мазки луга, песка, скал, хвои, коры и лепестков; мелкое зерно убрано. Исходный GLB и его статистика не менялись."
       ],
-      "source_sha256": "42a085d81e197aeb00130c2d7cd1a992b0848e987fe32c4aef2c16d27a0c3c74"
+      "source_sha256": "42a085d81e197aeb00130c2d7cd1a992b0848e987fe32c4aef2c16d27a0c3c74",
+      "runtime_texture": "assets/art/terrain/nature-paint-atlas.png",
+      "material_metadata": "assets/art/terrain/materials.json"
     },
     {
       "id": "island-nature/pine-young",
@@ -122,7 +128,7 @@
       "source": "assets/models/island-nature/pine-young.glb",
       "geometry_source": "assets/models/island-nature/models.json",
       "geometry_key": "pine-young",
-      "preview": "assets/models/island-nature/in-game-preview.png",
+      "preview": "assets/models/island-nature/painted-preview.png",
       "reference": "assets/art/island-reference.png",
       "generators": [
         "scripts/create-nature-models.mjs"
@@ -138,9 +144,12 @@
         "GLB и игровой JSON получены из одной геометрии; Y вверх, основание в нуле.",
         "В игре экземпляры имеют свободные координаты, поворот и масштаб, затем объединяются в один буфер.",
         "Превью показывает набор в игровом окружении, не отдельный объект.",
-        "В игре используется реальный свет, плоские нормали природных граней и более яркая тёплая палитра сцены; расстояния между объектами увеличены в √2, модели сохраняют пропорции и размещены по рельефу, подводные основания камней удлинены при сборке; геометрия и палитра исходного GLB не изменены."
+        "В игре используется реальный свет, плоские нормали природных граней и более яркая тёплая палитра сцены; расстояния между объектами увеличены в √2, модели сохраняют пропорции и размещены по рельефу, подводные основания камней удлинены при сборке; геометрия и палитра исходного GLB не изменены.",
+        "Игровые материалы используют общий рисованный атлас: широкие мазки луга, песка, скал, хвои, коры и лепестков; мелкое зерно убрано. Исходный GLB и его статистика не менялись."
       ],
-      "source_sha256": "380926c22a1bd235b047c51ca773fb2aac2be9c7f7a2c1cdc82120ab6ba216df"
+      "source_sha256": "380926c22a1bd235b047c51ca773fb2aac2be9c7f7a2c1cdc82120ab6ba216df",
+      "runtime_texture": "assets/art/terrain/nature-paint-atlas.png",
+      "material_metadata": "assets/art/terrain/materials.json"
     },
     {
       "id": "island-nature/rock-large",
@@ -155,7 +164,7 @@
       "source": "assets/models/island-nature/rock-large.glb",
       "geometry_source": "assets/models/island-nature/models.json",
       "geometry_key": "rock-large",
-      "preview": "assets/models/island-nature/in-game-preview.png",
+      "preview": "assets/models/island-nature/painted-preview.png",
       "reference": "assets/art/island-reference.png",
       "generators": [
         "scripts/create-nature-models.mjs"
@@ -172,9 +181,12 @@
         "В игре экземпляры имеют свободные координаты, поворот и масштаб, затем объединяются в один буфер.",
         "Превью показывает набор в игровом окружении, не отдельный объект.",
         "В игре используется реальный свет, плоские нормали природных граней и более яркая тёплая палитра сцены; расстояния между объектами увеличены в √2, модели сохраняют пропорции и размещены по рельефу, подводные основания камней удлинены при сборке; геометрия и палитра исходного GLB не изменены.",
-        "Игровая окраска дополнена тёплыми пятнами и более тёмной мокрой зоной у воды через src/scene/surface-color.ts и фрагментный плагин src/scene/painted-material.ts; исходный GLB сохранён."
+        "Игровая окраска дополнена тёплыми пятнами и более тёмной мокрой зоной у воды через src/scene/surface-color.ts и фрагментный плагин src/scene/painted-material.ts; исходный GLB сохранён.",
+        "Игровые материалы используют общий рисованный атлас: широкие мазки луга, песка, скал, хвои, коры и лепестков; мелкое зерно убрано. Исходный GLB и его статистика не менялись."
       ],
-      "source_sha256": "8dbfc07102f8950bda7a181261646272387b1f6e2a527c20a7ecb3a1416815eb"
+      "source_sha256": "8dbfc07102f8950bda7a181261646272387b1f6e2a527c20a7ecb3a1416815eb",
+      "runtime_texture": "assets/art/terrain/nature-paint-atlas.png",
+      "material_metadata": "assets/art/terrain/materials.json"
     },
     {
       "id": "island-nature/rock-flat",
@@ -189,7 +201,7 @@
       "source": "assets/models/island-nature/rock-flat.glb",
       "geometry_source": "assets/models/island-nature/models.json",
       "geometry_key": "rock-flat",
-      "preview": "assets/models/island-nature/in-game-preview.png",
+      "preview": "assets/models/island-nature/painted-preview.png",
       "reference": "assets/art/island-reference.png",
       "generators": [
         "scripts/create-nature-models.mjs"
@@ -206,9 +218,12 @@
         "В игре экземпляры имеют свободные координаты, поворот и масштаб, затем объединяются в один буфер.",
         "Превью показывает набор в игровом окружении, не отдельный объект.",
         "В игре используется реальный свет, плоские нормали природных граней и более яркая тёплая палитра сцены; расстояния между объектами увеличены в √2, модели сохраняют пропорции и размещены по рельефу, подводные основания камней удлинены при сборке; геометрия и палитра исходного GLB не изменены.",
-        "Игровая окраска дополнена тёплыми пятнами и более тёмной мокрой зоной у воды через src/scene/surface-color.ts и фрагментный плагин src/scene/painted-material.ts; исходный GLB сохранён."
+        "Игровая окраска дополнена тёплыми пятнами и более тёмной мокрой зоной у воды через src/scene/surface-color.ts и фрагментный плагин src/scene/painted-material.ts; исходный GLB сохранён.",
+        "Игровые материалы используют общий рисованный атлас: широкие мазки луга, песка, скал, хвои, коры и лепестков; мелкое зерно убрано. Исходный GLB и его статистика не менялись."
       ],
-      "source_sha256": "ec277a2073e0f996836a1ac7958a5f57a4fd943918cc6ece6b7bc1b3cb84029f"
+      "source_sha256": "ec277a2073e0f996836a1ac7958a5f57a4fd943918cc6ece6b7bc1b3cb84029f",
+      "runtime_texture": "assets/art/terrain/nature-paint-atlas.png",
+      "material_metadata": "assets/art/terrain/materials.json"
     },
     {
       "id": "island-nature/rock-small",
@@ -223,7 +238,7 @@
       "source": "assets/models/island-nature/rock-small.glb",
       "geometry_source": "assets/models/island-nature/models.json",
       "geometry_key": "rock-small",
-      "preview": "assets/models/island-nature/in-game-preview.png",
+      "preview": "assets/models/island-nature/painted-preview.png",
       "reference": "assets/art/island-reference.png",
       "generators": [
         "scripts/create-nature-models.mjs"
@@ -240,9 +255,12 @@
         "В игре экземпляры имеют свободные координаты, поворот и масштаб, затем объединяются в один буфер.",
         "Превью показывает набор в игровом окружении, не отдельный объект.",
         "В игре используется реальный свет, плоские нормали природных граней и более яркая тёплая палитра сцены; расстояния между объектами увеличены в √2, модели сохраняют пропорции и размещены по рельефу, подводные основания камней удлинены при сборке; геометрия и палитра исходного GLB не изменены.",
-        "Игровая окраска дополнена тёплыми пятнами и более тёмной мокрой зоной у воды через src/scene/surface-color.ts и фрагментный плагин src/scene/painted-material.ts; исходный GLB сохранён."
+        "Игровая окраска дополнена тёплыми пятнами и более тёмной мокрой зоной у воды через src/scene/surface-color.ts и фрагментный плагин src/scene/painted-material.ts; исходный GLB сохранён.",
+        "Игровые материалы используют общий рисованный атлас: широкие мазки луга, песка, скал, хвои, коры и лепестков; мелкое зерно убрано. Исходный GLB и его статистика не менялись."
       ],
-      "source_sha256": "c07553dbc836f6a1e57705b2d036da3522a2583dd39edb50f46e1bc1fc2dac26"
+      "source_sha256": "c07553dbc836f6a1e57705b2d036da3522a2583dd39edb50f46e1bc1fc2dac26",
+      "runtime_texture": "assets/art/terrain/nature-paint-atlas.png",
+      "material_metadata": "assets/art/terrain/materials.json"
     },
     {
       "id": "island-nature/bush",
@@ -257,7 +275,7 @@
       "source": "assets/models/island-nature/bush.glb",
       "geometry_source": "assets/models/island-nature/models.json",
       "geometry_key": "bush",
-      "preview": "assets/models/island-nature/in-game-preview.png",
+      "preview": "assets/models/island-nature/painted-preview.png",
       "reference": "assets/art/island-reference.png",
       "generators": [
         "scripts/create-nature-models.mjs"
@@ -273,9 +291,12 @@
         "GLB и игровой JSON получены из одной геометрии; Y вверх, основание в нуле.",
         "В игре экземпляры имеют свободные координаты, поворот и масштаб, затем объединяются в один буфер.",
         "Превью показывает набор в игровом окружении, не отдельный объект.",
-        "В игре используется реальный свет, плоские нормали природных граней и более яркая тёплая палитра сцены; расстояния между объектами увеличены в √2, модели сохраняют пропорции и размещены по рельефу, подводные основания камней удлинены при сборке; геометрия и палитра исходного GLB не изменены."
+        "В игре используется реальный свет, плоские нормали природных граней и более яркая тёплая палитра сцены; расстояния между объектами увеличены в √2, модели сохраняют пропорции и размещены по рельефу, подводные основания камней удлинены при сборке; геометрия и палитра исходного GLB не изменены.",
+        "Игровые материалы используют общий рисованный атлас: широкие мазки луга, песка, скал, хвои, коры и лепестков; мелкое зерно убрано. Исходный GLB и его статистика не менялись."
       ],
-      "source_sha256": "e632e6fdf0325ed1737f75f7f402d19807ec52dc5d725b6868fdc85ee1e08fe9"
+      "source_sha256": "e632e6fdf0325ed1737f75f7f402d19807ec52dc5d725b6868fdc85ee1e08fe9",
+      "runtime_texture": "assets/art/terrain/nature-paint-atlas.png",
+      "material_metadata": "assets/art/terrain/materials.json"
     },
     {
       "id": "island-nature/grass",
@@ -290,7 +311,7 @@
       "source": "assets/models/island-nature/grass.glb",
       "geometry_source": "assets/models/island-nature/models.json",
       "geometry_key": "grass",
-      "preview": "assets/models/island-nature/in-game-preview.png",
+      "preview": "assets/models/island-nature/painted-preview.png",
       "reference": "assets/art/island-reference.png",
       "generators": [
         "scripts/create-nature-models.mjs"
@@ -306,9 +327,12 @@
         "GLB и игровой JSON получены из одной геометрии; Y вверх, основание в нуле.",
         "В игре экземпляры имеют свободные координаты, поворот и масштаб, затем объединяются в один буфер.",
         "Превью показывает набор в игровом окружении, не отдельный объект.",
-        "В игре используется реальный свет, плоские нормали природных граней и более яркая тёплая палитра сцены; расстояния между объектами увеличены в √2, модели сохраняют пропорции и размещены по рельефу, подводные основания камней удлинены при сборке; геометрия и палитра исходного GLB не изменены."
+        "В игре используется реальный свет, плоские нормали природных граней и более яркая тёплая палитра сцены; расстояния между объектами увеличены в √2, модели сохраняют пропорции и размещены по рельефу, подводные основания камней удлинены при сборке; геометрия и палитра исходного GLB не изменены.",
+        "Игровые материалы используют общий рисованный атлас: широкие мазки луга, песка, скал, хвои, коры и лепестков; мелкое зерно убрано. Исходный GLB и его статистика не менялись."
       ],
-      "source_sha256": "81eb59e992340e7d517407e0b6bda09d3b77728006cc9589f309a0ef78a2ab95"
+      "source_sha256": "81eb59e992340e7d517407e0b6bda09d3b77728006cc9589f309a0ef78a2ab95",
+      "runtime_texture": "assets/art/terrain/nature-paint-atlas.png",
+      "material_metadata": "assets/art/terrain/materials.json"
     },
     {
       "id": "island-nature/flowers",
@@ -323,7 +347,7 @@
       "source": "assets/models/island-nature/flowers.glb",
       "geometry_source": "assets/models/island-nature/models.json",
       "geometry_key": "flowers",
-      "preview": "assets/models/island-nature/in-game-preview.png",
+      "preview": "assets/models/island-nature/painted-preview.png",
       "reference": "assets/art/island-reference.png",
       "generators": [
         "scripts/create-nature-models.mjs"
@@ -340,9 +364,12 @@
         "GLB и игровой JSON получены из одной геометрии; Y вверх, основание в нуле.",
         "В игре экземпляры имеют свободные координаты, поворот и масштаб, затем объединяются в один буфер.",
         "Превью показывает набор в игровом окружении, не отдельный объект.",
-        "11 октября исправлен обход граней лепестков: нормали смотрят вверх. Цветки шире, чередуются жёлтые и кремовые головки; изменения совпадают в GLB и игровом JSON. Число треугольников и вершин не изменено."
+        "11 октября исправлен обход граней лепестков: нормали смотрят вверх. Цветки шире, чередуются жёлтые и кремовые головки; изменения совпадают в GLB и игровом JSON. Число треугольников и вершин не изменено.",
+        "Игровые материалы используют общий рисованный атлас: широкие мазки луга, песка, скал, хвои, коры и лепестков; мелкое зерно убрано. Исходный GLB и его статистика не менялись."
       ],
-      "source_sha256": "b99a43853dfb21f527479e386a69b21c25fde31a3dd98b200fe5ada80074897e"
+      "source_sha256": "b99a43853dfb21f527479e386a69b21c25fde31a3dd98b200fe5ada80074897e",
+      "runtime_texture": "assets/art/terrain/nature-paint-atlas.png",
+      "material_metadata": "assets/art/terrain/materials.json"
     },
     {
       "id": "island-nature/cliff-rock",
@@ -356,7 +383,7 @@
       "game_ready": true,
       "source": "src/scene/cliffs.ts",
       "geometry_source": "src/scene/cliffs.ts",
-      "preview": "assets/models/island-nature/in-game-preview.png",
+      "preview": "assets/models/island-nature/painted-preview.png",
       "reference": "assets/art/coastal-reference/painted-coast-target.png",
       "references": [
         "assets/art/coastal-reference/coast-1.png",
@@ -377,8 +404,8 @@
         "triangles_per_block": 42,
         "vertices_per_block": 126,
         "scene_seed": 123456789,
-        "scene_triangles": 21246,
-        "scene_vertices": 63738,
+        "scene_triangles": 22374,
+        "scene_vertices": 67122,
         "measured_at": "2026-10-11",
         "triangles_per_coastal_block": 84,
         "vertices_per_coastal_block": 252
@@ -388,14 +415,17 @@
         "Короны заглублены под траву. Варьируются ширина, глубина, наклон, высота плеча и боковые скосы.",
         "Береговые глыбы имеют четыре видимых яруса с неровной высотой углов и расширением к воде; трава отступает внутрь каменного верха. Общая заглублённая основа закрывает стыки, прибой следует сечениям камня.",
         "Проверено в браузере; художественное согласование владельцем ещё не завершено.",
-        "Берег поднят общим полем высот с низкими пляжами и подходом к порту. Уступы ограничены высотой травы. Мокрая кромка и минеральные пятна вычисляются фрагментным плагином StandardMaterial без загрузки текстур. Художественное согласование нового вида ещё не получено."
+        "Берег поднят общим полем высот с низкими пляжами и подходом к порту. Уступы ограничены высотой травы. Мокрая кромка вычисляется плагином StandardMaterial, крупные минеральные мазки берутся из встроенного рисованного атласа. Художественное согласование нового вида ещё не получено.",
+        "Игровые материалы используют общий рисованный атлас: широкие мазки луга, песка, скал, хвои, коры и лепестков; мелкое зерно убрано. Геометрия и статистика описаны отдельно выше."
       ],
       "source_sha256": "1c1fa5a40cc16ae7be9f1b154134bf766b74e29d5b8ebd089c56b686459a1565",
-      "layout_sha256": "812e06b74c087a2b9e6ebc3bd0fd994f499230d0733be5ec4cb481d0606ae130",
+      "layout_sha256": "3b810c3fbc357b9578352de303e82ed48b90d869e5388d68cf980308a364ce47",
       "surface_color_sha256": "28366c5ef1e09656b9a6f0de1f3461fb677d902c6bb1a9525352e8859f2b97de",
       "coast_height_sha256": "cb1e3840f97a303f01bfac06d0cbc89960d7c76524ef59b10d035ff81cad3286",
-      "painted_material_sha256": "4d8f3058f9d090f01281756447a72a10f1d26244d4f49f17038a4403d8ea632e",
-      "environment_sha256": "703ff84a82de98e238d9ee3d9e1c7c6005a953d329d1bc55a821d70945e8ab0e"
+      "painted_material_sha256": "56c9f64f19fb7b983e259a8ea141353156fc75aa0673bb883a791c15094578f5",
+      "environment_sha256": "e13943df6f4cc806f93a5bf6478c178bdbace32e0bbe3a6164a8cd7b7f8ae0e7",
+      "runtime_texture": "assets/art/terrain/nature-paint-atlas.png",
+      "material_metadata": "assets/art/terrain/materials.json"
     },
     {
       "id": "island-nature/coast-surface",
@@ -410,29 +440,35 @@
         "src/scene/coast-height.ts",
         "src/scene/painted-material.ts"
       ],
-      "preview": "assets/models/island-nature/in-game-preview.png",
+      "preview": "assets/models/island-nature/painted-preview.png",
       "reference": "assets/art/coastal-reference/painted-coast-target.png",
       "runtime_export": null,
       "game_integration": "src/scene/environment.ts",
       "metrics": {
-        "triangles": 1536,
-        "vertices": 4608,
+        "triangles": 2664,
+        "vertices": 7992,
         "segments": 192,
-        "measured_at": "2026-10-11"
+        "measured_at": "2026-10-11",
+        "scene_seed": 123456789
       },
-      "source_sha256": "812e06b74c087a2b9e6ebc3bd0fd994f499230d0733be5ec4cb481d0606ae130",
+      "source_sha256": "3b810c3fbc357b9578352de303e82ed48b90d869e5388d68cf980308a364ce47",
       "notes": [
         "Общий шов с травой немного утоплен внутрь корон; заглублённая основа закрывает стыки ярусных глыб. Ватерлиния учитывает камни, два песчаных берега сохранены.",
         "Процедурная часть сцены; отдельного blend/GLB нет. Художественная итерация ожидает оценки владельца.",
-        "Берег поднят общим полем высот с низкими пляжами и подходом к порту. Уступы ограничены высотой травы. Мокрая кромка и минеральные пятна вычисляются фрагментным плагином StandardMaterial без загрузки текстур. Художественное согласование нового вида ещё не получено."
+        "Берег поднят общим полем высот с низкими пляжами и подходом к порту. Уступы ограничены высотой травы. Мокрая кромка вычисляется плагином StandardMaterial, крупные минеральные мазки берутся из встроенного рисованного атласа. Художественное согласование нового вида ещё не получено.",
+        "Игровые материалы используют общий рисованный атлас: широкие мазки луга, песка, скал, хвои, коры и лепестков; мелкое зерно убрано. Геометрия и статистика описаны отдельно выше.",
+        "Песчаные сектора имеют 17 поперечных колец с продолжением под водой. Кромка луга смешивается с песком в мировых координатах, без отдельной нависающей плоскости."
       ],
       "surface_color_sha256": "28366c5ef1e09656b9a6f0de1f3461fb677d902c6bb1a9525352e8859f2b97de",
       "references": [
-        "assets/art/coastal-reference/painted-coast-target.png"
+        "assets/art/coastal-reference/painted-coast-target.png",
+        "assets/art/coastal-reference/painted-beach-target.png"
       ],
       "coast_height_sha256": "cb1e3840f97a303f01bfac06d0cbc89960d7c76524ef59b10d035ff81cad3286",
-      "painted_material_sha256": "4d8f3058f9d090f01281756447a72a10f1d26244d4f49f17038a4403d8ea632e",
-      "environment_sha256": "703ff84a82de98e238d9ee3d9e1c7c6005a953d329d1bc55a821d70945e8ab0e"
+      "painted_material_sha256": "56c9f64f19fb7b983e259a8ea141353156fc75aa0673bb883a791c15094578f5",
+      "environment_sha256": "e13943df6f4cc806f93a5bf6478c178bdbace32e0bbe3a6164a8cd7b7f8ae0e7",
+      "runtime_texture": "assets/art/terrain/nature-paint-atlas.png",
+      "material_metadata": "assets/art/terrain/materials.json"
     }
   ]
 }

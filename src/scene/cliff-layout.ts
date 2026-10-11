@@ -229,7 +229,7 @@ function cliffContours(seed: number, buildings: Building[]): CliffContours {
         // form the visible faces. Recess it so it cannot flicker over them.
         const recess = band === 0 || band === 3 ? 0 : 0.1;
         const rock = band === 0 ? land : land + offset - recess;
-        const beach = coast + [0, 0.34, 0.7, 1, 1.4][band] * 1.29;
+        const beach = coast + [0, 0.34, 0.7, 1, 2.1][band] * 1.29;
         contours.bands[band][i] = rock * (1 - beachBlend) + beach * beachBlend;
       }
       contours.bands[0][i] = contours.land[i];

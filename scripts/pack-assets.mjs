@@ -95,6 +95,13 @@ export async function packAssets(root) {
     port: await imageTag('kenney-pirate', 'ship-small'),
   };
   await mkdir(path.join(root, '.generated'), { recursive: true });
+  const natureTexture = await readFile(
+    path.join(root, 'assets/art/terrain/nature-paint-atlas.png'),
+  );
+  await writeFile(
+    path.join(root, '.generated/terrain-textures.json'),
+    JSON.stringify({ paint: `data:image/png;base64,${natureTexture.toString('base64')}` }),
+  );
   await writeFile(path.join(root, '.generated/models.json'), JSON.stringify(models));
   const natureModels = await readFile(path.join(root, 'assets/models/island-nature/models.json'));
   await writeFile(path.join(root, '.generated/nature-models.json'), natureModels);
