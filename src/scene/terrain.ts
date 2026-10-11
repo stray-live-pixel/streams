@@ -58,7 +58,13 @@ function reliefRadius(angle: number, phase: number) {
   const index = Math.floor(wrapped / step);
   const anchor = (i: number) => {
     const a = (i % 16) * step;
-    const r = 1 + 0.085 * Math.sin(a * 3 + phase) + 0.035 * Math.cos(a * 5 - phase);
+    // Broad unequal lobes and a shallow saddle replace the repeated oval
+    // terrace. These same corners drive the hill, its rock faces and picking.
+    const r =
+      1 +
+      0.13 * Math.sin(a * 2 + phase) +
+      0.09 * Math.sin(a * 3 - phase * 0.7) +
+      0.045 * Math.cos(a * 5 - phase);
     return [Math.cos(a) * r, Math.sin(a) * r];
   };
   const [ax, az] = anchor(index),

@@ -33,19 +33,22 @@ export function coastalCliffs(seed: number, buildings: Building[] = []): CliffSp
   const result: CliffSpec[] = [];
   for (let i = 0; i < 44; i++) {
     const angle = ((i + (next() - 0.5) * 0.86) / 44) * Math.PI * 2;
-    const radius = world.coastRadius(angle) - (0.12 + next() * 0.22);
+    const radius = world.coastRadius(angle) - (0.16 + next() * 0.28);
     const x = 6 + Math.cos(angle) * radius,
       z = 6 + Math.sin(angle) * radius;
-    const width = 0.7 + next() * 1.0,
-      depth = 0.95 + next() * 0.7;
+    // Large headlands alternate with narrow fractured joints. The changing
+    // scale is deliberate: equal-size stones read as a constructed sea wall.
+    const broad = i % 4 === 0 || i % 7 === 2;
+    const width = broad ? 1.4 + next() * 0.7 : 0.85 + next() * 0.65,
+      depth = broad ? 1.05 + next() * 0.4 : 0.9 + next() * 0.4;
     // Внутренняя корона под дёрном, наружная скошена к воде.
     // Плоская крышка не подпирает траву широким нависающим козырьком.
     const top = -0.002;
     const bottom = -1.08 - next() * 0.24;
     const shoulderHeight = 0.29 + next() * 0.42;
-    const crownScale = 0.78 + next() * 0.11;
+    const crownScale = 0.74 + next() * 0.12;
     const lean = 0.01 + next() * 0.04;
-    const rotation = angle + Math.PI / 2 + (next() - 0.5) * 0.65;
+    const rotation = angle + Math.PI / 2 + (next() - 0.5) * 0.5;
     const beach = beachInfluence(angle, seed);
     if (beach > 0.72 || !portClear(x, z, seed, buildings)) continue;
     result.push({
@@ -64,6 +67,70 @@ export function coastalCliffs(seed: number, buildings: Building[] = []): CliffSp
       rotation,
       seed: seed ^ (i * 5347 + 17),
     });
+    // Smaller half-submerged masses sit against selected large fractures.
+    // Their crowns stay below the turf section, so grass covers the headland
+    // while the waterline gains irregular steps and pockets of shadow.
+    if (broad && beach < 0.18) {
+      const outward = 0.1 + next() * 0.08;
+      const tangent = (next() - 0.5) * width * 0.32;
+      const footX = x + Math.cos(angle) * outward - Math.sin(angle) * tangent;
+      const footZ = z + Math.sin(angle) * outward + Math.cos(angle) * tangent;
+      if (portClear(footX, footZ, seed, buildings))
+        result.push({
+          x: footX,
+          z: footZ,
+          width: width * (0.44 + next() * 0.2),
+          depth: depth * (0.48 + next() * 0.2),
+          bottom: -1.12,
+          top: -0.25 - next() * 0.19,
+          crownSlope: 0.16,
+          crownScale: 0.72,
+          shoulderHeight: 0.42,
+          profile: 'layered',
+          rotation: rotation + (next() - 0.5) * 0.5,
+          seed: seed ^ (i * 7457 + 929),
+        });
+    }
+  }
+  // Close the occasional deep joint between unequal headlands with an
+  // actual narrow rock. Stretching the hidden terrain shell across this gap
+  // used to produce the long triangular wedges visible from low cameras.
+  const topSections: Section[] = [];
+  const waterSections: Section[] = [];
+  for (const rock of result) {
+    const geometry = cliffRockGeometry(rock);
+    topSections.push(...horizontalSection(geometry.positions, -0.008, rock.elevation));
+    waterSections.push(...horizontalSection(geometry.positions, -0.68));
+  }
+  for (let i = 0; i < COAST_SEGMENTS; i++) {
+    const angle = (i / COAST_SEGMENTS) * Math.PI * 2;
+    if (beachInfluence(angle, seed) > 0.05) continue;
+    const topRadius = outerSectionRadius(angle, topSections);
+    const waterRadius = outerSectionRadius(angle, waterSections);
+    if (!Number.isFinite(topRadius) || waterRadius - topRadius <= 1.02) continue;
+    const radius = waterRadius - 0.4;
+    const x = 6 + Math.cos(angle) * radius;
+    const z = 6 + Math.sin(angle) * radius;
+    if (!portClear(x, z, seed, buildings)) continue;
+    const joint: CliffSpec = {
+      x,
+      z,
+      width: 0.8,
+      depth: 0.8,
+      bottom: -1.1,
+      top: -0.003,
+      profile: 'layered',
+      shoulderHeight: 0.5,
+      crownScale: 0.88,
+      crownSlope: 0.035,
+      rotation: angle + Math.PI / 2,
+      elevation: (px, pz) => coastalElevation(px, pz, seed, buildings),
+      seed: seed ^ (i * 3923 + 729),
+    };
+    result.push(joint);
+    topSections.push(
+      ...horizontalSection(cliffRockGeometry(joint).positions, -0.008, joint.elevation),
+    );
   }
   return result;
 }
@@ -96,7 +163,7 @@ export function uplandCliffs(seed: number, buildings: Building[] = []): CliffSpe
         (top - bottom) / run < 1.7
       )
         continue;
-      const inset = 0.88 + Math.sin(i * 2.7 + seed) * 0.08;
+      const inset = 0.57 + Math.sin(i * 2.7 + seed) * 0.1;
       const x = outer[0] * (1 - inset) + inner[0] * inset;
       const z = outer[1] * (1 - inset) + inner[1] * inset;
       if (
@@ -110,16 +177,20 @@ export function uplandCliffs(seed: number, buildings: Building[] = []): CliffSpe
         0.68,
         Math.hypot(neighbor[0] - outer[0], neighbor[1] - outer[1]) * 1.35,
       );
+      const capHeight = (px: number, pz: number) =>
+        terrainHeight(px - (dx / run) * 0.62, pz - (dz / run) * 0.62, seed, buildings) - 0.005;
       result.push({
-        // Корона уходит под ровную часть плато; наружу остаётся скальный бок.
-        x: x - Math.sin(Math.atan2(dz, dx) + Math.PI / 2) * 0.4,
-        z: z + Math.cos(Math.atan2(dz, dx) + Math.PI / 2) * 0.4,
+        // The mass straddles the escarpment. Sampling the crown inland keeps
+        // its back under turf while its broken shoulder replaces the old
+        // smooth heightfield face instead of being buried behind it.
+        x,
+        z,
         width,
-        depth: run + 0.58,
+        depth: run + 0.68,
         top,
-        ceiling: (px, pz) => terrainHeight(px, pz, seed, buildings) - 0.005,
+        ceiling: capHeight,
         profile: 'layered',
-        crownScale: 0.78 + ((i * 7 + hill) % 5) * 0.025,
+        crownScale: 0.72 + ((i * 7 + hill) % 5) * 0.025,
         shoulderHeight: 0.3 + ((i * 11 + hill) % 7) * 0.06,
         lean: 0.035,
         bottom,
@@ -138,7 +209,7 @@ export function uplandCliffs(seed: number, buildings: Building[] = []): CliffSpe
           top: bottom + rise * 0.62,
           // The small buttress shares the same terrain ceiling as its parent.
           // A free-standing cone here used to poke through the slope as fins.
-          ceiling: (px, pz) => terrainHeight(px, pz, seed, buildings) - 0.006,
+          ceiling: capHeight,
           profile: 'layered',
           crownScale: 0.81,
           shoulderHeight: 0.46,

@@ -6,7 +6,7 @@ import { readFileSync } from 'node:fs';
 import { environmentGeometry, environmentLayout } from '../src/scene/environment.ts';
 import { buildingElevation, terrainHeight } from '../src/scene/terrain.ts';
 import { boardCoordinate, sceneCoordinate, ISLAND_SPREAD } from '../src/scene/space.ts';
-import { pineGeometry } from '../src/scene/foliage.ts';
+import { pineGeometry, bushGeometry } from '../src/scene/foliage.ts';
 
 test('суша занимает вдвое большую площадь, координаты сохранений обратимы', () => {
   assert(Math.abs(ISLAND_SPREAD ** 2 - 2) < 1e-12);
@@ -45,7 +45,9 @@ test('увеличение острова раздвигает деревья, �
   const modelFor = (item) =>
     item.asset.startsWith('pine')
       ? pineGeometry(item.asset, item.x, item.z, world.seed)
-      : models[item.asset];
+      : item.asset === 'bush'
+        ? bushGeometry(item.x, item.z, world.seed)
+        : models[item.asset];
   const original = environmentGeometry(world, []);
   const expanded = environmentGeometry(world, [], ISLAND_SPREAD);
   let offset =

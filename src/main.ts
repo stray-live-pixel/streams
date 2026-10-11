@@ -120,7 +120,8 @@ refresh();
 if (loaded.error)
   menu.error(`${loaded.error}. Сохранение не изменится, пока вы не начнёте новую игру.`);
 
-// Только чтение: тесты и диагностика не получают доступа к изменяемому городу.
+// Диагностика не получает доступа к изменяемому городу. Менять можно только
+// силу обработки камеры для сравнения одного и того же неподвижного кадра.
 window.cityDebug = Object.freeze({
   get state() {
     return game.serialize();
@@ -142,6 +143,9 @@ window.cityDebug = Object.freeze({
   },
   get camera() {
     return scene?.cameraState ?? null;
+  },
+  setArtisticStrength(value: number) {
+    scene?.setArtisticStrength(value);
   },
   projectTile(x: number, z: number) {
     if (!scene) throw new Error('Сначала откройте остров из главного меню.');
@@ -172,6 +176,7 @@ declare global {
       readonly paused: boolean;
       readonly camera: CityScene['cameraState'] | null;
       readonly environment: CityScene['environmentState'] | null;
+      setArtisticStrength(value: number): void;
       projectTile(x: number, z: number): { x: number; y: number };
     };
   }

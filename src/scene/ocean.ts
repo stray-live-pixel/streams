@@ -74,15 +74,15 @@ float angularShore(vec2 p){
  return f.x+f.y<1.0 ? a+(b-a)*f.x+(c-a)*f.y
  : d+(c-d)*(1.0-f.x)+(b-d)*(1.0-f.y);
 }
-// Paint the body of a wash, not the borders of every noise cell. Broad
-// angular islands have a few cutouts; scattered short strokes remain separate.
+// Three scales share the same current: broad washes, broken angular crests,
+// and a few bright flecks. Their coverage is local, never a uniform coast band.
 vec2 foamBrush(vec2 p){
  vec2 turned=mat2(.84,-.54,.54,.84)*p;
- float mass=angularNoise(p*1.7+seed)*.58+angularNoise(turned*3.1+seed+17.0)*.42;
- float cuts=angularNoise(turned*6.3+seed+31.0);
- float body=smoothstep(.43,.49,mass)*(1.0-smoothstep(.63,.69,cuts)*.88);
- float flecks=smoothstep(.66,.71,angularNoise(p*5.2+seed+8.0));
- return vec2(body,flecks);
+ float mass=angularNoise(p*2.7+seed)*.65+angularNoise(turned*5.1+seed+17.0)*.35;
+ float cuts=angularNoise(turned*9.3+seed+31.0);
+ float body=smoothstep(.36,.57,mass)*(1.0-smoothstep(.55,.75,cuts)*.83);
+ float crest=1.0-smoothstep(.032,.09,abs(mass-.49));
+ return vec2(body,crest*(.3+.7*smoothstep(.25,.52,cuts)));
 }
 void main(){
  vec2 p=vPosition.xz;
@@ -102,10 +102,10 @@ void main(){
  // facets accent that wash, so the tessellation does not become the subject.
  float mottling=noise(vFacet*.24+seed);
  float wash=angularNoise(vFacet*.43+seed+9.0);
- vec3 deep=mix(vec3(.045,.57,.69),vec3(.075,.69,.73),mottling);
- vec3 shallow=mix(vec3(.20,.77,.74),vec3(.37,.84,.75),mottling);
+ vec3 deep=mix(vec3(.035,.49,.66),vec3(.07,.67,.72),mottling);
+ vec3 shallow=mix(vec3(.17,.74,.73),vec3(.40,.83,.70),mottling);
  vec3 color=mix(shallow,deep,smoothstep(.0,1.8,coast));
- color*=1.0+(facetTone-.5)*.052+(wash-.5)*.075;
+ color*=1.0+(facetTone-.5)*.075+(wash-.5)*.10;
  // Water over pale sand reads as clear, shallow water. The depth colour
  // absorbs the seabed gradually; opaque deep water still hides everything.
  float depth=max(0.0,signedCoast+.15);
@@ -118,9 +118,13 @@ void main(){
  // submerged stone and their shadows under the transparent shallows.
  vec2 screenUV=vClip.xy/vClip.w*.5+.5;
  vec4 seabed=texture2D(seabedSampler,screenUV+normal.xz*.002);
- vec3 transmitted=mix(seabed.rgb*1.08,vec3(.25,.83,.74),1.0-exp(-depth*.95));
+ vec3 transmitted=mix(seabed.rgb*vec3(.80,1.09,1.10),vec3(.15,.72,.72),1.0-exp(-depth*.85));
  lagoon=mix(lagoon,transmitted,seabed.a*.85);
  color=mix(color,lagoon,beach*exp(-depth*.46));
+ // Actual drowned boulders show through rocky shallows as muted turquoise
+ // shapes, not only through sandy coves. The water still hides distant land.
+ float clearRock=(1.0-beach)*seabed.a*exp(-depth*1.25)*.62;
+ color=mix(color,transmitted,clearRock);
  float diffuse=.90+.10*max(0.0,dot(normal,lightDirection));
  color*=diffuse*mix(.30,1.0,daylight);
  vec3 view=normalize(eyePosition-vWorldPosition);
@@ -142,33 +146,34 @@ void main(){
  float ragged=(angularNoise(p*5.4+vec2(slowTime*.12,0.0)+seed)-.5)*.17;
  // Broad sheets cling to the feet of rocks. Their outer edges break into
  // angular fragments, then dissolve instead of drawing nested contour rings.
- float washWidth=.15+surge*.23+localRhythm*.12;
+ float washWidth=.07+surge*.16+localRhythm*.08;
  float sheet=clamp((washWidth+ragged-signedCoast)/.032,0.0,1.0);
  vec2 driftFoam=p+vec2(slowTime*.035,-slowTime*.025);
  vec2 brush=foamBrush(driftFoam);
- sheet*=brush.x*smoothstep(.12,.37,broken);
+ sheet*=brush.x*smoothstep(.08,.35,broken)*.72;
  float frontDistance=.24+(.5-surge*.5)*(.55+localRhythm*.3);
  float front=clamp((.035-abs(coast-frontDistance-ragged))/.022,0.0,1.0);
- front*=brush.y*smoothstep(.53,.72,broken)*clamp((.9-coast)/.4,0.0,1.0)*.65;
- float foam=max(sheet,front);
+ front*=smoothstep(.42,.64,broken)*clamp((.9-coast)/.4,0.0,1.0)*.85;
+ float lace=brush.y*(1.0-smoothstep(.07,washWidth+.14,coast))*smoothstep(.20,.38,broken);
+ float foam=max(max(sheet,front),lace*.80);
  // Two waves leave patches of wash on the wet sand. Their broken leading
  // strokes are subordinate to the filled foam, not closed polygon outlines.
  float run=fract(slowTime*.075+localRhythm*.16);
  float reach=mix(.82,-.19,run)+(angularNoise(p*2.8)-.5)*.25;
- float wave=(1.0-smoothstep(.035,.095,abs(signedCoast-reach)))*smoothstep(.46,.64,broken);
+ float wave=(1.0-smoothstep(.018,.06,abs(signedCoast-reach)))*smoothstep(.30,.52,broken);
  float veil=smoothstep(reach-.34,reach-.29,signedCoast)*(1.0-smoothstep(reach+.015,reach+.045,signedCoast));
  float life=smoothstep(0.0,.16,run)*(1.0-smoothstep(.7,1.0,run));
  float secondRun=fract(run+.51);
  float secondReach=mix(.85,-.2,secondRun)+(angularNoise(p*3.5+seed)-.5)*.2;
  float secondLife=smoothstep(.05,.18,secondRun)*(1.0-smoothstep(.72,1.0,secondRun));
- float secondWave=(1.0-smoothstep(.025,.07,abs(signedCoast-secondReach)))*brush.y*smoothstep(.38,.57,broken);
+ float secondWave=(1.0-smoothstep(.015,.05,abs(signedCoast-secondReach)))*smoothstep(.38,.57,broken);
  float secondVeil=smoothstep(secondReach-.28,secondReach-.24,signedCoast)*(1.0-smoothstep(secondReach+.01,secondReach+.035,signedCoast));
- float beachFoam=max((wave*.65+veil*brush.x)*life,(secondWave*.55+secondVeil*brush.x*.72)*secondLife)*(.72+broken*.28);
- float afterwash=(1.0-smoothstep(.17,.23,signedCoast))*brush.x*.76;
+ float beachFoam=max((wave*.95+veil*brush.x*.28)*life,(secondWave*.78+secondVeil*brush.x*.24)*secondLife)*(.72+broken*.28);
+ float afterwash=(1.0-smoothstep(.06,.18,signedCoast))*(brush.x*.30+brush.y*.55);
  foam=mix(foam,max(beachFoam,afterwash),beach);
  // Sparse angular caustics drift beneath the surface rather than forming
  // a reflective glare that would obscure the underwater sand.
- color+=vec3(.11,.15,.10)*brush.y*beach*exp(-abs(signedCoast-.35)*1.7)*.12*daylight;
+ color+=vec3(.12,.19,.12)*brush.y*exp(-abs(signedCoast-.6)*1.5)*.20*daylight;
  vec3 foamColor=mix(vec3(.34,.46,.58),vec3(.91,.975,.91),daylight);
  color=mix(color,foamColor,clamp(foam,0.0,1.0)*.89);
  gl_FragColor=vec4(color,1.0);
@@ -228,7 +233,9 @@ export function shoreDistancePixels(
   size = SHORE_TEXTURE_SIZE,
 ) {
   const world = createWorld(board.seed ?? 0);
-  const rocks = environmentLayout(board, buildings).filter((o) => o.y < -0.2 && o.scale > 0.35);
+  const rocks = environmentLayout(board, buildings).filter(
+    (o) => o.y < -0.2 && o.y > -1.25 && o.scale > 0.35,
+  );
   const data = new Uint8Array(size * size * 4);
   for (let z = 0; z < size; z++)
     for (let x = 0; x < size; x++) {

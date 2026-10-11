@@ -101,6 +101,9 @@ try {
   assert(second.water.time > first.water.time + 1);
   assert.equal(second.water.triangles, 4608);
   assert.equal(second.lensBlur, true);
+  assert.equal(second.artisticFilter, 'soft-painted-palette');
+  assert.equal(second.artisticStrength, 1);
+  assert.equal(second.filterSamples, 9);
   assert(Math.abs(second.islandSpread ** 2 - 2) < 1e-12);
   assert(
     second.water.reflectionUpdates - first.water.reflectionUpdates <=
@@ -193,6 +196,23 @@ try {
   const frozen2 = await frame('low-frozen-again');
   assert.equal((await state()).water.time, low.water.time);
   assert.equal(difference(frozen, frozen2, [0, 0, 1440, 810]), 0);
+  assert.equal(low.filterSamples, 5);
+  // Compare the same frozen world: the finish must visibly affect the frame,
+  // but remain a restrained colour treatment rather than an opaque overlay.
+  await page.evaluate(() => cityDebug.setArtisticStrength(0));
+  await page.waitForFunction(() => cityDebug.environment.settled);
+  const ungraded = await frame('low-ungraded');
+  assert.equal((await state()).artisticStrength, 0);
+  await page.evaluate(() => cityDebug.setArtisticStrength(1));
+  await page.waitForFunction(() => cityDebug.environment.settled);
+  const graded = await frame('low-graded');
+  let gradeDelta = 0;
+  for (let i = 0; i < graded.data.length; i += 4)
+    for (let channel = 0; channel < 3; channel++)
+      gradeDelta += Math.abs(graded.data[i + channel] - ungraded.data[i + channel]);
+  gradeDelta /= graded.width * graded.height * 3;
+  assert(gradeDelta > 0.2 && gradeDelta < 8, `Деликатный фильтр: средняя разница ${gradeDelta}`);
+  assert.equal((await state()).water.time, low.water.time, 'Фильтр не запускает время игры');
   await page.click('#open-menu');
   await page.click('#pause-settings');
   await page.check('#setting-animation');

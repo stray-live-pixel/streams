@@ -64,22 +64,23 @@
       "runtime_export": null,
       "game_integration": "src/scene/environment.ts",
       "metrics": {
-        "triangles": 254,
-        "source_vertices": 142,
+        "triangles": 268,
+        "source_vertices": 144,
         "materials": 1,
         "measured_at": "2026-10-11"
       },
       "notes": [
-        "Игровая крона генерируется по seed и координатам; исходный GLB сохранён как архивный ассет и не совпадает с новой геометрией.",
-        "Три/четыре объёмных яруса с неровными краями и широкими плечами, видимый ствол. Модель сохраняет пропорции при расширении острова.",
-        "Хвоя берётся из сгенерированного атласа; белый vertex color исключает чередование квадратов. Локальная высота даёт слегка более светлую верхушку.",
-        "Геометрия объединяется с окружением без дополнительного draw call. Новый художественный вид ожидает оценки владельца."
+        "Игровая крона строится из широких согласованных ветвевых масс; взрослые 268, молодые 208 треугольников. Ствол замкнут снизу и сверху.",
+        "Сгенерированный атлас хвои сохранён; локальная высота осветляет верхушку. Геометрия объединена с окружением.",
+        "Исходный GLB сохранён как архив; новый процедурный вариант не экспортирован в GLB/blend. Проверено в игре, требуется оценка владельца."
       ],
       "runtime_texture": "assets/art/terrain/nature-paint-atlas.png",
       "material_metadata": "assets/art/terrain/materials.json",
       "archived_source": "assets/models/island-nature/pine-tall.glb",
       "archived_source_sha256": "efa027b0889675a0d88216f4fcb1187ccdefffa6ce5b339475b1fb734081c5cb",
-      "source_sha256": "4d4d3d533815255397437cb3c9935b01cf68d3e044301c7d0b8a37f564a908ee"
+      "source_sha256": "360ea41b86b5e497fe759dca142530d99e3f3939c5efbaa2724b3c24545302cf",
+      "review_status": "awaiting-user-art-review",
+      "blender_ready": false
     },
     {
       "id": "island-nature/pine-wide",
@@ -102,22 +103,23 @@
       "runtime_export": null,
       "game_integration": "src/scene/environment.ts",
       "metrics": {
-        "triangles": 254,
-        "source_vertices": 142,
+        "triangles": 268,
+        "source_vertices": 144,
         "materials": 1,
         "measured_at": "2026-10-11"
       },
       "notes": [
-        "Игровая крона генерируется по seed и координатам; исходный GLB сохранён как архивный ассет и не совпадает с новой геометрией.",
-        "Три/четыре объёмных яруса с неровными краями и широкими плечами, видимый ствол. Модель сохраняет пропорции при расширении острова.",
-        "Хвоя берётся из сгенерированного атласа; белый vertex color исключает чередование квадратов. Локальная высота даёт слегка более светлую верхушку.",
-        "Геометрия объединяется с окружением без дополнительного draw call. Новый художественный вид ожидает оценки владельца."
+        "Игровая крона строится из широких согласованных ветвевых масс; взрослые 268, молодые 208 треугольников. Ствол замкнут снизу и сверху.",
+        "Сгенерированный атлас хвои сохранён; локальная высота осветляет верхушку. Геометрия объединена с окружением.",
+        "Исходный GLB сохранён как архив; новый процедурный вариант не экспортирован в GLB/blend. Проверено в игре, требуется оценка владельца."
       ],
       "runtime_texture": "assets/art/terrain/nature-paint-atlas.png",
       "material_metadata": "assets/art/terrain/materials.json",
       "archived_source": "assets/models/island-nature/pine-wide.glb",
       "archived_source_sha256": "42a085d81e197aeb00130c2d7cd1a992b0848e987fe32c4aef2c16d27a0c3c74",
-      "source_sha256": "4d4d3d533815255397437cb3c9935b01cf68d3e044301c7d0b8a37f564a908ee"
+      "source_sha256": "360ea41b86b5e497fe759dca142530d99e3f3939c5efbaa2724b3c24545302cf",
+      "review_status": "awaiting-user-art-review",
+      "blender_ready": false
     },
     {
       "id": "island-nature/pine-young",
@@ -140,22 +142,23 @@
       "runtime_export": null,
       "game_integration": "src/scene/environment.ts",
       "metrics": {
-        "triangles": 194,
-        "source_vertices": 110,
+        "triangles": 208,
+        "source_vertices": 112,
         "materials": 1,
         "measured_at": "2026-10-11"
       },
       "notes": [
-        "Игровая крона генерируется по seed и координатам; исходный GLB сохранён как архивный ассет и не совпадает с новой геометрией.",
-        "Три/четыре объёмных яруса с неровными краями и широкими плечами, видимый ствол. Модель сохраняет пропорции при расширении острова.",
-        "Хвоя берётся из сгенерированного атласа; белый vertex color исключает чередование квадратов. Локальная высота даёт слегка более светлую верхушку.",
-        "Геометрия объединяется с окружением без дополнительного draw call. Новый художественный вид ожидает оценки владельца."
+        "Игровая крона строится из широких согласованных ветвевых масс; взрослые 268, молодые 208 треугольников. Ствол замкнут снизу и сверху.",
+        "Сгенерированный атлас хвои сохранён; локальная высота осветляет верхушку. Геометрия объединена с окружением.",
+        "Исходный GLB сохранён как архив; новый процедурный вариант не экспортирован в GLB/blend. Проверено в игре, требуется оценка владельца."
       ],
       "runtime_texture": "assets/art/terrain/nature-paint-atlas.png",
       "material_metadata": "assets/art/terrain/materials.json",
       "archived_source": "assets/models/island-nature/pine-young.glb",
       "archived_source_sha256": "380926c22a1bd235b047c51ca773fb2aac2be9c7f7a2c1cdc82120ab6ba216df",
-      "source_sha256": "4d4d3d533815255397437cb3c9935b01cf68d3e044301c7d0b8a37f564a908ee"
+      "source_sha256": "360ea41b86b5e497fe759dca142530d99e3f3939c5efbaa2724b3c24545302cf",
+      "review_status": "awaiting-user-art-review",
+      "blender_ready": false
     },
     {
       "id": "island-nature/rock-large",
@@ -192,7 +195,8 @@
       ],
       "source_sha256": "8dbfc07102f8950bda7a181261646272387b1f6e2a527c20a7ecb3a1416815eb",
       "runtime_texture": "assets/art/terrain/nature-paint-atlas.png",
-      "material_metadata": "assets/art/terrain/materials.json"
+      "material_metadata": "assets/art/terrain/materials.json",
+      "review_status": "awaiting-user-art-review"
     },
     {
       "id": "island-nature/rock-flat",
@@ -229,7 +233,8 @@
       ],
       "source_sha256": "ec277a2073e0f996836a1ac7958a5f57a4fd943918cc6ece6b7bc1b3cb84029f",
       "runtime_texture": "assets/art/terrain/nature-paint-atlas.png",
-      "material_metadata": "assets/art/terrain/materials.json"
+      "material_metadata": "assets/art/terrain/materials.json",
+      "review_status": "awaiting-user-art-review"
     },
     {
       "id": "island-nature/rock-small",
@@ -266,7 +271,8 @@
       ],
       "source_sha256": "c07553dbc836f6a1e57705b2d036da3522a2583dd39edb50f46e1bc1fc2dac26",
       "runtime_texture": "assets/art/terrain/nature-paint-atlas.png",
-      "material_metadata": "assets/art/terrain/materials.json"
+      "material_metadata": "assets/art/terrain/materials.json",
+      "review_status": "awaiting-user-art-review"
     },
     {
       "id": "island-nature/bush",
@@ -278,31 +284,39 @@
       ],
       "status": "integrated",
       "game_ready": true,
-      "source": "assets/models/island-nature/bush.glb",
-      "geometry_source": "assets/models/island-nature/models.json",
+      "source": "src/scene/foliage.ts",
+      "geometry_source": "src/scene/foliage.ts",
       "geometry_key": "bush",
       "preview": "assets/models/island-nature/painted-preview.png",
       "reference": "assets/art/island-reference.png",
       "generators": [
-        "scripts/create-nature-models.mjs"
+        "src/scene/foliage.ts"
       ],
-      "runtime_export": "assets/models/island-nature/models.json",
+      "runtime_export": null,
       "game_integration": "src/scene/environment.ts",
       "metrics": {
+        "triangles": 168,
+        "source_vertices": 90,
+        "materials": 1,
+        "measured_at": "2026-10-11"
+      },
+      "notes": [
+        "Три перекрывающиеся лиственные массы с округлыми плечами заменяют похожий на зелёный камень архивный куст.",
+        "Сгенерированная растительная текстура общая с атласом природы; геометрия объединена с окружением.",
+        "Архивные GLB/JSON сохранены. Новый вариант проверен в игре, ожидает оценки пользователя и не имеет отдельного экспорта Blender."
+      ],
+      "source_sha256": "360ea41b86b5e497fe759dca142530d99e3f3939c5efbaa2724b3c24545302cf",
+      "runtime_texture": "assets/art/terrain/nature-paint-atlas.png",
+      "material_metadata": "assets/art/terrain/materials.json",
+      "review_status": "awaiting-user-art-review",
+      "archived_source": "assets/models/island-nature/bush.glb",
+      "archived_source_sha256": "e632e6fdf0325ed1737f75f7f402d19807ec52dc5d725b6868fdc85ee1e08fe9",
+      "archived_metrics": {
         "triangles": 63,
         "source_vertices": 45,
         "materials": 1
       },
-      "notes": [
-        "GLB и игровой JSON получены из одной геометрии; Y вверх, основание в нуле.",
-        "В игре экземпляры имеют свободные координаты, поворот и масштаб, затем объединяются в один буфер.",
-        "Превью показывает набор в игровом окружении, не отдельный объект.",
-        "В игре используется реальный свет, плоские нормали природных граней и более яркая тёплая палитра сцены; расстояния между объектами увеличены в √2, модели сохраняют пропорции и размещены по рельефу, подводные основания камней удлинены при сборке; геометрия и палитра исходного GLB не изменены.",
-        "Игровые материалы используют общий рисованный атлас: широкие мазки луга, песка, скал, хвои, коры и лепестков; мелкое зерно убрано. Исходный GLB и его статистика не менялись."
-      ],
-      "source_sha256": "e632e6fdf0325ed1737f75f7f402d19807ec52dc5d725b6868fdc85ee1e08fe9",
-      "runtime_texture": "assets/art/terrain/nature-paint-atlas.png",
-      "material_metadata": "assets/art/terrain/materials.json"
+      "blender_ready": false
     },
     {
       "id": "island-nature/grass",
@@ -338,7 +352,8 @@
       ],
       "source_sha256": "81eb59e992340e7d517407e0b6bda09d3b77728006cc9589f309a0ef78a2ab95",
       "runtime_texture": "assets/art/terrain/nature-paint-atlas.png",
-      "material_metadata": "assets/art/terrain/materials.json"
+      "material_metadata": "assets/art/terrain/materials.json",
+      "review_status": "awaiting-user-art-review"
     },
     {
       "id": "island-nature/flowers",
@@ -375,7 +390,8 @@
       ],
       "source_sha256": "b99a43853dfb21f527479e386a69b21c25fde31a3dd98b200fe5ada80074897e",
       "runtime_texture": "assets/art/terrain/nature-paint-atlas.png",
-      "material_metadata": "assets/art/terrain/materials.json"
+      "material_metadata": "assets/art/terrain/materials.json",
+      "review_status": "awaiting-user-art-review"
     },
     {
       "id": "island-nature/cliff-rock",
@@ -407,6 +423,46 @@
       "runtime_export": null,
       "game_integration": "src/scene/environment.ts",
       "metrics": {
+        "triangles_per_boulder": 42,
+        "vertices_per_boulder": 126,
+        "triangles_per_layered_block": [
+          56,
+          70
+        ],
+        "vertices_per_layered_block": [
+          168,
+          210
+        ],
+        "coastal_blocks": 46,
+        "coastal_triangles": 3010,
+        "upland_blocks": 22,
+        "upland_triangles": 1442,
+        "scene_seed": 123456789,
+        "scene_triangles": 34809,
+        "scene_vertices": 104427,
+        "measured_at": "2026-10-11"
+      },
+      "notes": [
+        "Семигранная форма со срезанными углами, наклонными разломами и отдельными уступами. Три/четыре курса дают 56/70 треугольников вместо одинаковых шести кольцевых ярусов.",
+        "Крупные и узкие береговые массивы чередуются; у выбранных мысов есть низкие передние глыбы. Реальные каменные вставки закрывают слишком глубокие стыки.",
+        "Внутренние глыбы вынесены на склон. Их короны ограничены высотой внутреннего участка плато, а наружные плечи могут выступать над прежним heightfield.",
+        "Декор не размещается в выступившем камне; выбор участка учитывает реальную скальную поверхность через rock-support.ts.",
+        "Два пляжа и общий шов травы/берега сохранены. Проверено 479 замкнутых глыб на семи seed без вырожденных граней и неконечных нормалей.",
+        "Проверено в игре. Художественное согласование ожидается; отдельного blend/GLB процедурной сцены нет."
+      ],
+      "source_sha256": "653802f3b71e71e4133953355da1bc30577aa2e60bbc7921b4b77da9fa6dd97a",
+      "layout_sha256": "ce215bda5b56cd85dd58539f900a2925f8573a90416424b0578b66d6d46d5a0f",
+      "surface_color_sha256": "28366c5ef1e09656b9a6f0de1f3461fb677d902c6bb1a9525352e8859f2b97de",
+      "coast_height_sha256": "31ad8aeb95914a5b6ddf275dcbc9bee4c141b194ea56e46897436f45d3e07e52",
+      "painted_material_sha256": "98057035f252d82f757bfdc396c135e6a5b51a9398fcd96f768b0320a37a804e",
+      "environment_sha256": "4c44bc50a93e053e043df2f5be4186faf58aca077de485a5b9630d37fcc3db4a",
+      "runtime_texture": "assets/art/terrain/nature-paint-atlas.png",
+      "material_metadata": "assets/art/terrain/materials.json",
+      "transition_texture": "assets/art/terrain/shore-transition-atlas.png",
+      "transition_metadata": "assets/art/terrain/shore-transition-materials.json",
+      "terrain_sha256": "fce0d2848c1b762cefa6ddf4a9812cdb77949443e66cdcdc2a59b9273bdb0f54",
+      "review_status": "awaiting-user-art-review",
+      "previous_iteration_metrics": {
         "triangles_per_block": 42,
         "vertices_per_block": 126,
         "scene_seed": 123456789,
@@ -419,30 +475,9 @@
         "upland_blocks": 23,
         "upland_triangles": 1932
       },
-      "notes": [
-        "Процедурная замкнутая глыба на основе формы rock-large; отдельного GLB или blend пока нет.",
-        "Короны заглублены под траву. Варьируются ширина, глубина, наклон, высота плеча и боковые скосы.",
-        "Береговые глыбы имеют четыре видимых яруса с неровной высотой углов и расширением к воде; трава отступает внутрь каменного верха. Общая заглублённая основа закрывает стыки, прибой следует сечениям камня.",
-        "Проверено в браузере; художественное согласование владельцем ещё не завершено.",
-        "Берег поднят общим полем высот с низкими пляжами и подходом к порту. Уступы ограничены высотой травы. Мокрая кромка вычисляется плагином StandardMaterial, крупные минеральные мазки берутся из встроенного рисованного атласа. Художественное согласование нового вида ещё не получено.",
-        "Игровые материалы используют общий рисованный атлас: широкие мазки луга, песка, скал, хвои, коры и лепестков; мелкое зерно убрано. Геометрия и статистика описаны отдельно выше.",
-        "Широкие плечи бухт плавно снижаются к песку, переходные глыбы ниже; контур сглаживается только у песчаных секторов. Рисованный атлас переходов смешивает траву, камень и песок по склону и глубине короны.",
-        "Песчаная кромка понижена до −0,48 при уровне воды −0,68; плавный подъём продолжается на 4 логические единицы вглубь суши. Выступ ватерлинии уменьшен с 1,29 до 1,02. Намокание песка смягчено.",
-        "Середина каждой бухты заглублена в остров до 0,85 логической единицы. Рельеф песка и выбор участка учитывают низкий берег; внутренние волны рельефа плавно затухают перед песком.",
-        "Сухой песок отмеряется от фактической вогнутой кромки бухты: 1,35 логической единицы сплошного песка вглубь суши и затем широкая рисованная переходная полоса. Последний метр суши почти ровный; подводный склон сокращён с 1,58 до 0,78. Ватерлиния не вынесена дальше в море.",
-        "Крупные согласованные плечи и широкие короны заменяют независимый шум ярусов. Высота нагорных глыб целиком ограничена общим рельефом. Исправлена вставка точек на рёбра сетки; холодноватые тени и тёплые верхние плоскости поддерживают сгенерированные мазки."
-      ],
-      "source_sha256": "57b9195b1fcbbe01968dc490a3ae20b40c3fd96c32391dbd3a9b8f5cf78dc1c4",
-      "layout_sha256": "c9df97338771185e4413688775d76b144bcc21967b1a945a494265fe73bd3734",
-      "surface_color_sha256": "28366c5ef1e09656b9a6f0de1f3461fb677d902c6bb1a9525352e8859f2b97de",
-      "coast_height_sha256": "31ad8aeb95914a5b6ddf275dcbc9bee4c141b194ea56e46897436f45d3e07e52",
-      "painted_material_sha256": "9dba5d5e5518a940c71a687c970c739203133a835898f8a3b7899c020c5828fa",
-      "environment_sha256": "4809827a7c9e5b451bdec1ef55567a83e382beb2eeb42c3da1a9f4df2c700403",
-      "runtime_texture": "assets/art/terrain/nature-paint-atlas.png",
-      "material_metadata": "assets/art/terrain/materials.json",
-      "transition_texture": "assets/art/terrain/shore-transition-atlas.png",
-      "transition_metadata": "assets/art/terrain/shore-transition-materials.json",
-      "terrain_sha256": "392ae9c1f376bea5ecd343cdf79056e6d3f17f574756c9c3bd770b9aeacc180c"
+      "blender_ready": false,
+      "rock_support": "src/scene/rock-support.ts",
+      "rock_support_sha256": "ab40664602b900fe819001bbdfa7e3ae7c746a0bd54073f710f9c591516d4106"
     },
     {
       "id": "island-nature/coast-surface",
@@ -465,21 +500,15 @@
         "triangles": 2784,
         "vertices": 8352,
         "segments": 192,
-        "measured_at": "2026-10-11",
-        "scene_seed": 123456789
+        "scene_seed": 123456789,
+        "measured_at": "2026-10-11"
       },
-      "source_sha256": "c9df97338771185e4413688775d76b144bcc21967b1a945a494265fe73bd3734",
+      "source_sha256": "ce215bda5b56cd85dd58539f900a2925f8573a90416424b0578b66d6d46d5a0f",
       "notes": [
-        "Общий шов с травой немного утоплен внутрь корон; заглублённая основа закрывает стыки ярусных глыб. Ватерлиния учитывает камни, два песчаных берега сохранены.",
-        "Процедурная часть сцены; отдельного blend/GLB нет. Художественная итерация ожидает оценки владельца.",
-        "Берег поднят общим полем высот с низкими пляжами и подходом к порту. Уступы ограничены высотой травы. Мокрая кромка вычисляется плагином StandardMaterial, крупные минеральные мазки берутся из встроенного рисованного атласа. Художественное согласование нового вида ещё не получено.",
-        "Игровые материалы используют общий рисованный атлас: широкие мазки луга, песка, скал, хвои, коры и лепестков; мелкое зерно убрано. Геометрия и статистика описаны отдельно выше.",
-        "Песчаные сектора имеют 17 поперечных колец с продолжением под водой. Кромка луга смешивается с песком в мировых координатах, без отдельной нависающей плоскости.",
-        "Широкие плечи бухт плавно снижаются к песку, переходные глыбы ниже; контур сглаживается только у песчаных секторов. Рисованный атлас переходов смешивает траву, камень и песок по склону и глубине короны.",
-        "Песчаная кромка понижена до −0,48 при уровне воды −0,68; плавный подъём продолжается на 4 логические единицы вглубь суши. Выступ ватерлинии уменьшен с 1,29 до 1,02. Намокание песка смягчено.",
-        "Середина каждой бухты заглублена в остров до 0,85 логической единицы. Рельеф песка и выбор участка учитывают низкий берег; внутренние волны рельефа плавно затухают перед песком.",
-        "Сухой песок отмеряется от фактической вогнутой кромки бухты: 1,35 логической единицы сплошного песка вглубь суши и затем широкая рисованная переходная полоса. Последний метр суши почти ровный; подводный склон сокращён с 1,58 до 0,78. Ватерлиния не вынесена дальше в море.",
-        "Крупные согласованные плечи и широкие короны заменяют независимый шум ярусов. Высота нагорных глыб целиком ограничена общим рельефом. Исправлена вставка точек на рёбра сетки; холодноватые тени и тёплые верхние плоскости поддерживают сгенерированные мазки."
+        "Общая кромка травы и берега использует совпадающие вершины; промежутки закрывает заглублённая основа. Видимый профиль задают отдельные объёмные скалы.",
+        "Два пологих песчаных берега сохраняются. Крупные пятна рисованного атласа сглаживают переход травы в песок.",
+        "Природная расстановка фильтрует растения, оказавшиеся внутри выступающих скальных плеч.",
+        "Проверено в игре; требуется художественная оценка пользователя. Отдельного GLB/blend нет."
       ],
       "surface_color_sha256": "28366c5ef1e09656b9a6f0de1f3461fb677d902c6bb1a9525352e8859f2b97de",
       "references": [
@@ -487,14 +516,137 @@
         "assets/art/coastal-reference/painted-beach-target.png"
       ],
       "coast_height_sha256": "31ad8aeb95914a5b6ddf275dcbc9bee4c141b194ea56e46897436f45d3e07e52",
-      "painted_material_sha256": "9dba5d5e5518a940c71a687c970c739203133a835898f8a3b7899c020c5828fa",
-      "environment_sha256": "4809827a7c9e5b451bdec1ef55567a83e382beb2eeb42c3da1a9f4df2c700403",
+      "painted_material_sha256": "98057035f252d82f757bfdc396c135e6a5b51a9398fcd96f768b0320a37a804e",
+      "environment_sha256": "4c44bc50a93e053e043df2f5be4186faf58aca077de485a5b9630d37fcc3db4a",
       "runtime_texture": "assets/art/terrain/nature-paint-atlas.png",
       "material_metadata": "assets/art/terrain/materials.json",
-      "layout_sha256": "c9df97338771185e4413688775d76b144bcc21967b1a945a494265fe73bd3734",
+      "layout_sha256": "ce215bda5b56cd85dd58539f900a2925f8573a90416424b0578b66d6d46d5a0f",
       "transition_texture": "assets/art/terrain/shore-transition-atlas.png",
       "transition_metadata": "assets/art/terrain/shore-transition-materials.json",
-      "terrain_sha256": "392ae9c1f376bea5ecd343cdf79056e6d3f17f574756c9c3bd770b9aeacc180c"
+      "terrain_sha256": "fce0d2848c1b762cefa6ddf4a9812cdb77949443e66cdcdc2a59b9273bdb0f54",
+      "review_status": "awaiting-user-art-review",
+      "previous_iteration_metrics": {
+        "triangles": 2784,
+        "vertices": 8352,
+        "segments": 192,
+        "measured_at": "2026-10-11",
+        "scene_seed": 123456789
+      },
+      "blender_ready": false,
+      "rock_support": "src/scene/rock-support.ts",
+      "rock_support_sha256": "ab40664602b900fe819001bbdfa7e3ae7c746a0bd54073f710f9c591516d4106"
+    },
+    {
+      "id": "island-nature/contact-shadows",
+      "name": "Контактное затенение природы",
+      "asset_type": "runtime-texture",
+      "status": "design-iteration",
+      "review_status": "awaiting-user-art-review",
+      "game_ready": true,
+      "blender_ready": false,
+      "source": "src/scene/contact-shadows.ts",
+      "source_sha256": "4685bd015ea0dcf423d9282c4c8dd39bf38b4297e377a89c16c4efe7e80a3434",
+      "game_integration": "src/scene/painted-material.ts",
+      "runtime_export": null,
+      "metrics": {
+        "texture_width": 256,
+        "texture_height": 256,
+        "channels": 4,
+        "source_bytes": 262144,
+        "extra_meshes": 0,
+        "measured_at": "2026-10-11"
+      },
+      "notes": [
+        "Мягкие локальные тени у оснований деревьев, кустов, камней и зданий. Текстура пересчитывается при перестройке острова, используется внутри общего материала.",
+        "Проверено в игре; это материал, не отдельная 3D-модель и не экспорт Blender."
+      ]
+    },
+    {
+      "id": "island-nature/water",
+      "name": "Гранёная вода и подводные скалы",
+      "status": "design-iteration",
+      "review_status": "awaiting-user-art-review",
+      "game_ready": true,
+      "blender_ready": false,
+      "source": "src/scene/ocean.ts",
+      "source_sha256": "f29f7d40f67d3b7c1746d013ffe8e068b33b7d4fb78fbfc43b171b5f94796c35",
+      "generators": [
+        "src/scene/ocean.ts",
+        "src/scene/environment.ts"
+      ],
+      "runtime_export": null,
+      "game_integration": "src/scene/index.ts",
+      "metrics": {
+        "high_quality_triangles": 4608,
+        "high_quality_vertices": 13824,
+        "low_quality_triangles": 2048,
+        "low_quality_vertices": 6144,
+        "submerged_rock_instances": 8,
+        "scene_seed": 123456789,
+        "measured_at": "2026-10-11"
+      },
+      "notes": [
+        "Анимированная вода использует отдельные вершины граней при совпадающих геометрических рёбрах. Прибой сочетает тонкий фронт, плотную кромку и прозрачный отход волны.",
+        "Для глубины добавлены полностью подводные плоские камни; их исходный GLB сохранён. Проекция дна обновляется при изменении острова, тяжёлые рендеры не нужны.",
+        "Проверено в игровом WebGL; отдельный Blender-экспорт текущей сцены не подготовлен."
+      ]
     }
-  ]
+  ],
+  "runtime_validation": {
+    "date": "2026-10-11",
+    "status": "tested-in-game-awaiting-user-art-review",
+    "scene_blender_ready": false,
+    "scene_blender_export": null,
+    "seed": 123456789,
+    "buildings": 0,
+    "scene_triangles": 34809,
+    "scene_vertices": 104427,
+    "instances": 336,
+    "submerged_rock_instances": 8,
+    "source_hashes": {
+      "src/scene/foliage.ts": "360ea41b86b5e497fe759dca142530d99e3f3939c5efbaa2724b3c24545302cf",
+      "src/scene/cliffs.ts": "653802f3b71e71e4133953355da1bc30577aa2e60bbc7921b4b77da9fa6dd97a",
+      "src/scene/cliff-layout.ts": "ce215bda5b56cd85dd58539f900a2925f8573a90416424b0578b66d6d46d5a0f",
+      "src/scene/environment.ts": "4c44bc50a93e053e043df2f5be4186faf58aca077de485a5b9630d37fcc3db4a",
+      "src/scene/painted-material.ts": "98057035f252d82f757bfdc396c135e6a5b51a9398fcd96f768b0320a37a804e",
+      "src/scene/terrain.ts": "fce0d2848c1b762cefa6ddf4a9812cdb77949443e66cdcdc2a59b9273bdb0f54",
+      "src/scene/contact-shadows.ts": "4685bd015ea0dcf423d9282c4c8dd39bf38b4297e377a89c16c4efe7e80a3434",
+      "src/scene/ocean.ts": "f29f7d40f67d3b7c1746d013ffe8e068b33b7d4fb78fbfc43b171b5f94796c35",
+      "src/scene/rock-support.ts": "ab40664602b900fe819001bbdfa7e3ae7c746a0bd54073f710f9c591516d4106",
+      "src/scene/lens.ts": "4d18d45127c9533293da5d793648f74b6501838021b516d795841977da040882",
+      "src/scene/lighting.ts": "c2e7c7c2a9952ddc79b9f130f36ef6097453bf22da5bbee022fe242692145736"
+    },
+    "notes": [
+      "Текущая итерация проверена в игровом WebGL; это не утверждение художественного согласования.",
+      "Архивные GLB и исходная палитра сохранены. Процедурная сцена не экспортирована в Blender.",
+      "Превью обновлены после интеграции: дневной WebGL-кадр с обработкой камеры и второй ракурс растительности, seed 3210380753."
+    ],
+    "artistic_filter": {
+      "name": "soft-painted-palette",
+      "strength": 1,
+      "high_quality_samples": 9,
+      "low_quality_samples": 5,
+      "extra_render_targets": 0,
+      "comparison": "same frozen frame, day and night"
+    },
+    "previews": [
+      "assets/models/island-nature/painted-preview.png",
+      "assets/models/island-nature/pine-texture-preview.png"
+    ],
+    "preview_seed": 3210380753,
+    "preview_buildings": [
+      {
+        "t": "hall",
+        "x": 5,
+        "z": 5
+      }
+    ],
+    "checks": [
+      "npm run check: 97 tests, build, formatting",
+      "npm run typecheck",
+      "npm run test:e2e: all browser suites including WebGL 1 and free placement",
+      "Frozen daytime/nighttime A/B of camera processing",
+      "git diff --check"
+    ]
+  }
 }

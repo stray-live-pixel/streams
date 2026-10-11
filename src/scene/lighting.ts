@@ -65,7 +65,7 @@ export function createLighting(scene: Scene, camera: Camera, onLabel: (label: st
   shadows.filteringQuality = ShadowGenerator.QUALITY_HIGH;
   shadows.bias = 0.0008;
   shadows.normalBias = 0.025;
-  shadows.setDarkness(0.12);
+  shadows.setDarkness(0.06);
   shadows.getShadowMap()!.refreshRate = 0;
   const sky = CreateSphere('sky-dome', { diameter: 600, segments: 12 }, scene);
   sky.infiniteDistance = true;
@@ -108,21 +108,21 @@ export function createLighting(scene: Scene, camera: Camera, onLabel: (label: st
       sunlight.position.copyFrom(new Vector3(6, 0, 6).add(direction.scale(35)));
       // Leave headroom for painted highlights instead of clipping the meadow
       // and sand into one yellow plane. Cool fill keeps shaded facets legible.
-      sunlight.intensity = (0.28 + 0.55 * daylight) * (1 - 0.14 * twilight);
+      sunlight.intensity = (0.28 + 0.63 * daylight) * (1 - 0.14 * twilight);
       sunlight.diffuse = Color3.Lerp(
         new Color3(0.5, 0.64, 0.92),
-        Color3.Lerp(new Color3(1, 0.95, 0.81), new Color3(1, 0.62, 0.3), twilight),
+        Color3.Lerp(new Color3(1, 0.955, 0.845), new Color3(1, 0.62, 0.3), twilight),
         daylight,
       );
-      ambient.intensity = 0.5 + 0.15 * daylight;
+      ambient.intensity = 0.47 + 0.1 * daylight;
       ambient.diffuse = Color3.Lerp(
         new Color3(0.42, 0.52, 0.78),
-        new Color3(0.85, 0.93, 1),
+        new Color3(0.87, 0.945, 1),
         daylight,
       );
       ambient.groundColor = Color3.Lerp(
         new Color3(0.24, 0.31, 0.45),
-        new Color3(0.43, 0.51, 0.64),
+        new Color3(0.45, 0.54, 0.65),
         daylight,
       );
       skyMaterial
