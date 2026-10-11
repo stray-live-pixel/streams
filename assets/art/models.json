@@ -64,6 +64,80 @@
       }
     },
     {
+      "id": "cottage-house",
+      "name": "Жилой домик",
+      "tags": [
+        "дом",
+        "фахверк",
+        "черепица",
+        "low-poly"
+      ],
+      "status": "integrated",
+      "game_ready": true,
+      "visual_status": "pending_owner_review",
+      "description": "Домик из Blender по одобренному растровому концепту. Заменяет все четыре жилых варианта, в том числе в старых городах.",
+      "source": "assets/art/cottage-house/cottage-house.blend",
+      "preview": "assets/art/cottage-house/preview.png",
+      "views": [
+        "assets/art/cottage-house/view-front.png",
+        "assets/art/cottage-house/view-back.png",
+        "assets/art/cottage-house/view-right.png",
+        "assets/art/cottage-house/view-top.png"
+      ],
+      "reference": "assets/art/house-reference-v1/concept.png",
+      "prompt": "assets/art/house-reference-v1/prompt.txt",
+      "generators": [
+        "assets/art/cottage-house/build_cottage.py",
+        "assets/art/cottage-house/finalize_cottage.py"
+      ],
+      "audit": "assets/art/cottage-house/model-audit.json",
+      "runtime_export": "assets/art/cottage-house/cottage-house.obj",
+      "runtime_materials": "assets/art/cottage-house/cottage-house.mtl",
+      "export_generator": "assets/art/cottage-house/export_runtime.py",
+      "game_integration": "scripts/pack-cottage.mjs; src/scene/cottage.ts; src/scene/geometry.ts; src/scene/life.ts; src/objects/templates.json",
+      "metrics": {
+        "evaluated_viewport_triangles": 10582,
+        "evaluated_viewport_vertices": 5900,
+        "visible_objects": 297,
+        "used_materials": 28
+      },
+      "runtime_metrics": {
+        "vertices": 5900,
+        "triangles": 10582,
+        "source_objects": 297,
+        "materials": 28,
+        "source_scale": 0.25,
+        "object_scale": 0.7,
+        "footprint": [
+          [
+            0,
+            0
+          ]
+        ],
+        "width": 0.833,
+        "source_chimney_anchor_y_up": [
+          1.15,
+          5.24,
+          -0.72
+        ],
+        "normals": "Blender evaluated corner normals",
+        "axes": "OBJ Y up, front +Z"
+      },
+      "source_sha256": "41d6338f26b6739ec2c84d28e50ede126a3d641be8fe60c8932ac18a2b5e21a9",
+      "runtime_sha256": {
+        "cottage-house.obj": "1865e294fd96970f1648c3b1a6546ad54f003a0daf4845eaa9a35c9a0e76a11e",
+        "cottage-house.mtl": "9dd49cf144d8e488714888495ee836a8e01d092a801a7bc94463bd3be224f538",
+        "export_runtime.py": "b16a78d5cf9e0293d6faa79a57b51d85cc161266c7d5d37c6c7323eea69baaea"
+      },
+      "notes": [
+        "Техническая проверка в Blender и игровом WebGL; окончательная художественная оценка новой 3D-модели ожидается.",
+        "Нулевых треугольников и объёмных деталей с обратным обходом нет; лепестки и подложки скатов намеренно открыты.",
+        "Студия, камера и свет не экспортируются; изображений-текстур у модели нет.",
+        "Материалы MTL из linear RGB переводятся в sRGB, нормали и категории рисованной фактуры сохраняются.",
+        "Исходник порта и полная библиотека Kenney сохранены."
+      ]
+    },
+    {
       "id": "island-nature/pine-tall",
       "name": "Высокая сосна",
       "tags": [

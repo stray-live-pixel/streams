@@ -47,12 +47,13 @@ try {
       external.push(request.url());
   });
   await page.goto(url);
-  await page.waitForFunction(() => document.querySelectorAll('#object-parts button').length === 8);
+  await page.waitForFunction(() => document.querySelectorAll('#object-parts button').length === 1);
   assert.equal(await page.locator('#object-project').count(), 0);
   assert.equal(await page.locator('#object-export, #object-import').count(), 0);
   assert.equal(await page.evaluate(() => localStorage.length), 0);
-  assert.equal(await page.locator('#objects-list button').count(), 260);
+  assert.equal(await page.locator('#objects-list button').count(), 261);
   assert.equal(await page.locator('[data-object="custom/starter-port"]').count(), 1);
+  assert.equal(await page.locator('[data-object="custom/cottage-house"]').count(), 1);
   const choose = async (id) => {
     await page.selectOption('#objects-group', '');
     await page.fill('#objects-search', '');
@@ -180,13 +181,13 @@ try {
   await page.click('#object-redo');
   assert.equal(await page.inputValue('#part-scale-1'), '0.9');
   await page.click('#object-duplicate');
-  assert.equal(await page.locator('#object-parts button').count(), 9);
+  assert.equal(await page.locator('#object-parts button').count(), 2);
   await page.click('#object-delete');
-  assert.equal(await page.locator('#object-parts button').count(), 8);
+  assert.equal(await page.locator('#object-parts button').count(), 1);
   await page.click('#object-library');
   await page.fill('#objects-search', 'chimney');
   await page.click('#object-add');
-  assert.equal(await page.locator('#object-parts button').count(), 9);
+  assert.equal(await page.locator('#object-parts button').count(), 2);
   await page.fill('#part-scale-0', '0.3');
   await page.locator('#part-scale-0').press('Tab');
   await page.fill('#part-position-0', '0.4');
@@ -218,7 +219,7 @@ try {
     { x: 0, z: 1 },
   ]);
   await page.reload();
-  await page.waitForFunction(() => document.querySelectorAll('#object-parts button').length === 9);
+  await page.waitForFunction(() => document.querySelectorAll('#object-parts button').length === 2);
   await page.locator('#object-parts button').last().click();
   assert.equal(await page.inputValue('#part-position-0'), '0.4');
   assert.equal(await page.inputValue('#object-scale'), '70');
@@ -240,7 +241,7 @@ try {
   await page.setViewportSize({ width: 1440, height: 900 });
   await choose('game/house/1');
   await visible();
-  await page.locator('#object-parts button').nth(4).click();
+  await page.locator('#object-parts button').first().click();
   await page.screenshot({ path: path.join(screenshots, 'editor-1440.png') });
   await choose('kenney-fantasy-town/wall-window-glass');
   await visible();
@@ -250,7 +251,7 @@ try {
   assert.deepEqual(errors, []);
   assert.deepEqual(external, []);
   console.log(
-    'Editor: camera flight, 240 assets including Blender port, proportional scale, custom footprint, gizmos, history, direct file save, main commit and reload PASS',
+    'Editor: camera flight, 241 assets including Blender port and cottage, proportional scale, custom footprint, gizmos, history, direct file save, main commit and reload PASS',
   );
   console.log(`Screenshots: ${screenshots}`);
 } finally {
