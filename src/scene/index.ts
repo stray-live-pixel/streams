@@ -111,7 +111,8 @@ export function createScene({
   let model: GameModel | null = null;
   let hovered: Tile | null = null;
   let arrival: { event: Arrival; started: number } | null = null;
-  const motion = createCameraMotion();
+  const homeCenter = () => (board.size === 12 ? 5.5 : sceneCoordinate(board.size / 2 - 0.5));
+  const motion = createCameraMotion(homeCenter());
   let width = 0,
     height = 0,
     scale = 1,
@@ -140,7 +141,7 @@ export function createScene({
     const { x, z, yaw, pitch, zoom } = motion.state;
     const cx = width * (width < 760 ? 0.5 : 0.6),
       cy = height * (width < 760 ? 0.55 : 0.51);
-    scale = Math.min(width / 20, height / 18) * zoom;
+    scale = Math.min(width / 20, height / 18) * zoom * (12 / board.size);
     camera.orthoLeft = -cx / scale;
     camera.orthoRight = (width - cx) / scale;
     camera.orthoTop = cy / scale;
@@ -383,7 +384,7 @@ export function createScene({
   }
   frameId = requestAnimationFrame(frame);
   function resetCamera() {
-    motion.reset();
+    motion.reset(homeCenter());
   }
   return {
     setPaused(next: boolean) {
@@ -416,7 +417,10 @@ export function createScene({
       dirty = true;
     },
     setModel(next: GameModel) {
-      if (board.seed !== next.islandSeed) board = createWorld(next.islandSeed);
+      if (board.seed !== next.islandSeed) {
+        board = createWorld(next.islandSeed);
+        motion.reset(homeCenter());
+      }
       model = next;
       life.setModel(next);
       const key = JSON.stringify([
@@ -445,10 +449,10 @@ export function createScene({
         );
         contact.wrapU = Texture.CLAMP_ADDRESSMODE;
         contact.wrapV = Texture.CLAMP_ADDRESSMODE;
-        painted.setContactTexture(contact);
+        painted.setContactTexture(contact, board.size);
         island.material = material;
         island.receiveShadows = true;
-        lighting.setCasters([island, ship]);
+        lighting.setCasters([island, ship], board.size);
         ocean.setIsland(board, next.buildings, island, ship);
         signature = key;
         dirty = true;

@@ -71,7 +71,7 @@ try {
   const inland = await move(6.17, 6.23);
   await page.mouse.click(inland.x, inland.y);
   assert(!(await page.evaluate(() => cityDebug.state.buildings)).some((b) => b.t === 'port'));
-  const coast = await move(6.17, 10.98);
+  const coast = await move(12.17, 22.98);
   await page.mouse.click(coast.x, coast.y);
   state = await page.evaluate(() => cityDebug.state);
   assert(

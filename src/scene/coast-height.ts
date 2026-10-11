@@ -1,4 +1,4 @@
-import { createWorld, type Building } from '../domain/index.js';
+import { mapCenter, mapScale, createWorld, type Building } from '../domain/index.js';
 
 const smooth = (value: number) => {
   const t = Math.max(0, Math.min(1, value));
@@ -22,7 +22,7 @@ export function beachInset(angle: number, seed: number) {
     const t = Math.min(1, Math.abs(wrapAngle(angle - center)) / width);
     return Math.cos((t * Math.PI) / 2) ** 2;
   };
-  return 0.85 * Math.max(bell(1.1 + shift, 0.57), bell(3.85 - shift, 0.55));
+  return mapScale(seed) * 0.85 * Math.max(bell(1.1 + shift, 0.57), bell(3.85 - shift, 0.55));
 }
 
 function sandHeight(offset: number) {
@@ -40,8 +40,9 @@ function sandHeight(offset: number) {
 /** Shared coastal rise: tall headlands, low sandy coves and a level dock approach.
  * Coordinates stay unchanged; trees and buildings sit on the same heightfield. */
 export function coastalElevation(x: number, z: number, seed: number, buildings: Building[] = []) {
-  const angle = Math.atan2(z - 6, x - 6);
-  const radius = Math.hypot(x - 6, z - 6);
+  const center = mapCenter(seed);
+  const angle = Math.atan2(z - center, x - center);
+  const radius = Math.hypot(x - center, z - center);
   const edge = createWorld(seed).coastRadius(angle) - beachInset(angle, seed);
   const headland =
     0.46 + 0.11 * Math.sin(angle * 3 + (seed % 31)) + 0.07 * Math.cos(angle * 7 - (seed % 17));

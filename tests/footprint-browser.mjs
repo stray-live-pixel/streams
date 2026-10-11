@@ -41,7 +41,7 @@ try {
   const errors = [];
   page.on('pageerror', (error) => errors.push(error.message));
   await page.goto(pathToFileURL(path.join(root, 'dist/index.html')).href);
-  const city = initialState();
+  const city = initialState(0);
   city.step = STEP.FREE;
   city.money = 10000;
   city.buildings.push({ t: 'port', x: 6, z: 11 });

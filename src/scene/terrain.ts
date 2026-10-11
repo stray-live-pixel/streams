@@ -1,4 +1,11 @@
-import { buildingCells, createWorld, type Building } from '../domain/index.js';
+import {
+  DEFAULT_MAP,
+  mapCenter,
+  mapScale,
+  buildingCells,
+  createWorld,
+  type Building,
+} from '../domain/index.js';
 import { beachInfluence, beachInset, coastalElevation } from './coast-height.js';
 
 const smooth = (value: number) => {
@@ -27,6 +34,7 @@ const profileSteps = [
 const wrapAngle = (angle: number) => Math.atan2(Math.sin(angle), Math.cos(angle));
 
 function reliefHills(seed: number): ReliefHill[] {
+  if (seed === DEFAULT_MAP.key) return DEFAULT_MAP.hills;
   const phase = ((seed >>> 0) / 4294967296) * Math.PI * 2;
   return [
     {
@@ -120,9 +128,12 @@ function naturalHeight(x: number, z: number, seed: number) {
     const ramp = (width - 0.24) / 0.25;
     return sum + hill.height * (reliefProfile(t) * (1 - ramp) + smooth(t) * ramp);
   }, 0);
-  const rolling = 0.085 + 0.055 * Math.sin(x * 0.81 + phase) * Math.cos(z * 0.69 - phase);
-  const distance = Math.hypot(x - 6, z - 6);
-  const angle = Math.atan2(z - 6, x - 6);
+  const scale = mapScale(seed);
+  const center = mapCenter(seed);
+  const rolling =
+    0.085 + 0.055 * Math.sin((x / scale) * 0.81 + phase) * Math.cos((z / scale) * 0.69 - phase);
+  const distance = Math.hypot(x - center, z - center);
+  const angle = Math.atan2(z - center, x - center);
   const coast = createWorld(seed).coastRadius(angle);
   // Fade small inland relief into the lowered cove before the sand begins.
   // Picking, buildings and decoration share this same continuous surface.

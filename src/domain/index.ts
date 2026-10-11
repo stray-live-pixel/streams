@@ -2,6 +2,7 @@
 export { createGame } from './game.js';
 export { initialState, restoreState } from './state.js';
 export { MAP_SIZE, isLand, shoreDirection, createWorld } from './world.js';
+export { DEFAULT_MAP, MAPS, mapScale, mapCenter } from './maps.js';
 export type { IslandWorld } from './world.js';
 export { BUILDINGS, BUILD_ORDER } from './catalog.js';
 export { STEP } from './tutorial.js';

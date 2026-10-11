@@ -7,6 +7,8 @@ import {
   initialState,
   restoreState,
   isLand,
+  DEFAULT_MAP,
+  STEP,
 } from '../src/domain/index.ts';
 import { environmentLayout, environmentGeometry } from '../src/scene/environment.ts';
 import { harborLayout } from '../src/scene/harbor.ts';
@@ -51,22 +53,58 @@ test('новые острова связны, отличаются по seed и 
   assert(silhouettes.size > 10, 'Меняется не только случайная расстановка декора');
 });
 
-test('seed сохраняется при продолжении, новый город получает новый seed, старые города сохраняют географию', () => {
-  let seed = 12345;
-  const game = createGame(null, {}, () => seed++);
-  assert.equal(game.serialize().islandSeed, 12345);
-  assert.deepEqual(createGame(game.serialize()).serialize(), game.serialize());
+test('новая игра и сброс выбирают одну статичную карту 24×24, сохранения продолжаются на прежней', () => {
+  const game = createGame();
+  const fresh = game.serialize();
+  assert.equal(fresh.islandSeed, DEFAULT_MAP.key);
+  const world = createWorld(fresh.islandSeed);
+  assert.equal(world.size, 24);
+  assert.deepEqual(fresh.buildings, [{ t: 'hall', x: 11, z: 11 }]);
+  assert.deepEqual(createGame(fresh).serialize(), fresh);
   game.dispatch({ type: 'reset' });
-  assert.equal(game.serialize().islandSeed, 12346);
-  const old = initialState();
+  assert.deepEqual(game.serialize(), fresh);
+  assert.deepEqual(createGame().serialize(), fresh);
+  let land = 0;
+  for (let x = 0; x < world.size; x++)
+    for (let z = 0; z < world.size; z++) if (world.isLand(x, z)) land++;
+  assert(land > 440, 'Вчетверо больше площади при удвоении ширины и длины');
+  assert.deepEqual(world.shoreDirection(12, 23), [0, 1]);
+  const first = environmentLayout(world, []);
+  assert.deepEqual(environmentLayout(createWorld(game.serialize().islandSeed), []), first);
+  assert(first.some((p) => p.x > 12) && first.some((p) => p.z > 12));
+  const old = initialState(0);
   old.version = 5;
   delete old.islandSeed;
   assert.equal(restoreState(old).islandSeed, 0);
   const legacy = createWorld(0);
+  assert.equal(legacy.size, 12);
   for (let x = 0; x < 12; x++)
     for (let z = 0; z < 12; z++) assert.equal(legacy.isLand(x, z), isLand(x, z));
-  for (const bad of [-1, 1.5, 2 ** 32, NaN, '123', undefined])
+  for (const bad of [-1, 1.5, 2 ** 32 + 1, NaN, '123', undefined])
     assert.throws(() => restoreState({ ...initialState(), islandSeed: bad }));
+  assert.throws(
+    () => restoreState({ ...fresh, version: 7 }),
+    'Старый seed не может стать ключом новой карты',
+  );
+});
+
+test('строительство и сохранение работают в новой части статичной карты', () => {
+  const state = initialState();
+  state.step = STEP.FREE;
+  state.money = 10000;
+  const game = createGame(state);
+  game.dispatch({ type: 'select', building: 'port' });
+  assert.equal(game.dispatch({ type: 'build', x: 12, z: 23 }).changed, true);
+  game.dispatch({ type: 'select', building: 'house' });
+  assert.equal(game.dispatch({ type: 'build', x: 18, z: 8 }).changed, true);
+  assert.deepEqual(createGame(game.serialize()).serialize(), game.serialize());
+  const empty = environmentLayout(createWorld(DEFAULT_MAP.key), []);
+  const built = environmentLayout(createWorld(DEFAULT_MAP.key), game.serialize().buildings);
+  const positions = new Set(empty.map((p) => `${p.asset}:${p.x}:${p.z}`));
+  assert(
+    built.every((p) => positions.has(`${p.asset}:${p.x}:${p.z}`)),
+    'Застройка только убирает декор, не создаёт новую расстановку',
+  );
 });
 
 test('декор свободно расставлен, повторяется по seed и освобождает место для зданий и причала', () => {

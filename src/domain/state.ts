@@ -1,11 +1,12 @@
 import { BUILDINGS } from './catalog.js';
-import { createWorld, MAP_SIZE } from './world.js';
+import { DEFAULT_MAP } from './maps.js';
+import { createWorld } from './world.js';
 import { STEP } from './tutorial.js';
 import type { CityState, Building, BuildingType } from './types.js';
 import { validFootprint, buildingCells } from './footprint.js';
 import { buildingsOverlap, continuousPlacementIssue } from './placement.js';
-export const SAVE_VERSION = 7;
-export function initialState(islandSeed = 0): CityState {
+export const SAVE_VERSION = 8;
+export function initialState(islandSeed = DEFAULT_MAP.key): CityState {
   return {
     version: SAVE_VERSION,
     islandSeed,
@@ -16,7 +17,13 @@ export function initialState(islandSeed = 0): CityState {
     step: STEP.WELCOME,
     won: false,
     endingSeen: false,
-    buildings: [{ x: 5, z: 5, t: 'hall' }],
+    buildings: [
+      {
+        x: islandSeed === DEFAULT_MAP.key ? 11 : 5,
+        z: islandSeed === DEFAULT_MAP.key ? 11 : 5,
+        t: 'hall',
+      },
+    ],
   };
 }
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -40,7 +47,7 @@ export function restoreState(raw: unknown): CityState {
   if (
     !isRecord(raw) ||
     typeof raw.version !== 'number' ||
-    ![2, 3, 4, 5, 6, 7].includes(raw.version)
+    ![2, 3, 4, 5, 6, 7, 8].includes(raw.version)
   )
     throw new Error('Неизвестная версия сохранения');
   const { money, food, day, step, buildings } = raw;
@@ -50,7 +57,7 @@ export function restoreState(raw: unknown): CityState {
     typeof islandSeed !== 'number' ||
     !Number.isInteger(islandSeed) ||
     islandSeed < 0 ||
-    islandSeed > 0xffffffff
+    (islandSeed > 0xffffffff && !(raw.version === 8 && islandSeed === DEFAULT_MAP.key))
   )
     throw new Error('Некорректный seed острова');
   const world = createWorld(islandSeed);
@@ -70,7 +77,7 @@ export function restoreState(raw: unknown): CityState {
     step < 0 ||
     step > 7 ||
     !Array.isArray(buildings) ||
-    buildings.length > MAP_SIZE ** 2 ||
+    buildings.length > world.size ** 2 ||
     !buildings.every(isBuilding) ||
     buildings.filter((b) => b.t === 'hall').length !== 1 ||
     new Set(buildings.map((b) => `${b.x},${b.z}`)).size !== buildings.length

@@ -62,7 +62,7 @@ test('старый город сохраняет координаты и пло�
   old.version = 6;
   old.buildings.push({ t: 'port', x: 6, z: 11 }, house(8, 4));
   const saved = restoreState(old);
-  assert.equal(saved.version, 7);
+  assert.equal(saved.version, 8);
   assert.deepEqual(
     saved.buildings.map(({ legacy, ...b }) => b),
     old.buildings,

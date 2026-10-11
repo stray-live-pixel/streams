@@ -18,18 +18,6 @@ try {
       deviceScaleFactor: width === 390 ? 2 : 1,
     });
     const page = await context.newPage();
-    // This tutorial uses fixed placement coordinates. Keep its coastline fixed;
-    // randomized geography is exercised by the dedicated island/placement suites.
-    await page.addInitScript(() => {
-      const randomValues = crypto.getRandomValues.bind(crypto);
-      crypto.getRandomValues = (array) => {
-        if (array instanceof Uint32Array && array.length === 1) {
-          array[0] = 2674391865;
-          return array;
-        }
-        return randomValues(array);
-      };
-    });
     page.setDefaultTimeout(20000);
     const errors = [],
       network = [];
@@ -119,17 +107,17 @@ try {
     };
     await page.click('#coach-action');
     await page.click('[data-type="port"]');
-    await tile(7, 6);
+    await tile(13, 12);
     assert.equal(await page.evaluate(() => cityDebug.state.step), 7);
-    await tile(6, 11);
+    await tile(12, 23);
     await page.click('[data-type="road"]');
-    await tile(7, 6);
-    await tile(7, 6);
+    await tile(13, 12);
+    await tile(13, 12);
     assert.equal(await page.evaluate(() => cityDebug.state.money), 600);
     for (const [type, x, z] of [
-      ['house', 7, 6],
-      ['farm', 4, 7],
-      ['shop', 6, 7],
+      ['house', 13, 12],
+      ['farm', 10, 13],
+      ['shop', 12, 13],
     ]) {
       await page.click(`[data-type="${type}"]`);
       await tile(x, z);
@@ -194,6 +182,7 @@ try {
     await page.evaluate(() => {
       const state = {
         ...cityDebug.state,
+        islandSeed: 2674391865,
         day: 12,
         pop: 50,
         money: 350,

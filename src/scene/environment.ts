@@ -1,6 +1,7 @@
 import { VertexData } from '@babylonjs/core/Meshes/mesh.vertexData.js';
-import { buildingCells, createWorld, type Building } from '../domain/index.js';
+import { DEFAULT_MAP, buildingCells, createWorld, type Building } from '../domain/index.js';
 import nature from '../../.generated/nature-models.json';
+import fixedNature from './quiet-harbor-nature.json';
 import type { Board } from './types.js';
 import { terrainContourPoints, terrainHeight } from './terrain.js';
 import { beachInset } from './coast-height.js';
@@ -78,9 +79,11 @@ export function environmentLayout(board: Board, buildings: Building[]): NatureIn
   const occupied = buildings.flatMap(buildingCells);
   const ports = buildings.filter((b) => b.t === 'port');
   const sandCover = (x: number, z: number) => {
-    const angle = Math.atan2(z - 6, x - 6);
+    const angle = Math.atan2(z - world.center, x - world.center);
     const inland =
-      world.coastRadius(angle) - beachInset(angle, world.seed) - Math.hypot(x - 6, z - 6);
+      world.coastRadius(angle) -
+      beachInset(angle, world.seed) -
+      Math.hypot(x - world.center, z - world.center);
     return beachInfluence(angle, world.seed) * clamp(1 - (inland - 1.35) / 1.7, 0, 1);
   };
   const clear = (x: number, z: number, radius: number) => {
@@ -127,6 +130,33 @@ export function environmentLayout(board: Board, buildings: Building[]): NatureIn
         rotation,
       });
   };
+  // This authored placement list is shared by every new game. Only a building's
+  // footprint clears nearby items; restarting never rolls another forest.
+  if (world.seed === DEFAULT_MAP.key) {
+    return (fixedNature as NatureInstance[])
+      .filter(
+        (item) =>
+          !(item.asset.startsWith('pine') || ['bush', 'grass', 'flowers'].includes(item.asset)) ||
+          exposedRockHeight(item.x, item.z, world.seed, buildings) <=
+            terrainHeight(item.x, item.z, world.seed, buildings) + 0.06,
+      )
+      .filter((item) =>
+        clear(
+          item.x,
+          item.z,
+          item.asset.startsWith('pine') ? item.scale * 0.38 : item.scale * 0.22,
+        ),
+      )
+      .map((item) => ({
+        ...item,
+        y:
+          item.y > -0.1
+            ? item.y +
+              terrainHeight(item.x, item.z, world.seed, buildings) -
+              terrainHeight(item.x, item.z, world.seed)
+            : item.y,
+      }));
+  }
   // Камни идут нерегулярными группами по берегу, а не по клеткам.
   for (let i = 0; i < 100; i++) {
     const angle = (i / 100) * Math.PI * 2 + (random() - 0.5) * 0.045;
@@ -427,11 +457,11 @@ export function environmentGeometry(board: Board, buildings: Building[], spread 
       positions.push(6 + (point[0] - 6) * spread, point[1], 6 + (point[2] - 6) * spread);
       // Tide shading is evaluated per fragment, so its edge can cross a face.
       const pigment = stone ? rockPigment(point[0], Math.max(0, point[1]), point[2], color) : color;
-      const angle = Math.atan2(point[2] - 6, point[0] - 6);
+      const angle = Math.atan2(point[2] - world.center, point[0] - world.center);
       const inland =
         world.coastRadius(angle) -
         beachInset(angle, world.seed) -
-        Math.hypot(point[0] - 6, point[2] - 6);
+        Math.hypot(point[0] - world.center, point[2] - world.center);
       const duneWidth =
         1.7 + 0.25 * Math.sin(angle * 13 + (world.seed % 19)) + 0.13 * Math.cos(angle * 23);
       // Measure from the actual cove, not the old island outline. Keep a
@@ -462,15 +492,15 @@ export function environmentGeometry(board: Board, buildings: Building[], spread 
   const boundary: Point[] = Array.from({ length: segments }, (_, i) => {
     const angle = angleAt(i),
       radius = cliffLandRadius(angle, world.seed, buildings);
-    const x = 6 + Math.cos(angle) * radius,
-      z = 6 + Math.sin(angle) * radius;
+    const x = world.center + Math.cos(angle) * radius,
+      z = world.center + Math.sin(angle) * radius;
     return [x, coastSection(angle, 0, world.seed, buildings)[1], z];
   });
   // Независимые точки по всей площади: треугольники больше не расходятся
   // лучами из центра. Береговые точки входят в ту же триангуляцию.
   const insideTurf = (x: number, z: number) =>
-    Math.hypot(x - 6, z - 6) <
-    cliffLandRadius(Math.atan2(z - 6, x - 6), world.seed, buildings) - 0.12;
+    Math.hypot(x - world.center, z - world.center) <
+    cliffLandRadius(Math.atan2(z - world.center, x - world.center), world.seed, buildings) - 0.12;
   const contours = terrainContourPoints(world.seed).filter(
     ([x, z]) => world.contains(x, z, 0.2) && insideTurf(x, z),
   );
@@ -478,8 +508,8 @@ export function environmentGeometry(board: Board, buildings: Building[], spread 
     ...boundary,
     ...contours.map(([x, z]): Point => [x, terrainHeight(x, z, world.seed, buildings), z]),
   ];
-  for (let z = -0.1; z <= 12.1; z += 0.46) {
-    for (let x = -0.1; x <= 12.1; x += 0.46) {
+  for (let z = -0.1; z <= world.size + 0.1; z += 0.46) {
+    for (let x = -0.1; x <= world.size + 0.1; x += 0.46) {
       const px = x + (random() - 0.5) * 0.29;
       const pz = z + (random() - 0.5) * 0.29;
       if (
@@ -518,9 +548,9 @@ export function environmentGeometry(board: Board, buildings: Building[], spread 
   }
 
   const radial = (angle: number, r: number, y: number): Point => [
-    6 + Math.cos(angle) * r,
+    world.center + Math.cos(angle) * r,
     y,
-    6 + Math.sin(angle) * r,
+    world.center + Math.sin(angle) * r,
   ];
   // Верх скального бока использует те же вершины, что и земля.
   // Это цельный край, а не отдельные клинья под нависающим дёрном.
@@ -578,7 +608,7 @@ export function environmentGeometry(board: Board, buildings: Building[], spread 
         (offset) => rock.positions.slice(i + offset, i + offset + 3) as Point,
       );
       const color = rock.colors.slice((i / 3) * 4, (i / 3) * 4 + 3).map((value) => value * 255);
-      const angle = Math.atan2(spec.z - 6, spec.x - 6);
+      const angle = Math.atan2(spec.z - world.center, spec.x - world.center);
       triangle(
         points[0],
         points[1],

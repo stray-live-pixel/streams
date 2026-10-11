@@ -116,12 +116,12 @@ try {
   await page.setViewportSize({ width: 390, height: 844 });
   const frame = await checkFrame(390, 844);
   await inside('#world', frame);
-  const point = await page.evaluate(() => cityDebug.projectTile(6, 11));
+  const point = await page.evaluate(() => cityDebug.projectTile(12, 23));
   await page.mouse.click(point.x, point.y);
   assert(
     await page.evaluate(() =>
       cityDebug.state.buildings.some(
-        (b) => b.t === 'port' && Math.abs(b.x - 6) < 0.02 && Math.abs(b.z - 11) < 0.02,
+        (b) => b.t === 'port' && Math.abs(b.x - 12) < 0.02 && Math.abs(b.z - 23) < 0.02,
       ),
     ),
   );

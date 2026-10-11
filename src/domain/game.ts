@@ -20,13 +20,9 @@ import {
  * Команды — обычные объекты. Событие arrival просит сцену показать рейс,
  * но сама экономика ничего не знает о кадрах, DOM и графической библиотеке.
  */
-export function createGame(
-  saved: CityState | null = null,
-  footprints: FootprintCatalog = {},
-  nextSeed: () => number = () => 0,
-) {
+export function createGame(saved: CityState | null = null, footprints: FootprintCatalog = {}) {
   footprints = structuredClone(footprints);
-  let state = saved ? restoreState(saved) : initialState(nextSeed());
+  let state = saved ? restoreState(saved) : initialState();
   if (!saved)
     state.buildings = state.buildings.map((b) => proposedBuilding(b.t, b.x, b.z, footprints));
   let world = createWorld(state.islandSeed);
@@ -59,7 +55,7 @@ export function createGame(
     let changed = false;
     const say = (text: string) => events.push({ type: 'notice', text });
     if (command.type === 'reset') {
-      state = initialState(nextSeed());
+      state = initialState();
       world = createWorld(state.islandSeed);
       state.buildings = state.buildings.map((b) => proposedBuilding(b.t, b.x, b.z, footprints));
       selected = null;

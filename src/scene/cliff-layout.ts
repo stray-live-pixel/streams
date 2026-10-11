@@ -1,5 +1,12 @@
-import { buildingCells, createWorld, type Building } from '../domain/index.js';
+import {
+  DEFAULT_MAP,
+  mapCenter,
+  buildingCells,
+  createWorld,
+  type Building,
+} from '../domain/index.js';
 import { terrainContourPoints, terrainHeight } from './terrain.js';
+import staticCliffs from './quiet-harbor-cliffs.json';
 import { cliffRockGeometry, type CliffSpec } from './cliffs.js';
 
 export const COAST_SEGMENTS = 192;
@@ -28,6 +35,18 @@ function portClear(x: number, z: number, seed: number, buildings: Building[]) {
 
 /** Перекрывающиеся глыбы образуют сам берег, верх травы не выдвигается над ними полками. */
 export function coastalCliffs(seed: number, buildings: Building[] = []): CliffSpec[] {
+  if (seed === DEFAULT_MAP.key) {
+    return staticCliffs.coastal
+      .filter((spec) => portClear(spec.x, spec.z, seed, buildings))
+      .map(({ raised, ...spec }) => ({
+        ...spec,
+        profile: 'layered',
+        ...(raised
+          ? { elevation: (x: number, z: number) => coastalElevation(x, z, seed, buildings) }
+          : {}),
+      }));
+  }
+
   const world = createWorld(seed),
     next = random(seed ^ 0x1a73bd5);
   const result: CliffSpec[] = [];
@@ -137,6 +156,27 @@ export function coastalCliffs(seed: number, buildings: Building[] = []): CliffSp
 
 /** Те же объёмные глыбы подпирают высокие борта плато, оставляя пологие проходы. */
 export function uplandCliffs(seed: number, buildings: Building[] = []): CliffSpec[] {
+  if (seed === DEFAULT_MAP.key) {
+    const occupied = buildings.flatMap(buildingCells);
+    return staticCliffs.upland
+      .filter(
+        (spec) =>
+          !occupied.some(
+            (cell) =>
+              spec.x > cell.x - 0.2 &&
+              spec.x < cell.x + 1.2 &&
+              spec.z > cell.z - 0.2 &&
+              spec.z < cell.z + 1.2,
+          ),
+      )
+      .map(({ ceilingOffset, ...spec }) => ({
+        ...spec,
+        profile: 'layered',
+        ceiling: (x: number, z: number) =>
+          terrainHeight(x - ceilingOffset[0], z - ceilingOffset[1], seed, buildings) - 0.005,
+      }));
+  }
+
   const contours = terrainContourPoints(seed),
     result: CliffSpec[] = [];
   const occupied = buildings.flatMap(buildingCells);
@@ -234,6 +274,7 @@ function horizontalSection(
   positions: number[],
   level: number,
   elevation?: (x: number, z: number) => number,
+  center = 6,
 ): Section[] {
   const segments: Section[] = [];
   for (let i = 0; i < positions.length; i += 9) {
@@ -246,8 +287,8 @@ function horizontalSection(
       if (ay < level === by < level) continue;
       const t = (level - ay) / (by - ay);
       cut.push([
-        positions[a] + (positions[b] - positions[a]) * t - 6,
-        positions[a + 2] + (positions[b + 2] - positions[a + 2]) * t - 6,
+        positions[a] + (positions[b] - positions[a]) * t - center,
+        positions[a + 2] + (positions[b + 2] - positions[a + 2]) * t - center,
       ]);
     }
     if (cut.length === 2) segments.push([...cut[0], ...cut[1]]);
@@ -288,6 +329,7 @@ function cliffContours(seed: number, buildings: Building[]): CliffContours {
             mesh.positions,
             height,
             band === 0 ? (x, z) => coastalElevation(x, z, seed, buildings) : undefined,
+            mapCenter(seed),
           ),
         );
       });
@@ -397,8 +439,8 @@ export function coastSection(
   const depth = [0, -0.22, -0.47, -0.68, -1.15][band] - [0, 0.32, 0.14, 0, 0][band] * sand;
   const radius = sampleContour(angle, contours.bands[band]);
   const rise = terrainHeight(
-    6 + Math.cos(angle) * radius,
-    6 + Math.sin(angle) * radius,
+    mapCenter(seed) + Math.cos(angle) * radius,
+    mapCenter(seed) + Math.sin(angle) * radius,
     seed,
     buildings,
   );
@@ -413,8 +455,8 @@ export function coastalSurfaceHeight(
   seed: number,
   buildings: Building[] = [],
 ) {
-  const angle = Math.atan2(z - 6, x - 6);
-  const radius = Math.hypot(x - 6, z - 6);
+  const angle = Math.atan2(z - mapCenter(seed), x - mapCenter(seed));
+  const radius = Math.hypot(x - mapCenter(seed), z - mapCenter(seed));
   if (radius <= cliffLandRadius(angle, seed)) return terrainHeight(x, z, seed, buildings);
   let height = -1.15;
   let previous = coastSection(angle, 0, seed, buildings);

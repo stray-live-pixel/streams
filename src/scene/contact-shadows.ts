@@ -14,9 +14,10 @@ export function contactShadowPixels(
   buildings: Building[],
   size = CONTACT_TEXTURE_SIZE,
 ) {
+  const span = board.size + 4;
   const occlusion = new Float32Array(size * size);
   function ellipse(x: number, z: number, rx: number, rz: number, strength: number) {
-    const pixel = CONTACT_TEXTURE_SPAN / size;
+    const pixel = span / size;
     const minX = Math.max(0, Math.floor((x - rx - CONTACT_TEXTURE_ORIGIN) / pixel));
     const maxX = Math.min(size - 1, Math.ceil((x + rx - CONTACT_TEXTURE_ORIGIN) / pixel));
     const minZ = Math.max(0, Math.floor((z - rz - CONTACT_TEXTURE_ORIGIN) / pixel));
