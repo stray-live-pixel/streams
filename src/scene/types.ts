@@ -18,4 +18,5 @@ export interface SceneOptions {
 export interface Passenger extends Tile {
   id: number;
   progress: number;
+  deckHeight?: number;
 }

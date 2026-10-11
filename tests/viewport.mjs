@@ -19,14 +19,13 @@ try {
   });
   const errors = [];
   page.on('pageerror', (error) => errors.push(error.message));
-  // This test targets viewport scaling, including one known-valid dock site.
-  // Random relief can change visibility of the hard-coded dock target.
+  // Use the fixed 24×24 island that contains the dock target below.
   await page.addInitScript(() => {
     localStorage.setItem(
       'ostrov-simple-v2',
       JSON.stringify({
-        version: 7,
-        islandSeed: 0,
+        version: 8,
+        islandSeed: 4294967296,
         pop: 0,
         money: 600,
         food: 30,
@@ -34,7 +33,7 @@ try {
         step: 0,
         won: false,
         endingSeen: false,
-        buildings: [{ t: 'hall', x: 5, z: 5 }],
+        buildings: [{ t: 'hall', x: 11, z: 11 }],
       }),
     );
   });

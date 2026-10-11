@@ -13,9 +13,9 @@
         "low-poly",
         "мягкие формы"
       ],
-      "status": "design-iteration",
-      "game_ready": false,
-      "description": "Один фахверковый дом с боковым навесом, широкая набережная, правый пирс и грузовой подъёмник. Текущая модель ещё проходит визуальное согласование.",
+      "status": "integrated",
+      "game_ready": true,
+      "description": "Порт из Blender: фахверковый дом, навес, широкая набережная, правый пирс и подъёмник. Используется в игре вместо прежней композиции Kenney.",
       "source": "assets/art/port-reference-simple/port.blend",
       "preview": "assets/art/port-reference-simple/beauty.png",
       "views": "assets/art/port-reference-simple/four-views.png",
@@ -26,8 +26,8 @@
         "assets/art/port-reference-simple/stylize_port.py"
       ],
       "audit": "assets/art/port-reference-simple/model-audit.json",
-      "runtime_export": null,
-      "game_integration": null,
+      "runtime_export": "assets/art/port-reference-simple/port.obj",
+      "game_integration": "src/scene/geometry.ts: harbor; src/scene/harbor.ts; scripts/pack-port.mjs",
       "metrics": {
         "evaluated_viewport_triangles": 53314,
         "evaluated_viewport_vertices": 27180,
@@ -36,12 +36,32 @@
         "hidden_source_objects": 34
       },
       "notes": [
-        "Все ракурсы относятся к одной геометрии.",
-        "Старый блокинг сохранён скрытым внутри .blend, отдельно в каталоге не дублируется.",
-        "Рендеры — уже имеющиеся превью; для следующих проверок использовать viewport/Workbench/лёгкое Eevee.",
-        "Игровую оптимизацию выполнять после согласования внешнего вида."
+        "Подключён по просьбе пользователя 11 октября 2026; отдельного финального художественного утверждения не зафиксировано.",
+        "Геометрия сохранена без упрощения; скрытый блокинг, студия, камеры и свет исключены.",
+        "Статические части объединяются с островом; дополнительные 270 mesh/draw calls не создаются.",
+        "Материалы MTL из linear RGB переводятся в игровую палитру sRGB; сохраняются авторские нормали.",
+        "Сохранены исходный .blend, промпты и прежние превью. Мобильная производительность отдельно не измерена."
       ],
-      "source_sha256": "0534b710b9acd564a630ff377132a51b90e4f19e2a7499eb19967a25aecbd721"
+      "source_sha256": "0534b710b9acd564a630ff377132a51b90e4f19e2a7499eb19967a25aecbd721",
+      "export_generator": "assets/art/port-reference-simple/export_runtime.py",
+      "runtime_materials": "assets/art/port-reference-simple/port.mtl",
+      "runtime_metrics": {
+        "vertices": 27180,
+        "triangles": 53314,
+        "materials": 14,
+        "source_objects": 270,
+        "source_scale": 0.35,
+        "scene_scale": 0.4949747468305833,
+        "deck_height": 0.07,
+        "source_deck_height": 1.54,
+        "normals": "Blender evaluated corner normals",
+        "axes": "OBJ: X along coast, Y up, +Z toward sea"
+      },
+      "runtime_sha256": {
+        "port.obj": "af8574cf1bb024feb765ba2ce9a3b716780f4cc02d814479d824bc6eb29a9fbe",
+        "port.mtl": "42dce1804f12194b90c11ae714d4dc35fef2ed81fddf9b52e5029ccd36213780",
+        "export_runtime.py": "f732891b2a2d780926e9f6793367a6da2c6f2ffea5f26660040bee8f41c80367"
+      }
     },
     {
       "id": "island-nature/pine-tall",

@@ -264,16 +264,7 @@ export function createScene({
     // The dock is part of the placement preview; no map-wide grid of available cells.
     if (candidate.t === 'port') {
       const layout = harborLayout(candidate, board);
-      const perimeter = [
-        [-0.45, 0],
-        [0.45, 0],
-        [0.45, layout.distance - 0.9],
-        [1.5, layout.distance - 0.9],
-        [1.5, layout.distance + 0.9],
-        [-1.5, layout.distance + 0.9],
-        [-1.5, layout.distance - 0.9],
-        [-0.45, layout.distance - 0.9],
-      ];
+      const perimeter = layout.outline;
       perimeter.forEach(([side, depth], i) => {
         const p = layout.point(side, depth),
           screen = project(p.x, 0.035, p.z);
@@ -299,8 +290,8 @@ export function createScene({
       const port = model.buildings.find((b) => b.t === 'port');
       if (port) {
         const h = harborLayout(port, board),
-          p = h.point(-0.7, h.distance);
-        const light = project(p.x, 1.77, p.z);
+          p = h.beacon;
+        const light = project(p.x, 0.07 + (1.55 - 0.07) * ISLAND_SPREAD, p.z);
         const glow = context.createRadialGradient(light.x, light.y, 0, light.x, light.y, 28);
         glow.addColorStop(0, '#fff6bbdd');
         glow.addColorStop(1, '#ffe49b00');
@@ -344,7 +335,8 @@ export function createScene({
         arrival.event,
         (now - arrival.started) / 1000,
         board.shoreDirection(arrival.event.port.x, arrival.event.port.z) ?? [0, 1],
-        harborLayout(arrival.event.port, board).distance + 1.45,
+        undefined,
+        harborLayout(arrival.event.port, board),
       );
       ship.position.set(sceneCoordinate(result.x), -0.25, sceneCoordinate(result.z));
       ship.rotation.y = result.rotation;

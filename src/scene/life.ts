@@ -70,7 +70,9 @@ export function createCityLife(scene: Scene) {
         if (p)
           node.position.set(
             sceneCoordinate(p.x),
-            0.085 + terrainHeight(p.x, p.z, model?.islandSeed ?? 0, model?.buildings ?? []),
+            0.085 +
+              (p.deckHeight ??
+                terrainHeight(p.x, p.z, model?.islandSeed ?? 0, model?.buildings ?? [])),
             sceneCoordinate(p.z),
           );
       });

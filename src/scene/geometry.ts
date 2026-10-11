@@ -13,7 +13,7 @@ import modelIds from '../../.generated/model-ids.json';
 import { VertexData } from '@babylonjs/core/Meshes/mesh.vertexData.js';
 import { buildingObjectId, type Building } from '../domain/index.js';
 import type { Board } from './types.js';
-import { harborLayout } from './harbor.js';
+import { harborLayout, PORT_SCALE, PORT_DECK, PORT_SOURCE_DECK } from './harbor.js';
 import { environmentGeometry } from './environment.js';
 import { softenNormals } from './smoothing.js';
 import { buildingElevation, terrainHeight } from './terrain.js';
@@ -52,6 +52,10 @@ export interface ModelData {
   // Три индекса позиций, затем три индекса цветов UV-углов треугольника.
   f: number[][];
   c: number[][];
+  // Optional authored Blender normals, corner indices and material surface tags.
+  n?: number[][];
+  fn?: number[][];
+  s?: number[];
 }
 function builder(
   board: Board,
@@ -64,6 +68,7 @@ function builder(
 ) {
   const sceneVertices: number[] = [];
   const surfaces: number[] = [];
+  const authoredNormals: (number[] | undefined)[] = [];
   function rgb(hex: string) {
     return hex.match(/[0-9a-f]{2}/gi)!.map((v) => parseInt(v, 16));
   }
@@ -74,6 +79,7 @@ function builder(
     colors: number[][],
     lit = true,
     surface = 0,
+    normals?: number[][],
   ) {
     let u = b.map((v, i) => v - a[i]),
       v = c.map((x, i) => x - a[i]),
@@ -86,6 +92,7 @@ function builder(
     for (const [i, p] of [a, b, c].entries()) {
       sceneVertices.push(...p, ...colors[i].map((v) => (v / 255) * light));
       surfaces.push(surface, 0);
+      authoredNormals.push(normals?.[i]);
     }
   }
   function quad(a: number[], b: number[], c: number[], d: number[], color: number[]) {
@@ -146,7 +153,15 @@ function builder(
         y + p[1] * sy,
         z + p[0] * sx * si + p[2] * sz * co,
       ]);
-    for (let f of a.f) {
+    for (const [faceIndex, f] of a.f.entries()) {
+      const normals = a.fn?.[faceIndex].map((index) => {
+        const n = a.n![index];
+        const nx = n[0] / sx,
+          ny = n[1] / sy,
+          nz = n[2] / sz;
+        const length = Math.hypot(nx, ny, nz);
+        return [(nx * co - nz * si) / length, ny / length, (nx * si + nz * co) / length];
+      });
       const colors = faceColors(a, f, tint);
       triangle(
         points[f[0]],
@@ -154,7 +169,8 @@ function builder(
         points[f[2]],
         colors,
         true,
-        realtimeLighting ? buildingSurface(name, colors) : 0,
+        realtimeLighting ? (a.s?.[faceIndex] ?? buildingSurface(name, colors)) : 0,
+        normals,
       );
     }
   }
@@ -246,32 +262,24 @@ function builder(
       sy = sx,
       sz = sx,
       turn = 0,
+      tint?: number[],
     ) => {
       const p = layout.point(side, outward);
-      model(name, p.x, y, p.z, sx, sy, sz, layout.angle + turn);
+      model(name, p.x, y, p.z, sx, sy, sz, layout.angle + turn, tint);
     };
-    // Узкий мост от занимаемой клетки к Т-образной набережной: соседняя суша свободна.
-    for (let v = 0.25; v <= layout.distance; v += 0.6) place('planks', 0, v, 0.025, 0.92, 1, 0.75);
-    place('structure-platform', 0, layout.distance, -0.38, 1, 0.5, 0.58);
-    for (const side of [-1, 1])
-      place('structure-platform-dock', side, layout.distance + 0.15, -0.4, 0.35, 0.5, 0.65);
-    place('planks', 0.28, layout.distance + 0.9, 0.07, 0.35, 0.7, 0.65);
-    cottage(b.x + 0.5, b.z + 0.5, 0.94, 0.07, 1);
-    place('banner-green', -0.42, 0, 0.7, 0.6);
-    // Грузовой кран и складские детали делают функцию гавани читаемой с общего вида.
-    place('pillar-wood', 0.72, layout.distance, 0.08, 0.25, 1.2, 0.25);
-    place('planks-half', 0.55, layout.distance, 1.15, 0.9, 0.3, 0.16);
-    place('crate', 0.7, layout.distance + 0.2, 0.08, 0.34);
-    place('crate', 0.65, layout.distance - 0.22, 0.08, 0.28);
-    place('barrel', 0.95, layout.distance - 0.32, 0.08, 0.25);
-    place('lantern', 0.4, 0.7, 0.08, 0.7);
-    place('boat-row-small', 1.5, layout.distance + 0.2, -0.36, 0.25);
+    // A short landing joins the back edge of the actual Blender quay to dry land.
+    for (let v = 0.2; v < layout.back + 0.25; v += 0.4)
+      place('planks', 0, v, PORT_DECK - 0.04, 0.8, 0.6, 0.55, 0, [202, 165, 107]);
+    place(
+      'starter-port',
+      0,
+      layout.distance,
+      PORT_DECK - PORT_SOURCE_DECK * PORT_SCALE,
+      PORT_SCALE,
+    );
     if (completed) {
-      place('tower-complete-small', -0.7, layout.distance, 0.08, 0.29);
-      place('flag', -0.7, layout.distance, 1.95, 0.28);
-    } else {
-      place('crate', -0.7, layout.distance, 0.08, 0.4);
-      place('barrel', -0.95, layout.distance + 0.2, 0.08, 0.24);
+      place('tower-complete-small', -1.85, layout.distance - 0.12, PORT_DECK, 0.23);
+      place('flag', -1.85, layout.distance - 0.12, 1.55, 0.23);
     }
   }
   function building(b: Building) {
@@ -356,7 +364,7 @@ function builder(
     }
   }
 
-  function finish() {
+  function finish(smooth = false) {
     const p: number[] = [],
       c: number[] = [];
     for (let i = 0; i < sceneVertices.length; i += 6) {
@@ -372,6 +380,11 @@ function builder(
     VertexData.ComputeNormals(p, geometry.indices, geometry.normals, {
       useRightHandedSystem: realtimeLighting,
     });
+    if (smooth) softenNormals(geometry);
+    // Keep the source's bevel/weighted normals after smoothing other buildings.
+    for (const [i, normal] of authoredNormals.entries())
+      if (normal)
+        for (let axis = 0; axis < 3; axis++) geometry.normals[i * 3 + axis] = normal[axis];
     return geometry;
   }
   function streetDecoration(x: number, z: number, fountain: boolean) {
@@ -396,6 +409,9 @@ function builder(
           : elevation;
       sceneVertices[i] = sceneCoordinate(x) + (sceneVertices[i] - x) * spread;
       sceneVertices[i + 1] += ground;
+      // Scale the port uniformly around its deck: the original model keeps its proportions.
+      if (building.t === 'port')
+        sceneVertices[i + 1] = PORT_DECK + (sceneVertices[i + 1] - PORT_DECK) * spread;
       sceneVertices[i + 2] = sceneCoordinate(z) + (sceneVertices[i + 2] - z) * spread;
     }
   }
@@ -441,7 +457,7 @@ export function islandGeometry(buildings: Building[], board: Board, completed = 
   }
   const environment = environmentGeometry(board, buildings, ISLAND_SPREAD);
   // У природных граней сохраняем плоские нормали: резные скалы должны читаться.
-  const built = softenNormals(b.finish());
+  const built = b.finish(true);
   return environment.merge(built, true);
 }
 /** Корабль — отдельный объект; анимация не пересоздаёт геометрию острова. */

@@ -102,7 +102,7 @@ export function environmentLayout(board: Board, buildings: Building[]): NatureIn
         rz = z - p.z - 0.5;
       const outward = rx * dx + rz * dz,
         side = rx * dz - rz * dx;
-      return !(outward > -0.7 && outward < 6 && Math.abs(side) < 2.05 + radius);
+      return !(outward > -0.7 && outward < 8 && Math.abs(side) < 2.3 + radius);
     });
   };
   const add = (asset: NatureId, x: number, y: number, z: number, scale: number, stretch = 1) => {
