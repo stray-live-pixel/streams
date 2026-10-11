@@ -336,9 +336,10 @@ export function environmentGeometry(board: Board, buildings: Building[], spread 
     color: number[],
     stone = false,
     surface = stone ? 1 : 0,
+    crownHeights?: number[],
   ) {
     // Материалы получают исходный цвет: свет и тени рассчитывает Babylon.
-    for (const point of [a, b, c]) {
+    for (const [index, point] of [a, b, c].entries()) {
       positions.push(6 + (point[0] - 6) * spread, point[1], 6 + (point[2] - 6) * spread);
       // Tide shading is evaluated per fragment, so its edge can cross a face.
       const pigment = stone ? rockPigment(point[0], Math.max(0, point[1]), point[2], color) : color;
@@ -348,7 +349,7 @@ export function environmentGeometry(board: Board, buildings: Building[], spread 
         0.8 + 0.3 * Math.sin(angle * 13 + (world.seed % 19)) + 0.13 * Math.cos(angle * 23);
       const sand =
         surface === 2 ? beachInfluence(angle, world.seed) * clamp(1 - inland / duneWidth, 0, 1) : 0;
-      surfaces.push(surface, sand);
+      surfaces.push(surface, crownHeights?.[index] ?? sand);
       colors.push(...pigment.map((n) => Math.min(1, n / 255)), 1);
     }
   }
@@ -482,6 +483,8 @@ export function environmentGeometry(board: Board, buildings: Building[], spread 
     const model = nature[asset],
       co = Math.cos(rotation),
       si = Math.sin(rotation);
+    const pine = asset.startsWith('pine');
+    const crownTop = pine ? Math.max(...model.p.map((point) => point[1])) : 1;
     const points: Point[] = model.p.map(([px, py, pz]) => [
       x + ((px * co - pz * si) * scale) / spread,
       // У подводных камней основание остаётся ниже самой глубокой впадины волны.
@@ -490,21 +493,28 @@ export function environmentGeometry(board: Board, buildings: Building[], spread 
         (asset.startsWith('rock') && y < -0.2 ? Math.max(0, 0.2 - py) * 1.6 : 0),
       z + ((px * si + pz * co) * scale) / spread,
     ]);
-    for (const f of model.f)
+    for (const f of model.f) {
+      const needles = pine && f[3] < 4;
       triangle(
         points[f[0]],
         points[f[1]],
         points[f[2]],
-        sceneNaturePalette[f[3]] ?? model.c[f[3]],
+        // Pine faces used alternating palette colours; the generated texture
+        // now owns their colour, with a continuous local-height gradient.
+        needles ? [255, 255, 255] : (sceneNaturePalette[f[3]] ?? model.c[f[3]]),
         asset.startsWith('rock'),
         asset.startsWith('rock')
           ? 1
-          : asset.startsWith('pine') && (f[3] === 4 || f[3] === 5)
+          : pine && (f[3] === 4 || f[3] === 5)
             ? 5
-            : asset === 'flowers' && f[3] >= 11
-              ? 6
-              : 4,
+            : needles
+              ? 7
+              : asset === 'flowers' && f[3] >= 11
+                ? 6
+                : 4,
+        needles ? f.slice(0, 3).map((index) => model.p[index][1] / crownTop) : undefined,
       );
+    }
   }
   const data = new VertexData();
   data.positions = positions;

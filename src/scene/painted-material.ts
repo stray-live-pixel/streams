@@ -6,7 +6,8 @@ import type { BaseTexture } from '@babylonjs/core/Materials/Textures/baseTexture
 import terrainTextures from '../../.generated/terrain-textures.json';
 
 /** One broad-brush atlas for every natural material. UV.x tags stone (1),
- * meadow (2), sand (3), foliage (4), bark (5), petals (6); UV.y marks dunes.
+ * meadow (2), sand (3), foliage (4), bark (5), petals (6), pine needles (7).
+ * UV.y marks dunes or the pine's normalised local height.
  * Buildings use zero and retain their own art. No fine grain or photo normals. */
 export class PaintedScenery extends MaterialPluginBase {
   readonly natureTexture: Texture;
@@ -100,9 +101,21 @@ if (vPaintSurface.x > .5) {
   } else if (vPaintSurface.x < 5.5) {
     vec3 bark=paintTile(vec2(p.x+p.z,p.y)*.62,vec2(1.0,0.0));
     baseColor.rgb=mix(baseColor.rgb,bark,.55);
-  } else {
+  } else if (vPaintSurface.x < 6.5) {
     vec3 petals=paintTile(paper*.7,vec2(2.0,0.0));
     baseColor.rgb*=.88+petals.g*.15;
+  } else {
+    // Blend projections on all three axes: a single slanted projection
+    // stretches the painting into straight bands along the conical skirts.
+    vec3 weights=abs(normalW)+vec3(.25);
+    weights/=weights.x+weights.y+weights.z;
+    vec3 needles=paintTile(p.zy*.85+vec2(.37,.13),vec2(0.0,0.0))*weights.x
+      +paintTile(p.xz*.85+vec2(.71,.41),vec2(0.0,0.0))*weights.y
+      +paintTile(vec2(-p.x,p.y)*.85+vec2(.19,.83),vec2(0.0,0.0))*weights.z;
+    float height=smoothstep(.12,1.0,vPaintSurface.y);
+    // Use the generated foliage painting directly, not the model's alternating
+    // face palette. A gentle root-to-tip tint is independent of ground height.
+    baseColor.rgb=needles*mix(vec3(.83,.85,.81),vec3(1.01,1.04,.97),height);
   }
 }`,
     };
