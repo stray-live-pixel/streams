@@ -11,10 +11,12 @@ import terrainTextures from '../../.generated/terrain-textures.json';
  * meadow (2), sand (3), foliage (4), bark (5), petals (6), pine needles (7).
  * Grass-capped and sand-capped cliffs use tags 8 and 9. UV.y describes
  * terrain coverage, cliff caps, or the pine's normalised local height.
- * Buildings use zero and retain their own art. No fine grain or photo normals. */
+ * Buildings use wood (10), roof (11), plaster (12), with other surfaces (0)
+ * retaining their original palette. No fine grain or photo normals. */
 export class PaintedScenery extends MaterialPluginBase {
   readonly natureTexture: Texture;
   readonly transitionTexture: Texture;
+  readonly gouacheTexture: Texture;
   private contactTexture: Texture;
   constructor(material: StandardMaterial) {
     super(material, 'painted-scenery', 200, {}, true, true);
@@ -28,6 +30,17 @@ export class PaintedScenery extends MaterialPluginBase {
     this.transitionTexture.wrapU = Texture.CLAMP_ADDRESSMODE;
     this.transitionTexture.wrapV = Texture.CLAMP_ADDRESSMODE;
     this.transitionTexture.anisotropicFilteringLevel = 4;
+    this.gouacheTexture = new Texture(
+      terrainTextures.gouache,
+      material.getScene(),
+      false,
+      true,
+      Texture.TRILINEAR_SAMPLINGMODE,
+    );
+    this.gouacheTexture.name = 'gouache-water-wood-roof-1024';
+    this.gouacheTexture.wrapU = Texture.CLAMP_ADDRESSMODE;
+    this.gouacheTexture.wrapV = Texture.CLAMP_ADDRESSMODE;
+    this.gouacheTexture.anisotropicFilteringLevel = 4;
     this.contactTexture = RawTexture.CreateRGBATexture(
       new Uint8Array([0, 0, 0, 255]),
       1,
@@ -49,6 +62,7 @@ export class PaintedScenery extends MaterialPluginBase {
     return (
       this.natureTexture.isReady() &&
       this.transitionTexture.isReady() &&
+      this.gouacheTexture.isReady() &&
       this.contactTexture.isReady()
     );
   }
@@ -56,11 +70,13 @@ export class PaintedScenery extends MaterialPluginBase {
     samplers.push('paintedNatureSampler');
     samplers.push('shoreTransitionSampler');
     samplers.push('paintedContactSampler');
+    samplers.push('gouacheSampler');
   }
   override getActiveTextures(textures: BaseTexture[]) {
     textures.push(this.natureTexture);
     textures.push(this.transitionTexture);
     textures.push(this.contactTexture);
+    textures.push(this.gouacheTexture);
   }
   override getUniforms() {
     return {
@@ -72,6 +88,7 @@ export class PaintedScenery extends MaterialPluginBase {
     buffer.setTexture('paintedNatureSampler', this.natureTexture);
     buffer.setTexture('shoreTransitionSampler', this.transitionTexture);
     buffer.setTexture('paintedContactSampler', this.contactTexture);
+    buffer.setTexture('gouacheSampler', this.gouacheTexture);
     const sun = scene.getLightByName('sunlight');
     buffer.updateFloat(
       'paintDaylight',
@@ -82,6 +99,7 @@ export class PaintedScenery extends MaterialPluginBase {
     this.natureTexture.dispose();
     this.transitionTexture.dispose();
     this.contactTexture.dispose();
+    this.gouacheTexture.dispose();
   }
   override getAttributes(attributes: string[]) {
     if (!attributes.includes('uv')) attributes.push('uv');
@@ -103,6 +121,7 @@ varying vec2 vPaintSurface;
 uniform sampler2D paintedNatureSampler;
 uniform sampler2D shoreTransitionSampler;
 uniform sampler2D paintedContactSampler;
+uniform sampler2D gouacheSampler;
 float pigmentHash(vec2 p) { return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453); }
 float pigmentNoise(vec2 p) {
   vec2 i=floor(p), f=fract(p);
@@ -124,13 +143,19 @@ vec3 transitionTile(vec2 p,vec2 tile) {
 vec2 paintTurn(vec2 p,float cosine,float sine) {
   return vec2(p.x*cosine-p.y*sine,p.x*sine+p.y*cosine);
 }
+vec3 gouacheTile(vec2 p,vec2 tile) {
+  vec2 uv=abs(fract(p*.5)*2.0-1.0);
+  return texture2D(gouacheSampler,(tile+mix(vec2(.035),vec2(.965),uv))*.5).rgb;
+}
 vec3 meadowPaint(vec3 p) {
   // Offset paintings at two scales and different angles. This preserves the
   // generated brushwork without turning its mirrored diagonal into stripes.
-  vec3 broad=paintTile(paintTurn(p.xz*.14,.8,.6)+vec2(.31,1.73),vec2(0.0,1.0));
-  vec3 crossing=paintTile(paintTurn(p.xz*.23,-.48,.877)+vec2(1.67,.29),vec2(0.0,1.0));
+  vec2 drift=vec2(pigmentNoise(p.xz*.47),pigmentNoise(p.zx*.39+17.3));
+  vec2 ground=p.xz+drift*2.7;
+  vec3 broad=paintTile(paintTurn(ground*.34,.8,.6)+vec2(.31,1.73),vec2(0.0,1.0));
+  vec3 crossing=paintTile(paintTurn(ground*.51,-.48,.877)+vec2(1.67,.29),vec2(0.0,1.0));
   vec3 brush=mix(broad,crossing,.40);
-  return mix(vec3(.61,.73,.32),brush,.53);
+  return mix(vec3(.55,.67,.28),brush*vec3(.91,.98,1.04),.86);
 }
 float groundContact(vec3 p,vec3 normal) {
   vec2 contactUV=(p.xz-vec2(6.0))/1.41421356237/16.0+vec2(.5);
@@ -140,19 +165,19 @@ vec3 contactShade(vec3 color,float amount) {
   return color*mix(vec3(1.0),vec3(.62,.72,.67),amount);
 }
 vec3 stonePaint(vec3 p,vec3 normal) {
-  vec3 weights=abs(normal)+vec3(.18);
+  vec3 weights=pow(abs(normal),vec3(4.0))+vec3(.001);
   weights/=weights.x+weights.y+weights.z;
-  vec3 mineral=paintTile(paintTurn(p.zy*.26,.819,.574)+vec2(.29,.73),vec2(2.0,1.0))*weights.x
-    +paintTile(paintTurn(p.xz*.22,-.423,.906)+vec2(.63,.17),vec2(2.0,1.0))*weights.y
-    +paintTile(paintTurn(p.xy*.28,.94,-.342)+vec2(.83,.41),vec2(2.0,1.0))*weights.z;
+  vec3 mineral=paintTile(paintTurn(p.zy*.65,.819,.574)+vec2(.29,.73),vec2(2.0,1.0))*weights.x
+    +paintTile(paintTurn(p.xz*.57,-.423,.906)+vec2(.63,.17),vec2(2.0,1.0))*weights.y
+    +paintTile(paintTurn(p.xy*.69,.94,-.342)+vec2(.83,.41),vec2(2.0,1.0))*weights.z;
   // Warm broad planes, with restrained cool mineral washes inside the stone.
   // Their orientation follows the block, rather than painting height bands.
-  mineral=mix(vec3(.79,.72,.60),mineral,.74);
+  mineral=mix(vec3(.79,.72,.60),mineral,.92);
   return mineral*mix(vec3(.96,.985,1.025),vec3(1.035,1.015,.955),
     smoothstep(-.15,.9,normal.y));
 }
 vec3 sandPaint(vec3 p) {
-  vec3 sand=paintTile(p.xz*.19,vec2(1.0,1.0));
+  vec3 sand=paintTile(paintTurn(p.xz*.37,.94,.342),vec2(1.0,1.0));
   float wash=pigmentNoise(p.xz*1.3);
   float tide=-.49+(wash-.5)*.12;
   float wet=1.0-smoothstep(tide-.20,tide+.13,p.y);
@@ -161,7 +186,22 @@ vec3 sandPaint(vec3 p) {
 }`,
       CUSTOM_FRAGMENT_UPDATE_DIFFUSE: `
 float paintedStoneAmount=0.0;
-if (vPaintSurface.x > .5) {
+if (vPaintSurface.x > 9.5) {
+  vec3 p=vPositionW;
+  vec2 plane=mix(vec2(p.x+p.z,p.y),p.xz,smoothstep(.55,.85,abs(normalW.y)));
+  if (vPaintSurface.x < 10.5) {
+    vec3 wood=gouacheTile(plane*vec2(.72,.36),vec2(0.0,0.0));
+    float brush=dot(wood,vec3(.299,.587,.114));
+    baseColor.rgb*=clamp(.64+brush*1.25,.68,1.26);
+  } else if (vPaintSurface.x < 11.5) {
+    vec3 roof=gouacheTile(paintTurn(plane*.68,.94,.342),vec2(1.0,0.0));
+    float brush=dot(roof,vec3(.299,.587,.114));
+    baseColor.rgb*=clamp(.56+brush*1.35,.72,1.30);
+  } else {
+    vec3 plaster=paintTile(plane*.58,vec2(2.0,0.0));
+    baseColor.rgb*=.60+plaster*.47;
+  }
+} else if (vPaintSurface.x > .5) {
   vec3 p=vPositionW;
   vec2 paper=p.xz+vec2(p.y*.73,p.y*1.21);
   float pigment=pigmentNoise(paper*.8);
@@ -205,11 +245,11 @@ if (vPaintSurface.x > .5) {
     baseColor.rgb=contactShade(baseColor.rgb,groundContact(p,normalW));
     normalW=normalize(mix(normalW,vec3(0.0,1.0,0.0),.58));
   } else if (vPaintSurface.x < 4.5) {
-    vec3 foliage=paintTile(paintTurn(paper*.38,.8,.6)+vec2(.37,.19),vec2(0.0,0.0));
+    vec3 foliage=paintTile(paintTurn(paper*.62,.8,.6)+vec2(.37,.19),vec2(0.0,0.0));
     // Retain the light tips and dark lower tiers of each tree. Broad painted
     // patches vary hue inside those forms rather than drawing tiny leaves.
     baseColor.rgb=baseColor.rgb*(.91+foliage.g*.21);
-    baseColor.rgb=mix(baseColor.rgb,foliage,.18);
+    baseColor.rgb=mix(baseColor.rgb,foliage,.42);
   } else if (vPaintSurface.x < 5.5) {
     vec3 bark=paintTile(vec2(p.x+p.z,p.y)*.62,vec2(1.0,0.0));
     baseColor.rgb=mix(baseColor.rgb,bark,.55);
@@ -219,7 +259,7 @@ if (vPaintSurface.x > .5) {
   } else if (vPaintSurface.x < 7.5) {
     // Blend projections on all three axes: a single slanted projection
     // stretches the painting into straight bands along the conical skirts.
-    vec3 weights=abs(normalW)+vec3(.25);
+    vec3 weights=pow(abs(normalW),vec3(2.0))+vec3(.01);
     weights/=weights.x+weights.y+weights.z;
     vec3 needles=paintTile(paintTurn(p.zy*.55,.766,.643)+vec2(.37,.13),vec2(0.0,0.0))*weights.x
       +paintTile(paintTurn(p.xz*.49,.342,-.94)+vec2(.71,.41),vec2(0.0,0.0))*weights.y
@@ -227,7 +267,9 @@ if (vPaintSurface.x > .5) {
     float height=smoothstep(.12,1.0,vPaintSurface.y);
     // Use the generated foliage painting directly, not the model's alternating
     // face palette. A gentle root-to-tip tint is independent of ground height.
-    needles=mix(vec3(.30,.46,.24),needles,.76);
+    float grove=pigmentNoise(p.xz*.18);
+    needles=mix(vec3(.30,.46,.24),needles,.88);
+    needles*=mix(vec3(.91,1.01,1.09),vec3(1.05,1.01,.91),grove);
     baseColor.rgb=needles*mix(vec3(.89,.96,.91),vec3(1.12,1.15,1.02),height);
   }
 }`,
@@ -239,7 +281,10 @@ if (paintedStoneAmount > .001) {
   float headroom=1.0-clamp(dot(color.rgb,vec3(.299,.587,.114)),0.0,1.0);
   color.rgb+=baseColor.rgb*vec3(.30,.21,.12)*paintedStoneAmount
     *dryStone*headroom*paintDaylight;
-}`,
+}
+// A restrained cool ink in the shade, without flattening the actual lighting.
+float coolShade=(1.0-smoothstep(.24,.65,dot(color.rgb,vec3(.299,.587,.114))))*paintDaylight;
+color.rgb=mix(color.rgb,color.rgb*vec3(.90,.96,1.08),coolShade*.32);`,
     };
   }
 }

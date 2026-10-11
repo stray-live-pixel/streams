@@ -1,0 +1,28 @@
+{
+  "date": "2026-10-11",
+  "generator": "OpenAI built-in imagegen",
+  "prompt": "Create a production 2D game texture atlas, square image, exactly four equal square quadrants in a strict 2 by 2 grid. No margins, no gaps, no labels, no borders. Orthographic flat albedo textures ONLY, no objects, no lighting, no cast shadows. Medium: cozy hand-painted gouache illustration, broad overlapping matte brush strokes, softly irregular dry-brush edges, restrained paper texture, visibly handmade color variation, no fine noise, no tiny details, no geometric polygons, no line art. Top LEFT quadrant: calm deep turquoise blue sea, rich muted petrol teal base, overlapping broad medium teal and ocean blue paint patches, occasional lighter desaturated turquoise brush strokes, no white foam or waves. Top RIGHT quadrant: calm shallow aquamarine water, pale muted jade and turquoise base with broad overlapping sea-glass green and blue brush strokes, no white foam or objects. Bottom LEFT quadrant: warm brown wooden surface in gouache, broad vertical umber and honey-brown brushwork and subtle irregular darker long grain marks, no plank borders, no nails, no realistic wood grain. Bottom RIGHT quadrant: warm muted terracotta painted roof surface, broad brick red, burnt sienna and warm coral strokes, no outlines or individual tiles, no regular pattern. All four textures must read as broad painted color masses at small game scale. Preserve gently varied average color in each tile, avoid large directional gradients. Exact equal quadrants, each intended for repeat texture sampling. It must look like paint made with a flat brush, not a rendered material and not a photograph.",
+  "source": "water-and-buildings-source.png",
+  "runtime": "water-and-buildings.jpg",
+  "runtime_size": [
+    1024,
+    1024
+  ],
+  "conversion": "sips -Z 1024 -s format jpeg -s formatOptions 90",
+  "quadrants_image_coordinates": {
+    "top_left": "deep water",
+    "top_right": "shallow water",
+    "bottom_left": "wood",
+    "bottom_right": "roof"
+  },
+  "sampling": "Shared GPU texture; mipmaps, trilinear, anisotropy 4, mirrored tile interior with 3.5% inset. World/undeformed mesh coordinates.",
+  "notes": [
+    "JPEG reduces bundle size, not GPU memory. Estimated RGBA8 with mipmaps: 5.33 MiB.",
+    "No new render target or full-screen pass.",
+    "Original generated PNG retained."
+  ],
+  "sha256": {
+    "water-and-buildings-source.png": "e3112f1244c011cc87a2df50a8862073316d9a0b696c9270404f81658fd22436",
+    "water-and-buildings.jpg": "61e6411f87b1aee9b3925f535dea12442abd25ca905979921300a7ccc83f6e86"
+  }
+}

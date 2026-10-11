@@ -19,7 +19,7 @@ export function pineGeometry(kind: string, x: number, z: number, seed: number) {
   const random = foliageRandom(x, z, seed);
   const young = kind === 'pine-young';
   const height = (young ? 1.18 : kind === 'pine-wide' ? 1.81 : 2.17) * (0.94 + random() * 0.1);
-  const width = (young ? 0.43 : kind === 'pine-wide' ? 0.77 : 0.66) * (0.94 + random() * 0.09);
+  const width = (young ? 0.43 : kind === 'pine-wide' ? 0.77 : 0.66) * (0.85 + random() * 0.28);
   const trunkRadius = young ? 0.06 : 0.085;
   const leanX = (random() - 0.5) * 0.055;
   const leanZ = (random() - 0.5) * 0.055;
@@ -63,9 +63,9 @@ export function pineGeometry(kind: string, x: number, z: number, seed: number) {
   for (const [base, span, breadth] of layers) {
     const phase = random() * Math.PI * 2;
     const count = 10;
-    const radius = width * breadth * (0.97 + random() * 0.07);
-    const offsetX = (random() - 0.5) * radius * 0.11;
-    const offsetZ = (random() - 0.5) * radius * 0.11;
+    const radius = width * breadth * (0.88 + random() * 0.22);
+    const offsetX = (random() - 0.5) * radius * 0.22;
+    const offsetZ = (random() - 0.5) * radius * 0.22;
     const lobePhase = random() * Math.PI * 2;
     const tiltPhase = random() * Math.PI * 2;
     const profile = Array.from({ length: count }, (_, i) => {

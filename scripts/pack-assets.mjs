@@ -101,11 +101,15 @@ export async function packAssets(root) {
   const transitionTexture = await readFile(
     path.join(root, 'assets/art/terrain/shore-transition-atlas.png'),
   );
+  const gouacheTexture = await readFile(
+    path.join(root, 'assets/art/gouache/water-and-buildings.jpg'),
+  );
   await writeFile(
     path.join(root, '.generated/terrain-textures.json'),
     JSON.stringify({
       paint: `data:image/png;base64,${natureTexture.toString('base64')}`,
       transition: `data:image/png;base64,${transitionTexture.toString('base64')}`,
+      gouache: `data:image/jpeg;base64,${gouacheTexture.toString('base64')}`,
     }),
   );
   await writeFile(path.join(root, '.generated/models.json'), JSON.stringify(models));

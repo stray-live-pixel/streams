@@ -18,6 +18,18 @@ try {
       deviceScaleFactor: width === 390 ? 2 : 1,
     });
     const page = await context.newPage();
+    // This tutorial uses fixed placement coordinates. Keep its coastline fixed;
+    // randomized geography is exercised by the dedicated island/placement suites.
+    await page.addInitScript(() => {
+      const randomValues = crypto.getRandomValues.bind(crypto);
+      crypto.getRandomValues = (array) => {
+        if (array instanceof Uint32Array && array.length === 1) {
+          array[0] = 2674391865;
+          return array;
+        }
+        return randomValues(array);
+      };
+    });
     page.setDefaultTimeout(20000);
     const errors = [],
       network = [];

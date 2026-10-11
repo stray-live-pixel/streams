@@ -25,13 +25,13 @@ float noise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.0-2.0*f);return mix(mix(
 const waveCode = `
 float heightAt(vec2 p){
  float uneven=noise(p*.24+seed)*2.3;
- return sin(dot(p,vec2(.93,.36))*1.35+time*.62+uneven)*.105
- +sin(dot(p,vec2(-.42,.91))*2.05-time*.43+uneven*.6)*.060
- +(noise(p*.65+vec2(time*.08,-time*.04)+seed)-.5)*.070;
+ return sin(dot(p,vec2(.93,.36))*1.35+time*.44+uneven)*.062
+ +sin(dot(p,vec2(-.42,.91))*2.05-time*.31+uneven*.6)*.035
+ +(noise(p*.65+vec2(time*.05,-time*.03)+seed)-.5)*.035;
 }`;
 export const waterVertex = `precision highp float;
 attribute vec3 position;attribute vec2 uv;uniform mat4 worldViewProjection;uniform mat4 world;uniform float time;uniform float seed;uniform sampler2D coastSampler;
-varying vec3 vPosition;varying vec3 vWorldPosition;varying vec2 vFacet;varying vec4 vClip;
+varying vec3 vPosition;varying vec3 vWorldPosition;varying vec2 vPaintPosition;varying vec4 vClip;
 ${shaderNoise}${waveCode}
 void main(){
  vec3 p=position;
@@ -42,7 +42,7 @@ void main(){
  p.y+=heightAt(position.xz)*mix(.22,1.0,smoothstep(-.2,1.3,distance));
  p.x+=sin(position.z*.75+time*.43+seed)*.035;
  p.z+=cos(position.x*.67-time*.37+seed)*.035;
- vPosition=p;vWorldPosition=(world*vec4(p,1.0)).xyz;vFacet=uv;
+ vPosition=p;vWorldPosition=(world*vec4(p,1.0)).xyz;vPaintPosition=position.xz;
  vClip=worldViewProjection*vec4(p,1.0);gl_Position=vClip;
 }`;
 export const waterFragment = `
@@ -50,9 +50,10 @@ export const waterFragment = `
 #extension GL_OES_standard_derivatives : enable
 #endif
 precision highp float;
-varying vec3 vPosition;varying vec3 vWorldPosition;varying vec2 vFacet;varying vec4 vClip;
+varying vec3 vPosition;varying vec3 vWorldPosition;varying vec2 vPaintPosition;varying vec4 vClip;
 uniform float time;uniform float seed;uniform float daylight;uniform float reflectionStrength;
 uniform vec3 eyePosition;uniform vec3 lightDirection;uniform sampler2D coastSampler;uniform sampler2D reflectionSampler;uniform sampler2D paintedNatureSampler;uniform sampler2D seabedSampler;
+uniform sampler2D gouacheSampler;
 ${shaderNoise}
 // Линейный шум по треугольникам сохраняет изломы вместо округления фронтов.
 float angularNoise(vec2 p){
@@ -84,28 +85,26 @@ vec2 foamBrush(vec2 p){
  float crest=1.0-smoothstep(.032,.09,abs(mass-.49));
  return vec2(body,crest*(.3+.7*smoothstep(.25,.52,cuts)));
 }
+vec3 waterPaint(vec2 p,vec2 tile){
+ vec2 uv=abs(fract(p*.5)*2.0-1.0);
+ return texture2D(gouacheSampler,(tile+mix(vec2(.035),vec2(.965),uv))*.5,.45).rgb;
+}
 void main(){
  vec2 p=vPosition.xz;
- // Производные одной грани дают плоскую нормаль, а общий центр — её постоянный оттенок.
- #if defined(GL_OES_standard_derivatives) || __VERSION__ >= 300
- vec3 normal=normalize(cross(dFdx(vWorldPosition),dFdy(vWorldPosition)));
- #else
- vec3 normal=vec3(0.0,1.0,0.0);
- #endif
- if(normal.y<0.0)normal=-normal;
+ // Continuous, low-amplitude lighting never reveals the water tessellation.
+ // Pigment coordinates are attached to the undeformed mesh, not the screen.
+ vec3 normal=normalize(vec3(.05*cos(p.x*.7+time*.31),1.0,.04*sin(p.y*.8-time*.25)));
  float signedCoast=angularShore(p);
  float coast=max(0.0,signedCoast);
  float beach=texture2D(coastSampler,(p+18.0)/48.0).b;
  beach=smoothstep(.2,.85,beach);
- float facetTone=hash(vFacet+seed);
- // Adjacent triangles belong to a larger wash of turquoise. Only a few
- // facets accent that wash, so the tessellation does not become the subject.
- float mottling=noise(vFacet*.24+seed);
- float wash=angularNoise(vFacet*.43+seed+9.0);
- vec3 deep=mix(vec3(.035,.49,.66),vec3(.07,.67,.72),mottling);
- vec3 shallow=mix(vec3(.17,.74,.73),vec3(.40,.83,.70),mottling);
- vec3 color=mix(shallow,deep,smoothstep(.0,1.8,coast));
- color*=1.0+(facetTone-.5)*.075+(wash-.5)*.10;
+ vec2 warp=vec2(noise(vPaintPosition*.23),noise(vPaintPosition.yx*.19+13.7));
+ vec2 brushUV=mat2(.8,-.6,.6,.8)*vPaintPosition*.19+warp*.65+vec2(seed*.013,.37);
+ vec3 deep=waterPaint(brushUV,vec2(0.0,1.0));
+ vec3 crossing=waterPaint(mat2(0.0,1.0,-1.0,0.0)*brushUV*.57+vec2(.71,.19),vec2(0.0,1.0));
+ deep=mix(deep,crossing,.34)*1.16+vec3(.015,.05,.05);
+ vec3 shallow=waterPaint(brushUV*.83+vec2(.29,.63),vec2(1.0,1.0))*1.10;
+ vec3 color=mix(shallow,deep,smoothstep(.0,2.6,coast));
  // Water over pale sand reads as clear, shallow water. The depth colour
  // absorbs the seabed gradually; opaque deep water still hides everything.
  float depth=max(0.0,signedCoast+.15);
@@ -136,7 +135,7 @@ void main(){
  color=mix(color,reflected.rgb,reflectionStrength*(.45+fresnel)*reflected.a*(1.0-beach*.72));
  // Широкий мягкий отблеск оставляет главным цвет граней, без зеркального блеска.
  float glow=pow(max(0.0,dot(reflect(-lightDirection,normal),view)),8.0);
- color+=vec3(.70,.90,.83)*glow*.035*daylight;
+ color+=vec3(.70,.90,.83)*glow*.018*daylight;
  // Медленные нерегулярные фронты идут к берегу. Все контуры линейные,
  // поэтому прибой огибает скалы ломаными лентами, без гладких окружностей.
  float slowTime=time/3.0;
@@ -265,7 +264,12 @@ export function shoreDistancePixels(
   return data;
 }
 
-export function createOcean(scene: Scene, camera: Camera, natureTexture: Texture) {
+export function createOcean(
+  scene: Scene,
+  camera: Camera,
+  natureTexture: Texture,
+  gouacheTexture: Texture,
+) {
   const mesh = new Mesh('deforming-water', scene);
   mesh.scaling.set(ISLAND_SPREAD, 1, ISLAND_SPREAD);
   mesh.position.set(6 * (1 - ISLAND_SPREAD), 0, 6 * (1 - ISLAND_SPREAD));
@@ -299,19 +303,26 @@ export function createOcean(scene: Scene, camera: Camera, natureTexture: Texture
         'lightDirection',
         'reflectionStrength',
       ],
-      samplers: ['coastSampler', 'reflectionSampler', 'paintedNatureSampler', 'seabedSampler'],
+      samplers: [
+        'coastSampler',
+        'reflectionSampler',
+        'paintedNatureSampler',
+        'seabedSampler',
+        'gouacheSampler',
+      ],
     },
   );
   material.backFaceCulling = false;
   mesh.material = material;
   material.setTexture('reflectionSampler', reflection);
   material.setTexture('paintedNatureSampler', natureTexture);
+  material.setTexture('gouacheSampler', gouacheTexture);
   material.setTexture('seabedSampler', seabed);
   material.setFloat('seed', 0);
   material.setFloat('time', 0);
   material
     .setFloat('daylight', 1)
-    .setFloat('reflectionStrength', 0.12)
+    .setFloat('reflectionStrength', 0.055)
     .setVector3('lightDirection', Vector3.Up())
     .setVector3('eyePosition', camera.position);
   let field: RawTexture | null = null,
