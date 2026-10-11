@@ -74,19 +74,15 @@ float angularShore(vec2 p){
  return f.x+f.y<1.0 ? a+(b-a)*f.x+(c-a)*f.y
  : d+(c-d)*(1.0-f.x)+(b-d)*(1.0-f.y);
 }
-// A cellular, broken foam network, not another concentric coastline ring.
-vec2 foamCells(vec2 p){
- vec2 cell=floor(p),f=fract(p);
- float first=8.0,second=8.0;
- for(int y=-1;y<=1;y++)for(int x=-1;x<=1;x++){
-  vec2 o=vec2(float(x),float(y));
-  vec2 jitter=vec2(hash(cell+o),hash(cell+o+vec2(31.7,9.2)));
-  vec2 d=o+.2+jitter*.6-f;
-  // L1 with a diagonal component keeps the foam polygonal.
-  float v=max(abs(d.x),abs(d.y))*.35+length(d)*.65;
-  if(v<first){second=first;first=v;}else second=min(second,v);
- }
- return vec2(first,second-first);
+// Paint the body of a wash, not the borders of every noise cell. Broad
+// angular islands have a few cutouts; scattered short strokes remain separate.
+vec2 foamBrush(vec2 p){
+ vec2 turned=mat2(.84,-.54,.54,.84)*p;
+ float mass=angularNoise(p*1.7+seed)*.58+angularNoise(turned*3.1+seed+17.0)*.42;
+ float cuts=angularNoise(turned*6.3+seed+31.0);
+ float body=smoothstep(.43,.49,mass)*(1.0-smoothstep(.63,.69,cuts)*.88);
+ float flecks=smoothstep(.66,.71,angularNoise(p*5.2+seed+8.0));
+ return vec2(body,flecks);
 }
 void main(){
  vec2 p=vPosition.xz;
@@ -102,11 +98,14 @@ void main(){
  float beach=texture2D(coastSampler,(p+18.0)/48.0).b;
  beach=smoothstep(.2,.85,beach);
  float facetTone=hash(vFacet+seed);
- float mottling=noise(vFacet*.32+seed);
- vec3 deep=mix(vec3(.055,.59,.70),vec3(.10,.70,.74),mottling);
- vec3 shallow=mix(vec3(.22,.79,.74),vec3(.39,.86,.74),mottling);
+ // Adjacent triangles belong to a larger wash of turquoise. Only a few
+ // facets accent that wash, so the tessellation does not become the subject.
+ float mottling=noise(vFacet*.24+seed);
+ float wash=angularNoise(vFacet*.43+seed+9.0);
+ vec3 deep=mix(vec3(.045,.57,.69),vec3(.075,.69,.73),mottling);
+ vec3 shallow=mix(vec3(.20,.77,.74),vec3(.37,.84,.75),mottling);
  vec3 color=mix(shallow,deep,smoothstep(.0,1.8,coast));
- color*=mix(.965,1.035,facetTone);
+ color*=1.0+(facetTone-.5)*.052+(wash-.5)*.075;
  // Water over pale sand reads as clear, shallow water. The depth colour
  // absorbs the seabed gradually; opaque deep water still hides everything.
  float depth=max(0.0,signedCoast+.15);
@@ -122,7 +121,7 @@ void main(){
  vec3 transmitted=mix(seabed.rgb*1.08,vec3(.25,.83,.74),1.0-exp(-depth*.95));
  lagoon=mix(lagoon,transmitted,seabed.a*.85);
  color=mix(color,lagoon,beach*exp(-depth*.46));
- float diffuse=.88+.12*max(0.0,dot(normal,lightDirection));
+ float diffuse=.90+.10*max(0.0,dot(normal,lightDirection));
  color*=diffuse*mix(.30,1.0,daylight);
  vec3 view=normalize(eyePosition-vWorldPosition);
  float fresnel=pow(1.0-max(0.0,dot(view,normal)),3.0);
@@ -137,46 +136,41 @@ void main(){
  // Медленные нерегулярные фронты идут к берегу. Все контуры линейные,
  // поэтому прибой огибает скалы ломаными лентами, без гладких окружностей.
  float slowTime=time/3.0;
- float broken=angularNoise(p*3.7+seed);
+ float broken=angularNoise(p*2.2+seed);
  float localRhythm=angularNoise(p*.62+seed);
  float surge=sin(slowTime*.92+localRhythm*6.28)*.5+.5;
- float ragged=(angularNoise(p*7.5+vec2(slowTime*.12,0.0)+seed)-.5)*.15;
+ float ragged=(angularNoise(p*5.4+vec2(slowTime*.12,0.0)+seed)-.5)*.17;
  // Broad sheets cling to the feet of rocks. Their outer edges break into
  // angular fragments, then dissolve instead of drawing nested contour rings.
- float washWidth=.13+surge*.22+localRhythm*.10;
- float sheet=clamp((washWidth+ragged-signedCoast)/.045,0.0,1.0);
- vec2 driftFoam=p*mix(2.9,3.2,beach)+vec2(slowTime*.07,-slowTime*.05);
- driftFoam+=vec2(angularNoise(p*3.5+seed),angularNoise(p.yx*3.5+seed))*.85;
- vec2 cells=foamCells(driftFoam);
- float lace=(1.0-smoothstep(.045,.13,cells.y));
- lace*=smoothstep(.20,.51,angularNoise(p*4.2+seed));
- lace=max(lace,smoothstep(.55,.72,broken));
- float froth=mix(lace,1.0,smoothstep(.64,.85,broken)*.50);
- sheet*=froth*clamp((broken-.14)*4.2,0.0,1.0);
+ float washWidth=.15+surge*.23+localRhythm*.12;
+ float sheet=clamp((washWidth+ragged-signedCoast)/.032,0.0,1.0);
+ vec2 driftFoam=p+vec2(slowTime*.035,-slowTime*.025);
+ vec2 brush=foamBrush(driftFoam);
+ sheet*=brush.x*smoothstep(.12,.37,broken);
  float frontDistance=.24+(.5-surge*.5)*(.55+localRhythm*.3);
- float front=clamp((.045-abs(coast-frontDistance-ragged))/.02,0.0,1.0);
- front*=step(.52,broken)*clamp((.9-coast)/.4,0.0,1.0)*.75;
+ float front=clamp((.035-abs(coast-frontDistance-ragged))/.022,0.0,1.0);
+ front*=brush.y*smoothstep(.53,.72,broken)*clamp((.9-coast)/.4,0.0,1.0)*.65;
  float foam=max(sheet,front);
- // Two waves move shoreward, spreading a lacy sheet over the wet sand.
- // Each alongshore section has a different phase and fades independently.
+ // Two waves leave patches of wash on the wet sand. Their broken leading
+ // strokes are subordinate to the filled foam, not closed polygon outlines.
  float run=fract(slowTime*.075+localRhythm*.16);
  float reach=mix(.82,-.19,run)+(angularNoise(p*2.8)-.5)*.25;
- float wave=(1.0-smoothstep(.03,.08,abs(signedCoast-reach)))*smoothstep(.30,.49,broken);
- float veil=smoothstep(reach-.45,reach-.035,signedCoast)*(1.0-smoothstep(reach,reach+.05,signedCoast));
+ float wave=(1.0-smoothstep(.035,.095,abs(signedCoast-reach)))*smoothstep(.46,.64,broken);
+ float veil=smoothstep(reach-.34,reach-.29,signedCoast)*(1.0-smoothstep(reach+.015,reach+.045,signedCoast));
  float life=smoothstep(0.0,.16,run)*(1.0-smoothstep(.7,1.0,run));
  float secondRun=fract(run+.51);
  float secondReach=mix(.85,-.2,secondRun)+(angularNoise(p*3.5+seed)-.5)*.2;
  float secondLife=smoothstep(.05,.18,secondRun)*(1.0-smoothstep(.72,1.0,secondRun));
- float secondWave=(1.0-smoothstep(.03,.065,abs(signedCoast-secondReach)))*smoothstep(.37,.58,broken);
- float secondVeil=smoothstep(secondReach-.3,secondReach-.04,signedCoast)*(1.0-smoothstep(secondReach,secondReach+.04,signedCoast));
- float beachFoam=max((wave+veil*lace)*life,(secondWave+secondVeil*lace*.65)*secondLife)*(.72+broken*.28);
- float afterwash=(1.0-smoothstep(-.03,.31,signedCoast))*lace*.9;
+ float secondWave=(1.0-smoothstep(.025,.07,abs(signedCoast-secondReach)))*brush.y*smoothstep(.38,.57,broken);
+ float secondVeil=smoothstep(secondReach-.28,secondReach-.24,signedCoast)*(1.0-smoothstep(secondReach+.01,secondReach+.035,signedCoast));
+ float beachFoam=max((wave*.65+veil*brush.x)*life,(secondWave*.55+secondVeil*brush.x*.72)*secondLife)*(.72+broken*.28);
+ float afterwash=(1.0-smoothstep(.17,.23,signedCoast))*brush.x*.76;
  foam=mix(foam,max(beachFoam,afterwash),beach);
  // Sparse angular caustics drift beneath the surface rather than forming
  // a reflective glare that would obscure the underwater sand.
- color+=vec3(.11,.15,.10)*lace*beach*exp(-abs(signedCoast-.35)*1.7)*.22*daylight;
- vec3 foamColor=mix(vec3(.34,.46,.58),vec3(.98,1.0,.91),daylight);
- color=mix(color,foamColor,foam*.94);
+ color+=vec3(.11,.15,.10)*brush.y*beach*exp(-abs(signedCoast-.35)*1.7)*.12*daylight;
+ vec3 foamColor=mix(vec3(.34,.46,.58),vec3(.91,.975,.91),daylight);
+ color=mix(color,foamColor,clamp(foam,0.0,1.0)*.89);
  gl_FragColor=vec4(color,1.0);
 }`;
 

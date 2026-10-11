@@ -128,28 +128,37 @@ export function cliffRockGeometry(spec: CliffSpec): CliffGeometry {
   }
 
   if (profile === 'layered') {
-    const crown = rings[2];
-    // Four exposed courses plus a buried foot. Heights vary per corner so
-    // they read as fractured rock, not horizontal masonry courses.
+    // A fracture belongs to the whole boulder, not to one triangle. Keep the
+    // same seven corners through its height, with broad tilted shoulders.
+    // Independent radial noise in each course made thin zigzags and spikes.
+    const outline = Array.from({ length: 7 }, (_, i) => {
+      const p = source[7 + i];
+      const scale = 0.94 + random() * 0.12;
+      return [p[0] * scale, p[2] * scale] as const;
+    });
+    const tiltX = (random() - 0.5) * 0.12;
+    const tiltZ = (random() - 0.5) * 0.12;
+    const mainShoulder = 0.53 + (shoulderHeight - 0.5) * 0.7;
+    const shiftX = (random() - 0.5) * 0.12;
+    const shiftZ = (random() - 0.5) * 0.1;
+    const upperWidth = 0.97 + random() * 0.08;
+    const ledgeHeight = 0.73 + (random() - 0.5) * 0.1;
     const layers = [
-      [0, 1.08],
-      [0.34, 1.14],
-      [0.58, 1.04],
-      [0.73, 0.91],
-      [0.87, 0.78],
+      [0, 1.09],
+      [0.29, 1.16],
+      [mainShoulder, 1.1],
+      [ledgeHeight, upperWidth],
+      [0.9, 0.95],
+      [1, crownScale],
     ];
-    const stratified = layers.map(([height, width], layer) =>
-      Array.from({ length: 7 }, (_, i): Point => {
-        const p = source[7 + i];
-        const irregularity = 0.94 + random() * 0.12;
-        return [
-          p[0] * width * irregularity,
-          layer === 0 ? 0 : height + (random() - 0.5) * 0.09,
-          p[2] * width * irregularity,
-        ];
-      }),
+    const stratified = layers.map(([height, scale]) =>
+      outline.map(([px, pz]): Point => [
+        px * scale + shiftX * Math.sin(Math.PI * height),
+        height + (tiltX * px + tiltZ * pz) * Math.sin(Math.PI * height),
+        pz * scale + shiftZ * Math.sin(Math.PI * height),
+      ]),
     );
-    rings.splice(0, rings.length, ...stratified, crown);
+    rings.splice(0, rings.length, ...stratified);
   }
 
   const points = rings.flat();
@@ -169,13 +178,19 @@ export function cliffRockGeometry(spec: CliffSpec): CliffGeometry {
     const worldX = x + tx * cos - shiftedZ * sin;
     const worldZ = z + tx * sin + shiftedZ * cos;
     const rise = elevation?.(worldX, worldZ) ?? 0;
-    const height = py === 0 ? bottom : py === 1 ? crown : bottom + py * (crown - bottom);
+    // On inland escarpments the terrain is the top of the entire column.
+    // Clipping only the last ring let a shoulder pierce its lowered crown,
+    // producing inverted, paper-thin triangles beside the plateau.
+    const localCrown = ceiling ? Math.min(crown, ceiling(worldX, worldZ)) : crown;
+    const localBottom = Math.min(bottom, localCrown - 0.015);
+    const height =
+      py === 0
+        ? localBottom
+        : py === 1
+          ? localCrown
+          : localBottom + py * (localCrown - localBottom);
     const raised = height + rise * Math.max(0, (py - 0.18) / 0.82);
-    return [
-      worldX,
-      py === 1 && ceiling ? Math.min(raised, ceiling(worldX, worldZ)) : raised,
-      worldZ,
-    ];
+    return [worldX, raised, worldZ];
   };
   const transformed = rings.map((ring) => ring.map(transform));
   const data: CliffGeometry = { positions: [], indices: [], colors: [], normals: [] };

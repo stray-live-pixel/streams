@@ -229,6 +229,7 @@ test('вне пляжей высокие склоны сохраняют рез�
     const world = createWorld(seed);
     const geometry = environmentGeometry(world, []);
     const terrainVertices = new Set();
+    const terrainPositions = [];
     for (let i = 0; i < geometry.positions.length; i += 9) {
       const triangle = [0, 3, 6].map((offset) =>
         geometry.positions.slice(i + offset, i + offset + 3),
@@ -237,6 +238,7 @@ test('вне пляжей высокие склоны сохраняют рез�
       for (const [x, y, z] of triangle) {
         assert(Math.abs(y - terrainHeight(x, z, seed)) < 1e-9);
         terrainVertices.add(`${x.toFixed(8)},${z.toFixed(8)}`);
+        terrainPositions.push([x, z]);
       }
     }
     for (const [x, z] of points)
@@ -245,7 +247,8 @@ test('вне пляжей высокие склоны сохраняют рез�
         Math.hypot(x - 6, z - 6) < cliffLandRadius(Math.atan2(z - 6, x - 6), seed) - 0.2
       )
         assert(
-          terrainVertices.has(`${x.toFixed(8)},${z.toFixed(8)}`),
+          terrainVertices.has(`${x.toFixed(8)},${z.toFixed(8)}`) ||
+            terrainPositions.some(([px, pz]) => Math.hypot(px - x, pz - z) < 1e-9),
           'Все изломы включены в сетку',
         );
     let steepSides = 0;

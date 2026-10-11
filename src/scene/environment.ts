@@ -15,6 +15,7 @@ import {
 } from './cliff-layout.js';
 import { cliffRockGeometry } from './cliffs.js';
 import { grassPigment, rockPigment } from './surface-color.js';
+import { pineGeometry } from './foliage.js';
 export { beachInfluence } from './cliff-layout.js';
 
 type Point = [number, number, number];
@@ -75,6 +76,12 @@ export function environmentLayout(board: Board, buildings: Building[]): NatureIn
   const instances: NatureInstance[] = [];
   const occupied = buildings.flatMap(buildingCells);
   const ports = buildings.filter((b) => b.t === 'port');
+  const sandCover = (x: number, z: number) => {
+    const angle = Math.atan2(z - 6, x - 6);
+    const inland =
+      world.coastRadius(angle) - beachInset(angle, world.seed) - Math.hypot(x - 6, z - 6);
+    return beachInfluence(angle, world.seed) * clamp(1 - (inland - 1.35) / 1.7, 0, 1);
+  };
   const clear = (x: number, z: number, radius: number) => {
     if (
       occupied.some(
@@ -96,6 +103,7 @@ export function environmentLayout(board: Board, buildings: Building[]): NatureIn
   };
   const add = (asset: NatureId, x: number, y: number, z: number, scale: number, stretch = 1) => {
     const rotation = random() * Math.PI * 2;
+    if (['bush', 'grass', 'flowers'].includes(asset) && sandCover(x, z) > 0.46) return;
     if (clear(x, z, asset.startsWith('pine') ? scale * 0.38 : scale * 0.22))
       instances.push({
         asset,
@@ -161,9 +169,9 @@ export function environmentLayout(board: Board, buildings: Building[]): NatureIn
       z = 0.4 + random() * 11.2;
     const angle = Math.atan2(z - 6, x - 6);
     const edgeDistance = world.coastRadius(angle) - Math.hypot(x - 6, z - 6);
-    const grove = groveCenters.some(([gx, gz]) => Math.hypot(x - gx, z - gz) < 0.78);
+    const grove = groveCenters.some(([gx, gz]) => Math.hypot(x - gx, z - gz) < 1.05);
     if (!world.contains(x, z, 0.55) || (!grove && (edgeDistance > 1.35 || i % 3 !== 0))) continue;
-    if (beachInfluence(angle, world.seed) > 0.4 && edgeDistance < 1.5) continue;
+    if (sandCover(x, z) > 0.6) continue;
     if (trees.some((tree) => Math.hypot(x - tree.x, z - tree.z) < 0.68)) continue;
     trees.push({ x, z });
     const young = random() > 0.73;
@@ -183,15 +191,18 @@ export function environmentLayout(board: Board, buildings: Building[]): NatureIn
     const distance = world.coastRadius(angle) - Math.hypot(x - 6, z - 6);
     if (!world.contains(x, z, 0.22)) continue;
     const nearTree = trees.some((tree) => Math.hypot(x - tree.x, z - tree.z) < 0.9);
-    // Центральная поляна свободна; мелкая растительность группируется у края и деревьев.
-    if (!nearTree && distance > 1.3 && i % 11 !== 0) continue;
+    const nearRock = Math.min(Math.hypot(x - 8.7, z - 6.65), Math.hypot(x - 2.8, z - 4.1)) < 1;
+    // Quiet clearings separate a few legible plant groups. The coast gets
+    // discontinuous patches, not an evenly spaced line of tiny decorations.
+    const coastalPatch = distance < 1.1 && Math.sin(angle * 7 + world.seed) > 0.58;
+    if (!nearTree && !nearRock && !coastalPatch && i % 37 !== 0) continue;
     const roll = random();
     add(
-      roll < 0.08 ? 'rock-small' : roll < 0.19 ? 'bush' : roll < 0.48 ? 'flowers' : 'grass',
+      roll < 0.1 ? 'rock-small' : roll < 0.32 ? 'bush' : roll < 0.62 ? 'flowers' : 'grass',
       x,
       0.012,
       z,
-      0.55 + random() * 0.65,
+      0.7 + random() * 0.45,
     );
   }
   for (const [x, z] of [
@@ -249,7 +260,7 @@ export function environmentLayout(board: Board, buildings: Building[]): NatureIn
 /** Нерегулярная сетка с закреплённым внешним контуром.
  * Удалять треугольники обычной Delaunay-сетки по центру недостаточно:
  * в вогнутых бухтах это оставляет щели между землёй и скалами. */
-function triangulate(points: Point[], boundaryCount: number): [number, number, number][] {
+export function triangulate(points: Point[], boundaryCount: number): [number, number, number][] {
   type Face = [number, number, number];
   const cross = (a: number, b: number, c: number) =>
     (points[b][0] - points[a][0]) * (points[c][2] - points[a][2]) -
@@ -280,9 +291,36 @@ function triangulate(points: Point[], boundaryCount: number): [number, number, n
   for (let index = boundaryCount; index < points.length; index++) {
     const found = triangles.findIndex(([a, b, c]) => inside(a, b, c, index));
     if (found < 0) continue;
-    const [a, b, c] = triangles[found];
-    triangles.splice(found, 1, face(a, b, index), face(b, c, index), face(c, a, index));
+    const corners = triangles[found];
+    // A contour point may lie exactly on an existing internal edge. Both
+    // incident triangles must be split; splitting only one leaves a T-junction
+    // whose two height interpolations disagree and form a thin hanging flap.
+    const edge = corners.findIndex((a, j) => {
+      const b = corners[(j + 1) % 3];
+      return Math.abs(cross(a, b, index)) <= 1e-9;
+    });
+    if (edge >= 0) {
+      const a = corners[edge],
+        b = corners[(edge + 1) % 3];
+      if (
+        [a, b].some(
+          (i) =>
+            Math.hypot(points[i][0] - points[index][0], points[i][2] - points[index][2]) < 1e-9,
+        )
+      )
+        continue;
+      for (let i = triangles.length - 1; i >= 0; i--) {
+        const t = triangles[i];
+        if (!t.includes(a) || !t.includes(b)) continue;
+        const opposite = t.find((v) => v !== a && v !== b)!;
+        triangles.splice(i, 1, face(a, index, opposite), face(index, b, opposite));
+      }
+    } else {
+      const [a, b, c] = corners;
+      triangles.splice(found, 1, face(a, b, index), face(b, c, index), face(c, a, index));
+    }
   }
+
   function inCircle(triangle: Face, p: number[]) {
     const [a, b, c] = triangle.map((index) => points[index]);
     const ax = a[0] - p[0],
@@ -527,10 +565,10 @@ export function environmentGeometry(board: Board, buildings: Building[], spread 
   const layout = environmentLayout(board, buildings);
   for (const instance of layout) {
     const { asset, x, y, z, scale, stretch, rotation } = instance;
-    const model = nature[asset],
+    const pine = asset.startsWith('pine');
+    const model = pine ? pineGeometry(asset, x, z, world.seed) : nature[asset],
       co = Math.cos(rotation),
       si = Math.sin(rotation);
-    const pine = asset.startsWith('pine');
     const crownTop = pine ? Math.max(...model.p.map((point) => point[1])) : 1;
     const points: Point[] = model.p.map(([px, py, pz]) => [
       x + ((px * co - pz * si) * scale) / spread,

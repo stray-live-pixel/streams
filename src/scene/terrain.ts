@@ -17,11 +17,11 @@ type ReliefHill = {
 };
 const profileSteps = [
   [0, 0],
-  [0.18, 0.05],
-  [0.31, 0.07],
-  [0.46, 0.53],
-  [0.6, 0.98],
-  [0.8, 1],
+  [0.18, 0.025],
+  [0.31, 0.12],
+  [0.46, 0.48],
+  [0.6, 0.88],
+  [0.8, 0.99],
   [1, 1],
 ];
 const wrapAngle = (angle: number) => Math.atan2(Math.sin(angle), Math.cos(angle));
@@ -58,8 +58,7 @@ function reliefRadius(angle: number, phase: number) {
   const index = Math.floor(wrapped / step);
   const anchor = (i: number) => {
     const a = (i % 16) * step;
-    const r =
-      1 + 0.105 * Math.sin((i % 16) * 2.4 + phase) + 0.04 * Math.cos((i % 16) * 0.8 + phase);
+    const r = 1 + 0.085 * Math.sin(a * 3 + phase) + 0.035 * Math.cos(a * 5 - phase);
     return [Math.cos(a) * r, Math.sin(a) * r];
   };
   const [ax, az] = anchor(index),
@@ -71,7 +70,7 @@ function reliefWidth(angle: number, hill: ReliefHill) {
   // Примерно четверть периметра — пологий травяной подъём. Остальные
   // три четверти образуют крутой срез с выступающими каменными глыбами.
   const ramp = 1 - smooth((Math.abs(wrapAngle(angle - hill.ramp)) - Math.PI / 4) / 0.16);
-  return 0.22 + ramp * 0.27;
+  return 0.24 + ramp * 0.25;
 }
 
 function reliefProfile(t: number) {
@@ -112,7 +111,7 @@ function naturalHeight(x: number, z: number, seed: number) {
     const radius = Math.hypot(dx, dz) / reliefRadius(angle, hill.phase);
     const width = reliefWidth(angle, hill);
     const t = (1 - radius) / width;
-    const ramp = (width - 0.22) / 0.27;
+    const ramp = (width - 0.24) / 0.25;
     return sum + hill.height * (reliefProfile(t) * (1 - ramp) + smooth(t) * ramp);
   }, 0);
   const rolling = 0.085 + 0.055 * Math.sin(x * 0.81 + phase) * Math.cos(z * 0.69 - phase);
