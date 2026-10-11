@@ -1,0 +1,28 @@
+{
+  "objects": 297,
+  "evaluated_triangles": 10582,
+  "evaluated_vertices": 5900,
+  "zero_area_triangles": 0,
+  "negative_signed_volume_objects": [],
+  "source_bounds": [
+    [
+      -2.380000114440918,
+      2.380000114440918
+    ],
+    [
+      -2.4800000190734863,
+      2.0360000133514404
+    ],
+    [
+      -0.000968284672126174,
+      5.510000228881836
+    ]
+  ],
+  "smoke_anchor_blender": [
+    1.15,
+    0.72,
+    5.24
+  ],
+  "axes": "Blender Z up, front -Y; OBJ Y up, front +Z",
+  "note": "Decorative flower petals and roof underlay are intentionally open; main walls, roof tiles and chimney solids are closed."
+}

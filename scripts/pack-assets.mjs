@@ -2,6 +2,7 @@ import { readFile, writeFile, mkdir, readdir } from 'node:fs/promises';
 import path from 'node:path';
 import { PNG } from 'pngjs';
 import { packPort } from './pack-port.mjs';
+import { packCottage } from './pack-cottage.mjs';
 
 /**
  * На этапе сборки переводим OBJ + палитру в простые массивы.
@@ -73,6 +74,9 @@ export async function packAssets(root) {
   models['starter-port'] = await packPort(root);
   modelIds['starter-port'] = 'custom/starter-port';
   library['custom/starter-port'] = models['starter-port'];
+  models['cottage-house'] = await packCottage(root);
+  modelIds['cottage-house'] = 'custom/cottage-house';
+  library['custom/cottage-house'] = models['cottage-house'];
   const templates = JSON.parse(
     await readFile(path.join(root, 'src/objects/templates.json'), 'utf8'),
   );

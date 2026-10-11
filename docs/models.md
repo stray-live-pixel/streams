@@ -5,6 +5,7 @@
 | ID | Модель | Исходник | Превью | Статус | В игре |
 | --- | --- | --- | --- | --- | --- |
 | `starter-port` | Стартовый порт: дом, набережная, правый пирс, подъёмник | [port.blend](../assets/art/port-reference-simple/port.blend) | [Общий вид](../assets/art/port-reference-simple/beauty.png) · [4 ракурса](../assets/art/port-reference-simple/four-views.png) | Подключён по запросу пользователя | [OBJ + MTL](../assets/art/port-reference-simple/port.obj), `scene/geometry.ts` |
+| `cottage-house` | Жилой фахверковый домик с черепицей и цветами | [cottage-house.blend](../assets/art/cottage-house/cottage-house.blend) | [Общий вид](../assets/art/cottage-house/preview.png) · [Фасад](../assets/art/cottage-house/view-front.png) | Подключён; новая модель ждёт художественной оценки | [OBJ + MTL](../assets/art/cottage-house/cottage-house.obj), все 4 варианта `game/house` |
 | `island-nature/pine-tall` | Высокая сосна | [Генератор](../src/scene/foliage.ts) · [Архив GLB](../assets/models/island-nature/pine-tall.glb) | [В игре](../assets/models/island-nature/painted-preview.png) | Художественная итерация, 268 треугольников | `scene/environment.ts` |
 | `island-nature/pine-wide` | Широкая сосна | [Генератор](../src/scene/foliage.ts) · [Архив GLB](../assets/models/island-nature/pine-wide.glb) | [В игре](../assets/models/island-nature/painted-preview.png) | Художественная итерация, 268 треугольников | `scene/environment.ts` |
 | `island-nature/pine-young` | Молодая сосна | [Генератор](../src/scene/foliage.ts) · [Архив GLB](../assets/models/island-nature/pine-young.glb) | [В игре](../assets/models/island-nature/painted-preview.png) | Художественная итерация, 208 треугольников | `scene/environment.ts` |
@@ -17,6 +18,12 @@
 | `island-nature/cliff-rock` | Скальные массивы | [Генератор](../src/scene/cliffs.ts) | [В игре](../assets/models/island-nature/painted-preview.png) | 56/70 треугольников на многослойную глыбу; ждёт оценки | `scene/cliff-layout.ts` |
 | `island-nature/contact-shadows` | Контактное затенение | [Генератор](../src/scene/contact-shadows.ts) | Общее игровое превью | Текстура 256 × 256, не отдельная модель | `scene/painted-material.ts` |
 | `island-nature/water` | Вода и подводные скалы | [Генератор](../src/scene/ocean.ts) | Общее игровое превью | Анимированная сетка 4 608/2 048 треугольников | `scene/index.ts` |
+
+### Жилой домик — 11 октября 2026
+
+Модель создана в Blender по [концепту](../assets/art/house-reference-v1/concept.png). [Исходники, четыре ракурса, генератор и экспорт](../assets/art/cottage-house/README.md) сохранены отдельно от порта. Вычисленная геометрия: **297 мешей, 5 900 вершин, 10 582 треугольника**, 28 используемых материалов; точные хеши и [аудит](../assets/art/cottage-house/model-audit.json) привязаны к файлам в машинном каталоге. Нулевых треугольников и замкнутых частей с обратным обходом нет; лепестки и подложки скатов намеренно открыты.
+
+Все четыре жилых варианта, включая сохранённый шаблон `game/house/0`, используют `custom/cottage-house`. Масштаб исходника 0,25 и настройка дома 0,7 дают ширину около 0,83 при прежнем участке 1×1. Дым выходит из новой трубы. OBJ сохраняет авторские нормали, MTL — цвета; разметка крыши, дерева и штукатурки включает игровую рисованную фактуру. Полная библиотека Kenney сохранена. Модель проверена в игровом WebGL и старом сохранении; окончательное художественное утверждение владельцем ещё не получено.
 
 ### Актуальная итерация природы — 11 октября 2026
 

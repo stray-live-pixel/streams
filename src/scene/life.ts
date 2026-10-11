@@ -9,6 +9,7 @@ import { objectSettings } from '../objects/index.js';
 import type { Passenger } from './types.js';
 import { sceneCoordinate } from './space.js';
 import { buildingElevation, terrainHeight } from './terrain.js';
+import { COTTAGE_CHIMNEY, COTTAGE_GROUND, COTTAGE_SCALE } from './cottage.js';
 
 export const lifeColors = {
   coats: ['#af6248', '#437e86', '#dec18b', '#677a4d'],
@@ -81,12 +82,13 @@ export function createCityLife(scene: Scene) {
         mesh.setEnabled(!!home && !reducedMotion && !!model?.pop);
         if (!home) return;
         const phase = (seconds * 0.25 + i / 3) % 1;
-        const tall = (home.x * 3 + home.z) % 2 === 1;
         const scale = objectSettings(buildingObjectId(home)).scale;
+        const [chimneyX, chimneyY, chimneyZ] = COTTAGE_CHIMNEY;
         mesh.position.set(
-          sceneCoordinate(home.x + 0.5) + (0.17 + phase * 0.18) * scale,
-          buildingElevation(home, model!.islandSeed) + ((tall ? 1.45 : 1.18) + phase * 0.7) * scale,
-          sceneCoordinate(home.z + 0.5) - 0.18 * scale,
+          sceneCoordinate(home.x + 0.5) + (chimneyX * COTTAGE_SCALE + phase * 0.18) * scale,
+          buildingElevation(home, model!.islandSeed) +
+            (COTTAGE_GROUND + chimneyY * COTTAGE_SCALE + phase * 0.7) * scale,
+          sceneCoordinate(home.z + 0.5) + chimneyZ * COTTAGE_SCALE * scale,
         );
         mesh.scaling.setAll(0.5 + phase * 1.8);
         mesh.visibility = 1 - phase;

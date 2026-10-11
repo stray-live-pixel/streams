@@ -20,6 +20,7 @@ import { buildingElevation, terrainHeight } from './terrain.js';
 import { ISLAND_SPREAD, sceneCoordinate } from './space.js';
 import assets from '../../.generated/models.json';
 import { buildingSurface } from './building-surface.js';
+import { COTTAGE_GROUND, COTTAGE_SCALE } from './cottage.js';
 
 // В игре только используемые ассеты; полную библиотеку подключает редактор.
 let objectAssets: Record<string, ModelData> = {
@@ -38,7 +39,7 @@ export function registerObjectAssets(models: Record<string, ModelData>) {
   objectAssets = models;
 }
 
-// Композиции состоят из исходных деталей Kenney. Параметры — координаты,
+// Композиции состоят из деталей Kenney и собственных моделей. Параметры — координаты,
 // масштаб и поворот; стоимость и правила зданий этому модулю неизвестны.
 // В игре палитру освещают источники сцены; мастерская сохраняет прежний запечённый свет.
 const hash = (x: number, z: number) => {
@@ -186,7 +187,14 @@ function builder(
         const v = Vector3.TransformCoordinates(Vector3.FromArray(p), matrix);
         return [v.x + x, v.y, v.z + z];
       });
-      for (const f of data.f) {
+      // Normals transform by the inverse transpose, including non-uniform editor scaling.
+      const normalMatrix = data.n && Matrix.Transpose(matrix.clone().invert());
+      const normals =
+        normalMatrix &&
+        data.n!.map((n) =>
+          Vector3.TransformNormal(Vector3.FromArray(n), normalMatrix).normalize().asArray(),
+        );
+      for (const [faceIndex, f] of data.f.entries()) {
         const colors = faceColors(data, f, part.tint);
         triangle(
           points[f[0]],
@@ -194,7 +202,8 @@ function builder(
           points[f[2]],
           colors,
           true,
-          realtimeLighting ? buildingSurface(part.asset, colors) : 0,
+          realtimeLighting ? (data.s?.[faceIndex] ?? buildingSurface(part.asset, colors)) : 0,
+          data.fn?.[faceIndex].map((index) => normals![index]),
         );
       }
     }
@@ -334,9 +343,7 @@ function builder(
     }
     shadow(x + 0.03, z + 0.06, 0.52, 0.45);
     if (b.t === 'house') {
-      cottage(x, z, 0.86, 0.035, variant);
-      model('hedge', x - 0.02, 0.025, z - 0.42, 0.83, 1, 0.8, Math.PI / 2);
-      if (variant % 2 === 0) model('barrel', x + 0.38, 0.035, z + 0.36, 0.14);
+      model('cottage-house', x, COTTAGE_GROUND, z, COTTAGE_SCALE);
     }
     if (b.t === 'hall') {
       cottage(x, z, 0.97, 0.03, 1);
