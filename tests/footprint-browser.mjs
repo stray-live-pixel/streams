@@ -56,20 +56,24 @@ try {
     const point = await page.evaluate(([x, z]) => cityDebug.projectTile(x, z), [x, z]);
     await page.mouse.click(point.x, point.y);
   };
-  await place('house', 2, 3);
+  // Keep this footprint fixture on an unobstructed meadow. The old (2, 3)
+  // point now lies behind the near slope of the deeper sandy cove.
+  await place('house', 3, 6);
   let state = await page.evaluate(() => cityDebug.state);
-  assert.deepEqual(state.buildings.find((b) => b.t === 'house').footprint, footprint);
+  const house = state.buildings.find((b) => b.t === 'house');
+  assert.deepEqual(house.footprint, footprint);
+  assert(Math.abs(house.x - 3) < 0.02 && Math.abs(house.z - 6) < 0.02);
   assert.equal(state.money, 9900);
-  await place('road', 3, 3);
+  await place('road', 4, 6);
   assert.equal(
     (await page.evaluate(() => cityDebug.state)).buildings.filter((b) => b.t === 'road').length,
     0,
   );
-  await place('shop', 3, 4);
+  await place('shop', 4, 7);
   state = await page.evaluate(() => cityDebug.state);
   assert(
     state.buildings.some(
-      (b) => b.t === 'shop' && Math.abs(b.x - 3) < 0.02 && Math.abs(b.z - 4) < 0.02,
+      (b) => b.t === 'shop' && Math.abs(b.x - 4) < 0.02 && Math.abs(b.z - 7) < 0.02,
     ),
     'Missing corner must remain buildable',
   );

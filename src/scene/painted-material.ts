@@ -95,7 +95,7 @@ vec3 sandPaint(vec3 p) {
   float tide=-.49+(wash-.5)*.12;
   float wet=1.0-smoothstep(tide-.20,tide+.13,p.y);
   // Damp sand is a large, quiet ochre wash, not a speckled brown outline.
-  return mix(sand,sand*vec3(.77,.80,.78),wet*.75);
+  return mix(sand,sand*vec3(.91,.94,.91),wet*.55);
 }`,
       CUSTOM_FRAGMENT_UPDATE_DIFFUSE: `
 if (vPaintSurface.x > .5) {

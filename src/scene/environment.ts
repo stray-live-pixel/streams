@@ -3,6 +3,7 @@ import { buildingCells, createWorld, type Building } from '../domain/index.js';
 import nature from '../../.generated/nature-models.json';
 import type { Board } from './types.js';
 import { terrainContourPoints, terrainHeight } from './terrain.js';
+import { beachInset } from './coast-height.js';
 import {
   beachInfluence,
   coastSection,
@@ -364,11 +365,18 @@ export function environmentGeometry(board: Board, buildings: Building[], spread 
       // Tide shading is evaluated per fragment, so its edge can cross a face.
       const pigment = stone ? rockPigment(point[0], Math.max(0, point[1]), point[2], color) : color;
       const angle = Math.atan2(point[2] - 6, point[0] - 6);
-      const inland = world.coastRadius(angle) - Math.hypot(point[0] - 6, point[2] - 6);
+      const inland =
+        world.coastRadius(angle) -
+        beachInset(angle, world.seed) -
+        Math.hypot(point[0] - 6, point[2] - 6);
       const duneWidth =
-        0.8 + 0.3 * Math.sin(angle * 13 + (world.seed % 19)) + 0.13 * Math.cos(angle * 23);
+        1.7 + 0.25 * Math.sin(angle * 13 + (world.seed % 19)) + 0.13 * Math.cos(angle * 23);
+      // Measure from the actual cove, not the old island outline. Keep a
+      // broad dry sand strip before the painted transition into meadow.
       const sand =
-        surface === 2 ? beachInfluence(angle, world.seed) * clamp(1 - inland / duneWidth, 0, 1) : 0;
+        surface === 2
+          ? beachInfluence(angle, world.seed) * clamp(1 - (inland - 1.35) / duneWidth, 0, 1)
+          : 0;
       let covering = sand;
       if (surface === 2) {
         // One continuous material crosses triangle boundaries: 0 is exposed

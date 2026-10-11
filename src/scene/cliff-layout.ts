@@ -4,7 +4,7 @@ import { cliffRockGeometry, type CliffSpec } from './cliffs.js';
 
 export const COAST_SEGMENTS = 192;
 
-import { beachInfluence, coastalElevation } from './coast-height.js';
+import { beachInfluence, beachInset, coastalElevation } from './coast-height.js';
 export { beachInfluence } from './coast-height.js';
 
 function random(seed: number) {
@@ -220,8 +220,9 @@ function cliffContours(seed: number, buildings: Building[]): CliffContours {
       // The whole cove shoulder is a transition, not an abrupt switch from
       // an upright cliff to a full-width sand fan at one angular threshold.
       const blend = Math.max(0, Math.min(1, sand));
-      const beachBlend = blend * blend * (3 - 2 * blend);
-      contours.land[i] = land * (1 - beachBlend) + coast * beachBlend;
+      const beachBlend = blend;
+      const sandEdge = coast - beachInset(theta, seed);
+      contours.land[i] = land * (1 - beachBlend) + sandEdge * beachBlend;
       // Each height follows the actual boulder section instead of extruding
       // the grass outline. Broad shoulders and recessed joints now have depth.
       // The bounded offset keeps the mass upright rather than splaying sideways.
@@ -232,7 +233,9 @@ function cliffContours(seed: number, buildings: Building[]): CliffContours {
         // form the visible faces. Recess it so it cannot flicker over them.
         const recess = band === 0 || band === 3 ? 0 : 0.1;
         const rock = band === 0 ? land : land + offset - recess;
-        const beach = coast + [0, 0.34, 0.7, 1, 2.1][band] * 1.29;
+        // Keep the wet edge closer to the island; the low sandy apron gives
+        // us a gentler slope without a wide bulge projecting into the bay.
+        const beach = sandEdge + [0, 0.36, 0.7, 1.02, 1.8][band];
         contours.bands[band][i] = rock * (1 - beachBlend) + beach * beachBlend;
       }
       contours.bands[0][i] = contours.land[i];
@@ -301,13 +304,36 @@ export function coastSection(
   buildings: Building[] = [],
 ): [number, number] {
   const contours = cliffContours(seed, buildings);
-  const depth = [0, -0.22, -0.47, -0.68, -1.15][band];
+  const sand = beachInfluence(angle, seed);
+  const depth = [0, -0.22, -0.47, -0.68, -1.15][band] - [0, 0.32, 0.14, 0, 0][band] * sand;
   const radius = sampleContour(angle, contours.bands[band]);
-  const rise = coastalElevation(
+  const rise = terrainHeight(
     6 + Math.cos(angle) * radius,
     6 + Math.sin(angle) * radius,
     seed,
     buildings,
   );
   return [radius, depth + rise * [1, 0, 0, 0, 0][band]];
+}
+
+/** Picking must follow the visible shore, not extend the inland heightfield
+ * over the sea where it can create an invisible ridge in front of a beach. */
+export function coastalSurfaceHeight(
+  x: number,
+  z: number,
+  seed: number,
+  buildings: Building[] = [],
+) {
+  const angle = Math.atan2(z - 6, x - 6);
+  const radius = Math.hypot(x - 6, z - 6);
+  if (radius <= cliffLandRadius(angle, seed)) return terrainHeight(x, z, seed, buildings);
+  let height = -1.15;
+  let previous = coastSection(angle, 0, seed, buildings);
+  for (let band = 1; band < 5; band++) {
+    const next = coastSection(angle, band, seed, buildings);
+    const t = (radius - previous[0]) / (next[0] - previous[0]);
+    if (t >= 0 && t <= 1) height = Math.max(height, previous[1] + t * (next[1] - previous[1]));
+    previous = next;
+  }
+  return height;
 }

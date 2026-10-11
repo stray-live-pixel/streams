@@ -23,7 +23,7 @@ import { createLighting } from './lighting.js';
 import { createOcean } from './ocean.js';
 import { createLens } from './lens.js';
 import { PaintedScenery } from './painted-material.js';
-import { terrainHeight } from './terrain.js';
+import { coastalSurfaceHeight } from './cliff-layout.js';
 import { sceneCoordinate, boardCoordinate, ISLAND_SPREAD } from './space.js';
 import { createCityLife } from './life.js';
 import { harborLayout } from './harbor.js';
@@ -114,7 +114,8 @@ export function createScene({
     dirty = true,
     frameId = 0;
   const upperGround = new Plane(0, 1, 0, -4);
-  const lowerGround = new Plane(0, 1, 0, 0.02);
+  // The sandy apron sits below zero but above the sea; picking must reach it.
+  const lowerGround = new Plane(0, 1, 0, 1.2);
   const signal = new AbortController();
   surface.addEventListener(
     'webglcontextlost',
@@ -183,7 +184,7 @@ export function createScene({
     return { x: p.x, y: p.y };
   }
   function heightAt(x: number, z: number) {
-    return terrainHeight(x, z, board.seed ?? 0, model?.buildings ?? []);
+    return coastalSurfaceHeight(x, z, board.seed ?? 0, model?.buildings ?? []);
   }
   function project(x: number, y: number, z: number) {
     return projectWorld(sceneCoordinate(x), y + heightAt(x, z), sceneCoordinate(z));

@@ -1,9 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { coastSection, coastalCliffs, cliffLandRadius } from '../src/scene/cliff-layout.ts';
+import {
+  coastSection,
+  coastalCliffs,
+  cliffLandRadius,
+  coastalSurfaceHeight,
+} from '../src/scene/cliff-layout.ts';
 import { createWorld } from '../src/domain/index.ts';
 import { cliffRockGeometry } from '../src/scene/cliffs.ts';
-import { coastalElevation } from '../src/scene/coast-height.ts';
+import { beachInset, coastalElevation } from '../src/scene/coast-height.ts';
 import {
   beachInfluence,
   environmentGeometry,
@@ -48,10 +53,10 @@ test('земля имеет нерегулярные грани, а её зам�
     const data = environmentGeometry(createWorld(seed), []);
     const edges = new Map();
     const vertices = new Set();
-    // Земля записана первой; первое отрицательное Y начинает скальный берег.
+    // Low beach ground can lie below zero; use its material tag, not height.
     for (let i = 0; i < data.positions.length; i += 9) {
       const points = [0, 3, 6].map((offset) => data.positions.slice(i + offset, i + offset + 3));
-      if (points.some((point) => point[1] < 0)) break;
+      if (data.uvs[(i / 3) * 2] !== 2) break;
       for (let j = 0; j < 3; j++) {
         const a = points[j].map((v) => v.toFixed(6)).join(',');
         const b = points[(j + 1) % 3].map((v) => v.toFixed(6)).join(',');
@@ -93,7 +98,9 @@ test('рельеф воспроизводим, имеет перепад выс�
   const buildings = [house, port];
   for (const x of [3, 3.5, 4.5, 5])
     for (const z of [4, 4.5, 5])
-      assert.equal(terrainHeight(x, z, seed, buildings), buildingElevation(house, seed));
+      assert(
+        Math.abs(terrainHeight(x, z, seed, buildings) - buildingElevation(house, seed)) < 1e-9,
+      );
   assert.equal(buildingElevation(port, seed), 0);
   assert.equal(terrainHeight(6.5, 11.5, seed, buildings), 0);
   assert.equal(
@@ -113,7 +120,7 @@ test('два песчаных берега полого продолжаются
       const angle = (index / 192) * Math.PI * 2;
       const sand = beachInfluence(angle, seed);
       assert(sand > 0.99, 'Обе бухты имеют широкое песчаное ядро');
-      const coast = world.coastRadius(angle);
+      const coast = cliffLandRadius(angle, seed);
       const edge = shorelineRadius(angle, seed);
       const profile = [];
       for (let i = 0; i < data.positions.length; i += 3) {
@@ -121,7 +128,7 @@ test('два песчаных берега полого продолжаются
         const radius = Math.hypot(x - 6, z - 6);
         if (
           radius >= coast - 1e-8 &&
-          radius <= edge + 1.43 &&
+          radius <= coastSection(angle, 4, seed)[0] + 1e-8 &&
           Math.abs(Math.atan2(z - 6, x - 6) - (angle > Math.PI ? angle - Math.PI * 2 : angle)) <
             1e-8
         )
@@ -135,19 +142,40 @@ test('два песчаных берега полого продолжаются
         17,
         'Плотная сетка соединяет траву, сухой и мокрый песок, ватерлинию и подводный склон',
       );
-      assert(rings[0][1] >= 0);
-      assert(rings[4][1] < -0.21 && rings[4][1] > -0.23);
-      assert(rings[8][1] < -0.46 && rings[8][1] > -0.48);
+      assert(rings[0][1] > -0.49 && rings[0][1] < -0.47, 'Низкий песчаный край');
+      assert(rings[4][1] < -0.53 && rings[4][1] > -0.55);
+      assert(rings[8][1] < -0.6 && rings[8][1] > -0.62);
+      assert(edge - coast < 1.1, 'Пляж не раздувается далеко в море');
+      assert(edge < world.coastRadius(angle) + 0.25, 'Середина пляжа утоплена внутрь бухты');
+      assert(
+        (rings[0][1] - rings[4][1]) / (rings[4][0] - rings[0][0]) < 0.2,
+        'Сухой песок поднимается полого, без выпуклой насыпи',
+      );
       assert.equal(rings[12][1], -0.68);
       assert.equal(rings[16][1], -1.15);
+      assert(rings[16][0] - edge < 0.85, 'Подводная часть короче сухого продолжения пляжа');
+      const dryHeights = [0, 0.5, 1].map((inland) =>
+        terrainHeight(
+          6 + Math.cos(angle) * (coast - inland),
+          6 + Math.sin(angle) * (coast - inland),
+          seed,
+        ),
+      );
+      assert(Math.max(...dryHeights) - Math.min(...dryHeights) < 0.06, 'Сухая полоса почти ровная');
+      assert(Math.min(...dryHeights) > -0.55, 'Сухая полоса выше воды и прибрежных волн');
       for (let i = 1; i < rings.length; i++) {
-        assert(rings[i][0] > rings[i - 1][0] + 0.08, 'У пляжа нет вертикальной стенки');
+        assert(rings[i][0] > rings[i - 1][0] + 0.075, 'У пляжа нет вертикальной стенки');
         assert(rings[i][1] < rings[i - 1][1], 'Пляж спускается к морю без ступеней');
       }
     }
     assert(
       environmentLayout(world, [])
-        .filter((instance) => instance.y < -0.2)
+        .filter(
+          (instance) =>
+            instance.asset.startsWith('rock') &&
+            instance.y < -0.4 &&
+            !world.contains(instance.x, instance.z),
+        )
         .every(
           (instance) => beachInfluence(Math.atan2(instance.z - 6, instance.x - 6), seed) < 0.28,
         ),
@@ -156,7 +184,46 @@ test('два песчаных берега полого продолжаются
   }
 });
 
-test('примерно три четверти высоких склонов имеют резные срезы, точки сетки совпадают с рельефом', () => {
+test('сухой песок продолжается в глубь бухты до перехода в траву', () => {
+  for (const seed of [0, 1, 3210380753]) {
+    const world = createWorld(seed);
+    const data = environmentGeometry(world, []);
+    let checked = 0;
+    for (let vertex = 0; vertex < data.positions.length / 3; vertex++) {
+      if (data.uvs[vertex * 2] !== 2) continue;
+      const x = data.positions[vertex * 3],
+        z = data.positions[vertex * 3 + 2];
+      const angle = Math.atan2(z - 6, x - 6);
+      if (beachInfluence(angle, seed) < 0.999) continue;
+      const inland = world.coastRadius(angle) - beachInset(angle, seed) - Math.hypot(x - 6, z - 6);
+      if (inland < 0.3 || inland > 1.25) continue;
+      assert(data.uvs[vertex * 2 + 1] > 0.99, 'У воды нет преждевременной зелёной каймы');
+      checked++;
+    }
+    assert(checked > 15, 'Проверена широкая сухая полоса в ядрах бухт');
+  }
+});
+
+test('выбор участка следует песчаному склону без невидимого продолжения суши', () => {
+  const seed = 1530508826;
+  const x = 6.157569065649572,
+    z = 11.923454049960107;
+  assert(terrainHeight(x, z, seed) > 0, 'Регрессия воспроизводит прежний невидимый гребень');
+  assert(coastalSurfaceHeight(x, z, seed) < -0.4);
+  for (const angle of [1.1 + 0.1 * Math.sin(seed), 3.85 - 0.1 * Math.sin(seed)]) {
+    for (let band = 0; band < 5; band++) {
+      const [radius, height] = coastSection(angle, band, seed);
+      assert(
+        Math.abs(
+          coastalSurfaceHeight(6 + Math.cos(angle) * radius, 6 + Math.sin(angle) * radius, seed) -
+            height,
+        ) < 1e-7,
+      );
+    }
+  }
+});
+
+test('вне пляжей высокие склоны сохраняют резные срезы, точки сетки совпадают с рельефом', () => {
   for (const seed of [0, 1, 3210380753]) {
     const points = terrainContourPoints(seed);
     const world = createWorld(seed);
@@ -166,30 +233,45 @@ test('примерно три четверти высоких склонов и�
       const triangle = [0, 3, 6].map((offset) =>
         geometry.positions.slice(i + offset, i + offset + 3),
       );
-      if (triangle.some((point) => point[1] < 0)) break;
+      if (geometry.uvs[(i / 3) * 2] !== 2) break;
       for (const [x, y, z] of triangle) {
         assert(Math.abs(y - terrainHeight(x, z, seed)) < 1e-9);
         terrainVertices.add(`${x.toFixed(8)},${z.toFixed(8)}`);
       }
     }
     for (const [x, z] of points)
-      if (world.contains(x, z, 0.2))
+      if (
+        world.contains(x, z, 0.2) &&
+        Math.hypot(x - 6, z - 6) < cliffLandRadius(Math.atan2(z - 6, x - 6), seed) - 0.2
+      )
         assert(
           terrainVertices.has(`${x.toFixed(8)},${z.toFixed(8)}`),
           'Все изломы включены в сетку',
         );
     let steepSides = 0;
+    let rockySides = 0;
     for (let angle = 0; angle < 32; angle++) {
       const low = points[angle * 7 + 2];
       const high = points[angle * 7 + 4];
+      const onBeach = ([x, z]) => {
+        const a = Math.atan2(z - 6, x - 6);
+        const inland = world.coastRadius(a) - beachInset(a, seed) - Math.hypot(x - 6, z - 6);
+        return beachInfluence(a, seed) > 0.72 && inland < 1.2;
+      };
+      if (onBeach(low) || onBeach(high)) continue;
+      rockySides++;
+      // Measure the upland profile separately from the long coastal apron.
       const grade =
-        (terrainHeight(...high, seed) - terrainHeight(...low, seed)) /
+        (terrainHeight(...high, seed) -
+          coastalElevation(...high, seed) -
+          terrainHeight(...low, seed) +
+          coastalElevation(...low, seed)) /
         Math.hypot(high[0] - low[0], high[1] - low[1]);
       if (grade > 2) steepSides++;
     }
     assert(
-      steepSides >= 22 && steepSides <= 26,
-      'Около 75% периметра — крутые срезы, остальное подъём',
+      steepSides >= rockySides * 0.68 && steepSides <= rockySides * 0.86,
+      'Большая часть непесчаных склонов — крутые срезы, остальное подъём',
     );
   }
 });
@@ -206,7 +288,7 @@ test('скальный бок соединяется с травой и спус
       assert.equal(topRadius, cliffLandRadius(angle, seed));
       assert.equal(
         topY,
-        coastalElevation(6 + Math.cos(angle) * topRadius, 6 + Math.sin(angle) * topRadius, seed),
+        terrainHeight(6 + Math.cos(angle) * topRadius, 6 + Math.sin(angle) * topRadius, seed),
       );
       assert.equal(waterY, -0.68);
       assert(Math.abs(shorelineRadius(angle, seed) - waterRadius) < 1e-8);

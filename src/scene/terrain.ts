@@ -1,5 +1,5 @@
 import { buildingCells, createWorld, type Building } from '../domain/index.js';
-import { coastalElevation } from './coast-height.js';
+import { beachInfluence, beachInset, coastalElevation } from './coast-height.js';
 
 const smooth = (value: number) => {
   const t = Math.max(0, Math.min(1, value));
@@ -117,8 +117,14 @@ function naturalHeight(x: number, z: number, seed: number) {
   }, 0);
   const rolling = 0.085 + 0.055 * Math.sin(x * 0.81 + phase) * Math.cos(z * 0.69 - phase);
   const distance = Math.hypot(x - 6, z - 6);
-  const coast = createWorld(seed).coastRadius(Math.atan2(z - 6, x - 6));
-  return (hills + rolling) * smooth((coast - distance - 0.65) / 0.95);
+  const angle = Math.atan2(z - 6, x - 6);
+  const coast = createWorld(seed).coastRadius(angle);
+  // Fade small inland relief into the lowered cove before the sand begins.
+  // Picking, buildings and decoration share this same continuous surface.
+  const sandEdge = coast - beachInset(angle, seed);
+  const openBeach = smooth((beachInfluence(angle, seed) - 0.72) / 0.28);
+  const relief = 1 - openBeach * (1 - smooth((sandEdge - distance - 1) / 1.7));
+  return (hills + rolling) * smooth((coast - distance - 0.65) / 0.95) * relief;
 }
 
 /** Одна горизонтальная площадка для всего здания, включая многоклеточные шаблоны. */
