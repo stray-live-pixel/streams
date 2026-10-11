@@ -81,6 +81,11 @@ test('поле прибоя соответствует seed, затопленн�
   assert.deepEqual(first, shoreDistancePixels(createWorld(1234), [], 64));
   assert.notDeepEqual(first, shoreDistancePixels(createWorld(9876), [], 64));
   assert.equal(first[0], 255);
+  assert.equal(first[2], 0, 'В открытом море нет маски песчаного мелководья');
+  assert(
+    first.some((value, i) => i % 4 === 2 && value > 0),
+    'У бухт есть песчаное мелководье',
+  );
   const center = (32 * 64 + 32) * 4;
   assert.equal(first[center], 0);
   assert.equal(first[center + 1], 255);

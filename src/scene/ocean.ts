@@ -4,6 +4,7 @@ import { ShaderMaterial } from '@babylonjs/core/Materials/shaderMaterial.js';
 import { RawTexture } from '@babylonjs/core/Materials/Textures/rawTexture.js';
 import { Texture } from '@babylonjs/core/Materials/Textures/texture.js';
 import { MirrorTexture } from '@babylonjs/core/Materials/Textures/mirrorTexture.js';
+import { RenderTargetTexture } from '@babylonjs/core/Materials/Textures/renderTargetTexture.js';
 import { Plane } from '@babylonjs/core/Maths/math.plane.js';
 import { Color4 } from '@babylonjs/core/Maths/math.color.js';
 import { Vector3 } from '@babylonjs/core/Maths/math.vector.js';
@@ -11,12 +12,12 @@ import type { Scene } from '@babylonjs/core/scene.js';
 import type { Camera } from '@babylonjs/core/Cameras/camera.js';
 import type { Building } from '../domain/index.js';
 import { createWorld } from '../domain/index.js';
-import { environmentLayout, shorelineRadius } from './environment.js';
+import { beachInfluence, environmentLayout, shorelineRadius } from './environment.js';
 import type { Board } from './types.js';
 import { ISLAND_SPREAD } from './space.js';
 
 export const WATER_LEVEL = -0.68;
-export const SHORE_TEXTURE_SIZE = 256;
+export const SHORE_TEXTURE_SIZE = 512;
 const shaderNoise = `
 float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
 float noise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.0-2.0*f);return mix(mix(hash(i),hash(i+vec2(1,0)),f.x),mix(hash(i+vec2(0,1)),hash(i+vec2(1,1)),f.x),f.y);}
@@ -29,13 +30,16 @@ float heightAt(vec2 p){
  +(noise(p*.65+vec2(time*.08,-time*.04)+seed)-.5)*.070;
 }`;
 export const waterVertex = `precision highp float;
-attribute vec3 position;attribute vec2 uv;uniform mat4 worldViewProjection;uniform mat4 world;uniform float time;uniform float seed;
+attribute vec3 position;attribute vec2 uv;uniform mat4 worldViewProjection;uniform mat4 world;uniform float time;uniform float seed;uniform sampler2D coastSampler;
 varying vec3 vPosition;varying vec3 vWorldPosition;varying vec2 vFacet;varying vec4 vClip;
 ${shaderNoise}${waveCode}
 void main(){
  vec3 p=position;
  // Одинаковое смещение общих вершин: грани качаются без разрывов между ними.
- p.y+=heightAt(position.xz);
+ vec2 shoreline=texture2D(coastSampler,(position.xz+18.0)/48.0).rg;
+ float distance=(shoreline.r-shoreline.g)*2.0;
+ // The long offshore waves lose height as they run into the shallows.
+ p.y+=heightAt(position.xz)*mix(.22,1.0,smoothstep(-.2,1.3,distance));
  p.x+=sin(position.z*.75+time*.43+seed)*.035;
  p.z+=cos(position.x*.67-time*.37+seed)*.035;
  vPosition=p;vWorldPosition=(world*vec4(p,1.0)).xyz;vFacet=uv;
@@ -48,7 +52,7 @@ export const waterFragment = `
 precision highp float;
 varying vec3 vPosition;varying vec3 vWorldPosition;varying vec2 vFacet;varying vec4 vClip;
 uniform float time;uniform float seed;uniform float daylight;uniform float reflectionStrength;
-uniform vec3 eyePosition;uniform vec3 lightDirection;uniform sampler2D coastSampler;uniform sampler2D reflectionSampler;
+uniform vec3 eyePosition;uniform vec3 lightDirection;uniform sampler2D coastSampler;uniform sampler2D reflectionSampler;uniform sampler2D paintedNatureSampler;uniform sampler2D seabedSampler;
 ${shaderNoise}
 // Линейный шум по треугольникам сохраняет изломы вместо округления фронтов.
 float angularNoise(vec2 p){
@@ -70,6 +74,20 @@ float angularShore(vec2 p){
  return f.x+f.y<1.0 ? a+(b-a)*f.x+(c-a)*f.y
  : d+(c-d)*(1.0-f.x)+(b-d)*(1.0-f.y);
 }
+// A cellular, broken foam network, not another concentric coastline ring.
+vec2 foamCells(vec2 p){
+ vec2 cell=floor(p),f=fract(p);
+ float first=8.0,second=8.0;
+ for(int y=-1;y<=1;y++)for(int x=-1;x<=1;x++){
+  vec2 o=vec2(float(x),float(y));
+  vec2 jitter=vec2(hash(cell+o),hash(cell+o+vec2(31.7,9.2)));
+  vec2 d=o+.2+jitter*.6-f;
+  // L1 with a diagonal component keeps the foam polygonal.
+  float v=max(abs(d.x),abs(d.y))*.35+length(d)*.65;
+  if(v<first){second=first;first=v;}else second=min(second,v);
+ }
+ return vec2(first,second-first);
+}
 void main(){
  vec2 p=vPosition.xz;
  // Производные одной грани дают плоскую нормаль, а общий центр — её постоянный оттенок.
@@ -79,13 +97,31 @@ void main(){
  vec3 normal=vec3(0.0,1.0,0.0);
  #endif
  if(normal.y<0.0)normal=-normal;
- float coast=max(0.0,angularShore(p));
+ float signedCoast=angularShore(p);
+ float coast=max(0.0,signedCoast);
+ float beach=texture2D(coastSampler,(p+18.0)/48.0).b;
+ beach=smoothstep(.2,.85,beach);
  float facetTone=hash(vFacet+seed);
  float mottling=noise(vFacet*.32+seed);
- vec3 deep=mix(vec3(.09,.56,.67),vec3(.19,.70,.73),mottling);
- vec3 shallow=mix(vec3(.24,.78,.70),vec3(.43,.87,.77),mottling);
+ vec3 deep=mix(vec3(.055,.59,.70),vec3(.10,.70,.74),mottling);
+ vec3 shallow=mix(vec3(.22,.79,.74),vec3(.39,.86,.74),mottling);
  vec3 color=mix(shallow,deep,smoothstep(.0,1.8,coast));
- color*=mix(.95,1.05,facetTone);
+ color*=mix(.965,1.035,facetTone);
+ // Water over pale sand reads as clear, shallow water. The depth colour
+ // absorbs the seabed gradually; opaque deep water still hides everything.
+ float depth=max(0.0,signedCoast+.15);
+ vec2 drift=p+vec2(angularNoise(p*.7),angularNoise(p.yx*.9));
+ float sandWash=angularNoise(drift*1.65);
+ vec3 painted=texture2D(paintedNatureSampler,(vec2(1.0,1.0)+mix(vec2(.025),vec2(.975),abs(fract(vWorldPosition.xz*.095)*2.0-1.0)))/vec2(3.0,2.0)).rgb;
+ vec3 bottom=painted*vec3(.84,.92,.86)*(.97+sandWash*.06);
+ vec3 lagoon=mix(bottom,vec3(.26,.83,.73),1.0-exp(-depth*1.12));
+ // A small cached view of the actual terrain preserves its painted sand,
+ // submerged stone and their shadows under the transparent shallows.
+ vec2 screenUV=vClip.xy/vClip.w*.5+.5;
+ vec4 seabed=texture2D(seabedSampler,screenUV+normal.xz*.002);
+ vec3 transmitted=mix(seabed.rgb*1.08,vec3(.25,.83,.74),1.0-exp(-depth*.95));
+ lagoon=mix(lagoon,transmitted,seabed.a*.85);
+ color=mix(color,lagoon,beach*exp(-depth*.46));
  float diffuse=.88+.12*max(0.0,dot(normal,lightDirection));
  color*=diffuse*mix(.30,1.0,daylight);
  vec3 view=normalize(eyePosition-vWorldPosition);
@@ -94,26 +130,51 @@ void main(){
  vec4 reflected=texture2D(reflectionSampler,uv);
  reflected+=texture2D(reflectionSampler,uv+vec2(.003,0));
  reflected+=texture2D(reflectionSampler,uv-vec2(.003,0));reflected/=3.0;
- color=mix(color,reflected.rgb,reflectionStrength*(.45+fresnel)*reflected.a);
+ color=mix(color,reflected.rgb,reflectionStrength*(.45+fresnel)*reflected.a*(1.0-beach*.72));
  // Широкий мягкий отблеск оставляет главным цвет граней, без зеркального блеска.
  float glow=pow(max(0.0,dot(reflect(-lightDirection,normal),view)),8.0);
  color+=vec3(.70,.90,.83)*glow*.035*daylight;
  // Медленные нерегулярные фронты идут к берегу. Все контуры линейные,
  // поэтому прибой огибает скалы ломаными лентами, без гладких окружностей.
  float slowTime=time/3.0;
- float broken=angularNoise(p*4.7+seed);
+ float broken=angularNoise(p*3.7+seed);
  float localRhythm=angularNoise(p*.62+seed);
  float surge=sin(slowTime*.92+localRhythm*6.28)*.5+.5;
  float ragged=(angularNoise(p*7.5+vec2(slowTime*.12,0.0)+seed)-.5)*.15;
  // Broad sheets cling to the feet of rocks. Their outer edges break into
  // angular fragments, then dissolve instead of drawing nested contour rings.
- float washWidth=.10+surge*.17+localRhythm*.08;
- float sheet=clamp((washWidth+ragged-coast)/.045,0.0,1.0);
- sheet*=clamp((broken-.16)*4.8,0.0,1.0);
+ float washWidth=.13+surge*.22+localRhythm*.10;
+ float sheet=clamp((washWidth+ragged-signedCoast)/.045,0.0,1.0);
+ vec2 driftFoam=p*mix(2.9,3.2,beach)+vec2(slowTime*.07,-slowTime*.05);
+ driftFoam+=vec2(angularNoise(p*3.5+seed),angularNoise(p.yx*3.5+seed))*.85;
+ vec2 cells=foamCells(driftFoam);
+ float lace=(1.0-smoothstep(.045,.13,cells.y));
+ lace*=smoothstep(.20,.51,angularNoise(p*4.2+seed));
+ lace=max(lace,smoothstep(.55,.72,broken));
+ float froth=mix(lace,1.0,smoothstep(.64,.85,broken)*.50);
+ sheet*=froth*clamp((broken-.14)*4.2,0.0,1.0);
  float frontDistance=.24+(.5-surge*.5)*(.55+localRhythm*.3);
  float front=clamp((.045-abs(coast-frontDistance-ragged))/.02,0.0,1.0);
  front*=step(.52,broken)*clamp((.9-coast)/.4,0.0,1.0)*.75;
  float foam=max(sheet,front);
+ // Two waves move shoreward, spreading a lacy sheet over the wet sand.
+ // Each alongshore section has a different phase and fades independently.
+ float run=fract(slowTime*.075+localRhythm*.16);
+ float reach=mix(.82,-.19,run)+(angularNoise(p*2.8)-.5)*.25;
+ float wave=(1.0-smoothstep(.03,.08,abs(signedCoast-reach)))*smoothstep(.30,.49,broken);
+ float veil=smoothstep(reach-.45,reach-.035,signedCoast)*(1.0-smoothstep(reach,reach+.05,signedCoast));
+ float life=smoothstep(0.0,.16,run)*(1.0-smoothstep(.7,1.0,run));
+ float secondRun=fract(run+.51);
+ float secondReach=mix(.85,-.2,secondRun)+(angularNoise(p*3.5+seed)-.5)*.2;
+ float secondLife=smoothstep(.05,.18,secondRun)*(1.0-smoothstep(.72,1.0,secondRun));
+ float secondWave=(1.0-smoothstep(.03,.065,abs(signedCoast-secondReach)))*smoothstep(.37,.58,broken);
+ float secondVeil=smoothstep(secondReach-.3,secondReach-.04,signedCoast)*(1.0-smoothstep(secondReach,secondReach+.04,signedCoast));
+ float beachFoam=max((wave+veil*lace)*life,(secondWave+secondVeil*lace*.65)*secondLife)*(.72+broken*.28);
+ float afterwash=(1.0-smoothstep(-.03,.31,signedCoast))*lace*.9;
+ foam=mix(foam,max(beachFoam,afterwash),beach);
+ // Sparse angular caustics drift beneath the surface rather than forming
+ // a reflective glare that would obscure the underwater sand.
+ color+=vec3(.11,.15,.10)*lace*beach*exp(-abs(signedCoast-.35)*1.7)*.22*daylight;
  vec3 foamColor=mix(vec3(.34,.46,.58),vec3(.98,1.0,.91),daylight);
  color=mix(color,foamColor,foam*.94);
  gl_FragColor=vec4(color,1.0);
@@ -173,7 +234,7 @@ export function shoreDistancePixels(
   size = SHORE_TEXTURE_SIZE,
 ) {
   const world = createWorld(board.seed ?? 0);
-  const rocks = environmentLayout(board, buildings).filter((o) => o.y < -0.2);
+  const rocks = environmentLayout(board, buildings).filter((o) => o.y < -0.2 && o.scale > 0.35);
   const data = new Uint8Array(size * size * 4);
   for (let z = 0; z < size; z++)
     for (let x = 0; x < size; x++) {
@@ -193,12 +254,17 @@ export function shoreDistancePixels(
       const index = (z * size + x) * 4;
       data[index] = Math.round(Math.max(0, Math.min(1, distance / 2)) * 255);
       data[index + 1] = Math.round(Math.max(0, Math.min(1, -distance / 2)) * 255);
+      // The distance channels saturate in open water; fade the cove mask before
+      // that point so a shallow sandy tint cannot continue to the ocean edge.
+      const shallowBeach =
+        beachInfluence(angle, world.seed) * Math.max(0, Math.min(1, (2 - distance) / 0.65));
+      data[index + 2] = Math.round(shallowBeach * 255);
       data[index + 3] = 255;
     }
   return data;
 }
 
-export function createOcean(scene: Scene, camera: Camera) {
+export function createOcean(scene: Scene, camera: Camera, natureTexture: Texture) {
   const mesh = new Mesh('deforming-water', scene);
   mesh.scaling.set(ISLAND_SPREAD, 1, ISLAND_SPREAD);
   mesh.position.set(6 * (1 - ISLAND_SPREAD), 0, 6 * (1 - ISLAND_SPREAD));
@@ -211,6 +277,11 @@ export function createOcean(scene: Scene, camera: Camera) {
   reflection.refreshRate = 0;
   // ShaderMaterial не собирает render targets из своих sampler автоматически.
   scene.customRenderTargets.push(reflection);
+  const seabed = new RenderTargetTexture('painted-seabed', 512, scene, false);
+  seabed.clearColor = new Color4(0, 0, 0, 0);
+  seabed.refreshRate = 0;
+  seabed.activeCamera = camera;
+  scene.customRenderTargets.push(seabed);
   const material = new ShaderMaterial(
     'living-water',
     scene,
@@ -227,12 +298,14 @@ export function createOcean(scene: Scene, camera: Camera) {
         'lightDirection',
         'reflectionStrength',
       ],
-      samplers: ['coastSampler', 'reflectionSampler'],
+      samplers: ['coastSampler', 'reflectionSampler', 'paintedNatureSampler', 'seabedSampler'],
     },
   );
   material.backFaceCulling = false;
   mesh.material = material;
   material.setTexture('reflectionSampler', reflection);
+  material.setTexture('paintedNatureSampler', natureTexture);
+  material.setTexture('seabedSampler', seabed);
   material.setFloat('seed', 0);
   material.setFloat('time', 0);
   material
@@ -269,6 +342,7 @@ export function createOcean(scene: Scene, camera: Camera) {
         .setTexture('coastSampler', field)
         .setFloat('seed', ((board.seed ?? 0) % 10000) / 137);
       reflection.renderList = [island, ship];
+      seabed.renderList = [island];
       lastReflection = -100;
     },
     update(seconds: number, daylight: number, sun: Vector3, clockSeconds: number) {
@@ -295,6 +369,7 @@ export function createOcean(scene: Scene, camera: Camera) {
       // В покое маленькая RTT обновляется реже: вода сама не входит в renderList.
       if (cameraMoving || clockSeconds - lastReflection > (quality === 'high' ? 0.25 : 0.5)) {
         reflection.resetRefreshCounter();
+        seabed.resetRefreshCounter();
         lastReflection = clockSeconds;
       }
     },
@@ -303,11 +378,13 @@ export function createOcean(scene: Scene, camera: Camera) {
       quality = value;
       waterGeometry(value === 'high').applyToMesh(mesh);
       reflection.resize(value === 'high' ? 256 : 128);
+      seabed.resize(value === 'high' ? 512 : 256);
       lastReflection = -100;
     },
     invalidate() {
       lastReflection = -100;
       reflection.resetRefreshCounter();
+      seabed.resetRefreshCounter();
     },
     get diagnostics() {
       return {
@@ -315,6 +392,7 @@ export function createOcean(scene: Scene, camera: Camera) {
         triangles: mesh.getTotalIndices() / 3,
         vertices: mesh.getTotalVertices(),
         reflectionSize: reflection.getSize().width,
+        seabedSize: seabed.getSize().width,
         reflectionUpdates: reflections,
         reflectionHz: quality === 'high' ? 4 : 2,
         reflectionCameraMoving: cameraMoving,
@@ -324,6 +402,7 @@ export function createOcean(scene: Scene, camera: Camera) {
     dispose() {
       field?.dispose();
       reflection.dispose();
+      seabed.dispose();
       material.dispose();
       mesh.dispose();
     },

@@ -121,7 +121,7 @@ test('два песчаных берега полого продолжаются
         const radius = Math.hypot(x - 6, z - 6);
         if (
           radius >= coast - 1e-8 &&
-          radius <= edge + 0.53 &&
+          radius <= edge + 1.43 &&
           Math.abs(Math.atan2(z - 6, x - 6) - (angle > Math.PI ? angle - Math.PI * 2 : angle)) <
             1e-8
         )
@@ -132,16 +132,16 @@ test('два песчаных берега полого продолжаются
       );
       assert.equal(
         rings.length,
-        5,
-        'Трава, сухой и мокрый песок, ватерлиния и подводный склон связаны',
+        17,
+        'Плотная сетка соединяет траву, сухой и мокрый песок, ватерлинию и подводный склон',
       );
       assert(rings[0][1] >= 0);
-      assert(rings[1][1] < -0.21 && rings[1][1] > -0.23);
-      assert(rings[2][1] < -0.46 && rings[2][1] > -0.48);
-      assert.equal(rings[3][1], -0.68);
-      assert.equal(rings[4][1], -1.15);
+      assert(rings[4][1] < -0.21 && rings[4][1] > -0.23);
+      assert(rings[8][1] < -0.46 && rings[8][1] > -0.48);
+      assert.equal(rings[12][1], -0.68);
+      assert.equal(rings[16][1], -1.15);
       for (let i = 1; i < rings.length; i++) {
-        assert(rings[i][0] > rings[i - 1][0] + 0.3, 'У пляжа нет вертикальной стенки');
+        assert(rings[i][0] > rings[i - 1][0] + 0.08, 'У пляжа нет вертикальной стенки');
         assert(rings[i][1] < rings[i - 1][1], 'Пляж спускается к морю без ступеней');
       }
     }
@@ -224,15 +224,7 @@ test('скальный бок соединяется с травой и спус
     // должно иметь ровно одну ответную грань скалы, включая последний сегмент.
     const data = environmentGeometry(world, []);
     const edges = new Map();
-    let groundEnd = 0;
     for (let i = 0; i < data.positions.length; i += 9) {
-      if ([1, 4, 7].some((offset) => data.positions[i + offset] < 0)) {
-        groundEnd = i;
-        break;
-      }
-    }
-    const limit = groundEnd + 192 * 4 * 2 * 9;
-    for (let i = 0; i < limit; i += 9) {
       const pts = [0, 3, 6].map((offset) => data.positions.slice(i + offset, i + offset + 3));
       for (let j = 0; j < 3; j++) {
         const a = pts[j],

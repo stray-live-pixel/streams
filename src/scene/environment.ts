@@ -342,7 +342,13 @@ export function environmentGeometry(board: Board, buildings: Building[], spread 
       positions.push(6 + (point[0] - 6) * spread, point[1], 6 + (point[2] - 6) * spread);
       // Tide shading is evaluated per fragment, so its edge can cross a face.
       const pigment = stone ? rockPigment(point[0], Math.max(0, point[1]), point[2], color) : color;
-      surfaces.push(surface, 0);
+      const angle = Math.atan2(point[2] - 6, point[0] - 6);
+      const inland = world.coastRadius(angle) - Math.hypot(point[0] - 6, point[2] - 6);
+      const duneWidth =
+        0.8 + 0.3 * Math.sin(angle * 13 + (world.seed % 19)) + 0.13 * Math.cos(angle * 23);
+      const sand =
+        surface === 2 ? beachInfluence(angle, world.seed) * clamp(1 - inland / duneWidth, 0, 1) : 0;
+      surfaces.push(surface, sand);
       colors.push(...pigment.map((n) => Math.min(1, n / 255)), 1);
     }
   }
@@ -430,8 +436,31 @@ export function environmentGeometry(board: Board, buildings: Building[], spread 
         d = ledge(i, band + 1);
       const facet = Math.sin(angleAt(i) * 9 + world.seed) * 3;
       const color = [224 + sand * 23 + facet, 198 + sand * 27 + facet, 152 + sand * 17 + facet];
-      triangle(a, b, c, color, sand < 0.4);
-      triangle(a, c, d, color, sand < 0.4);
+      if (sand < 0.4) {
+        triangle(a, b, c, color, true);
+        triangle(a, c, d, color, true);
+      } else {
+        // A gently rippled sandy slope. Sharing every edge keeps the beach
+        // joined to both headlands, without long fan-shaped lighting bands.
+        const point = (t: number, right: boolean): Point => {
+          const start = right ? b : a;
+          const end = right ? c : d;
+          return start.map((value, axis) => value + (end[axis] - value) * t) as Point;
+        };
+        for (let step = 0; step < 4; step++) {
+          const p = point(step / 4, false),
+            q = point(step / 4, true),
+            r = point((step + 1) / 4, true),
+            s = point((step + 1) / 4, false);
+          if ((i + band + step) % 2) {
+            triangle(p, q, s, color, false, 3);
+            triangle(q, r, s, color, false, 3);
+          } else {
+            triangle(p, q, r, color, false, 3);
+            triangle(p, r, s, color, false, 3);
+          }
+        }
+      }
     }
   }
   for (const spec of [
@@ -468,6 +497,13 @@ export function environmentGeometry(board: Board, buildings: Building[], spread 
         points[f[2]],
         sceneNaturePalette[f[3]] ?? model.c[f[3]],
         asset.startsWith('rock'),
+        asset.startsWith('rock')
+          ? 1
+          : asset.startsWith('pine') && (f[3] === 4 || f[3] === 5)
+            ? 5
+            : asset === 'flowers' && f[3] >= 11
+              ? 6
+              : 4,
       );
   }
   const data = new VertexData();

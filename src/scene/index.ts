@@ -88,14 +88,14 @@ export function createScene({
   new FxaaPostProcess('soft-edges', 1, camera);
   const lens = createLens(camera);
   const lighting = createLighting(scene, camera, (label) => onTimeChanged?.(label));
-  const ocean = createOcean(scene, camera);
   const material = new StandardMaterial('palette', scene);
   material.disableLighting = false;
   material.diffuseColor = Color3.White();
   material.specularColor = Color3.Black();
   material.twoSidedLighting = false;
   material.backFaceCulling = false;
-  new PaintedScenery(material);
+  const painted = new PaintedScenery(material);
+  const ocean = createOcean(scene, camera, painted.natureTexture);
   const ship = new Mesh('arrival-ship', scene);
   const shipData = shipGeometry(true);
   shipData.uvs = new Array((shipData.positions!.length / 3) * 2).fill(0);
