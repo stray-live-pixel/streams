@@ -3,6 +3,9 @@ import assert from 'node:assert/strict';
 import { createWorld } from '../src/domain/index.ts';
 import { environmentGeometry } from '../src/scene/environment.ts';
 import { islandGeometry } from '../src/scene/geometry.ts';
+import { pineGeometry } from '../src/scene/foliage.ts';
+import { environmentLayout, beachInfluence } from '../src/scene/environment.ts';
+import { beachInset } from '../src/scene/coast-height.ts';
 
 test('все природные поверхности размечены под рисованные материалы без смешения на гранях', () => {
   const world = createWorld(3210380753);
@@ -40,4 +43,35 @@ test('хвоя использует текстуру без чередующей
   assert(Math.min(...heights) < 0.2);
   assert.equal(Math.max(...heights), 1);
   assert(new Set(heights).size > 8, 'Высота интерполируется внутри всех ярусов кроны');
+});
+
+test('объёмные кроны воспроизводимы, различаются по месту и остаются в бюджете', () => {
+  const tree = pineGeometry('pine-tall', 2.3, 4.7, 1234);
+  assert.deepEqual(tree, pineGeometry('pine-tall', 2.3, 4.7, 1234));
+  assert.notDeepEqual(tree.p, pineGeometry('pine-tall', 2.4, 4.7, 1234).p);
+  assert(tree.f.length < 300);
+  assert(tree.p.every((point) => point.every(Number.isFinite)));
+  const foliage = tree.f.filter((face) => face[3] === 0);
+  const heights = new Set(
+    foliage.flatMap((face) => face.slice(0, 3).map((index) => tree.p[index][1])),
+  );
+  assert(heights.size > 40, 'Края ярусов не лежат в одинаковых плоских кольцах');
+  assert(
+    Math.min(...foliage.flatMap((face) => face.slice(0, 3).map((index) => tree.p[index][1]))) >
+      0.25,
+    'Под нижними ветвями остаётся видимый ствол',
+  );
+});
+
+test('сухой песок остаётся свободным от россыпи кустов, травы и цветов', () => {
+  const world = createWorld(3210380753);
+  for (const item of environmentLayout(world, [])) {
+    if (!['bush', 'grass', 'flowers'].includes(item.asset)) continue;
+    const angle = Math.atan2(item.z - 6, item.x - 6);
+    const inland =
+      world.coastRadius(angle) - beachInset(angle, world.seed) - Math.hypot(item.x - 6, item.z - 6);
+    const cover =
+      beachInfluence(angle, world.seed) * Math.max(0, Math.min(1, 1 - (inland - 1.35) / 1.7));
+    assert(cover <= 0.46);
+  }
 });

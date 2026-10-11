@@ -6,6 +6,7 @@ import { readFileSync } from 'node:fs';
 import { environmentGeometry, environmentLayout } from '../src/scene/environment.ts';
 import { buildingElevation, terrainHeight } from '../src/scene/terrain.ts';
 import { boardCoordinate, sceneCoordinate, ISLAND_SPREAD } from '../src/scene/space.ts';
+import { pineGeometry } from '../src/scene/foliage.ts';
 
 test('суша занимает вдвое большую площадь, координаты сохранений обратимы', () => {
   assert(Math.abs(ISLAND_SPREAD ** 2 - 2) < 1e-12);
@@ -41,14 +42,18 @@ test('увеличение острова раздвигает деревья, �
     readFileSync(new URL('../.generated/nature-models.json', import.meta.url)),
   );
   const layout = environmentLayout(world, []);
+  const modelFor = (item) =>
+    item.asset.startsWith('pine')
+      ? pineGeometry(item.asset, item.x, item.z, world.seed)
+      : models[item.asset];
   const original = environmentGeometry(world, []);
   const expanded = environmentGeometry(world, [], ISLAND_SPREAD);
   let offset =
     original.positions.length -
-    layout.reduce((size, item) => size + models[item.asset].f.length * 9, 0);
+    layout.reduce((size, item) => size + modelFor(item).f.length * 9, 0);
   let checked = 0;
   for (const item of layout) {
-    const length = models[item.asset].f.length * 9;
+    const length = modelFor(item).f.length * 9;
     if (item.asset.startsWith('pine')) {
       for (let i = offset; i < offset + length; i += 3) {
         assert(
@@ -75,14 +80,14 @@ test('увеличение острова раздвигает деревья, �
 test('соседние дороги следуют общему склону и не создают отдельные ступени земли', () => {
   const world = createWorld(3210380753);
   const roads = [
-    { t: 'road', x: 4, z: 3 },
-    { t: 'road', x: 5, z: 3 },
+    { t: 'road', x: 2, z: 3.1 },
+    { t: 'road', x: 3, z: 3.1 },
   ];
   assert(
     Math.abs(buildingElevation(roads[0], world.seed) - buildingElevation(roads[1], world.seed)) > 1,
   );
-  for (let x = 4; x <= 6; x += 0.025)
-    assert.equal(terrainHeight(x, 3.5, world.seed, roads), terrainHeight(x, 3.5, world.seed));
+  for (let x = 2; x <= 4; x += 0.025)
+    assert.equal(terrainHeight(x, 3.6, world.seed, roads), terrainHeight(x, 3.6, world.seed));
 
   const environment = environmentGeometry(world, roads);
   const points = islandGeometry(roads, world).positions.slice(environment.positions.length);

@@ -43,7 +43,7 @@ export function coastalCliffs(seed: number, buildings: Building[] = []): CliffSp
     const top = -0.002;
     const bottom = -1.08 - next() * 0.24;
     const shoulderHeight = 0.29 + next() * 0.42;
-    const crownScale = 0.66 + next() * 0.24;
+    const crownScale = 0.78 + next() * 0.11;
     const lean = 0.01 + next() * 0.04;
     const rotation = angle + Math.PI / 2 + (next() - 0.5) * 0.65;
     const beach = beachInfluence(angle, seed);
@@ -58,7 +58,7 @@ export function coastalCliffs(seed: number, buildings: Building[] = []): CliffSp
       shoulderHeight,
       profile: 'layered',
       elevation: (px, pz) => coastalElevation(px, pz, seed, buildings),
-      crownSlope: (0.16 + 0.06 * Math.sin(i * 2.3)) * (1 - beach * 0.65),
+      crownSlope: (0.09 + 0.035 * Math.sin(i * 2.3)) * (1 - beach * 0.65),
       crownScale,
       lean,
       rotation,
@@ -84,7 +84,18 @@ export function uplandCliffs(seed: number, buildings: Building[] = []): CliffSpe
       const bottom = terrainHeight(...outer, seed, buildings) - 0.13;
       const top = terrainHeight(...inner, seed, buildings) - 0.035;
       // Длинный подъём остаётся травяным; скальные стенки получают отдельные плечи и сколы.
-      if ((top - bottom) / run < 1.7) continue;
+      const shoreAngle = Math.atan2(outer[1] - 6, outer[0] - 6);
+      const beachDistance =
+        createWorld(seed).coastRadius(shoreAngle) -
+        beachInset(shoreAngle, seed) -
+        Math.hypot(outer[0] - 6, outer[1] - 6);
+      // A plateau that has faded into a cove must not leave detached wedges
+      // on the sand. Its gentle heightfield is the complete surface there.
+      if (
+        (beachInfluence(shoreAngle, seed) > 0.42 && beachDistance < 2.7) ||
+        (top - bottom) / run < 1.7
+      )
+        continue;
       const inset = 0.88 + Math.sin(i * 2.7 + seed) * 0.08;
       const x = outer[0] * (1 - inset) + inner[0] * inset;
       const z = outer[1] * (1 - inset) + inner[1] * inset;
@@ -107,9 +118,10 @@ export function uplandCliffs(seed: number, buildings: Building[] = []): CliffSpe
         depth: run + 0.58,
         top,
         ceiling: (px, pz) => terrainHeight(px, pz, seed, buildings) - 0.005,
-        crownScale: 0.57 + ((i * 7 + hill) % 5) * 0.045,
+        profile: 'layered',
+        crownScale: 0.78 + ((i * 7 + hill) % 5) * 0.025,
         shoulderHeight: 0.3 + ((i * 11 + hill) % 7) * 0.06,
-        lean: 0.13,
+        lean: 0.035,
         bottom,
         rotation: Math.atan2(dz, dx) + Math.PI / 2,
         seed: seed ^ (hill * 5707 + i * 3253 + 887),
@@ -124,6 +136,12 @@ export function uplandCliffs(seed: number, buildings: Building[] = []): CliffSpe
           depth: (run + 0.47) * 0.8,
           bottom: bottom - 0.06,
           top: bottom + rise * 0.62,
+          // The small buttress shares the same terrain ceiling as its parent.
+          // A free-standing cone here used to poke through the slope as fins.
+          ceiling: (px, pz) => terrainHeight(px, pz, seed, buildings) - 0.006,
+          profile: 'layered',
+          crownScale: 0.81,
+          shoulderHeight: 0.46,
           crownSlope: rise * 0.18,
           rotation: Math.atan2(dz, dx) + Math.PI / 2 + 0.17,
           seed: seed ^ (hill * 6703 + i * 3253 + 191),

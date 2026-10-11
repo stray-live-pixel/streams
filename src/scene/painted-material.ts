@@ -85,9 +85,13 @@ vec3 transitionTile(vec2 p,vec2 tile) {
 vec3 stonePaint(vec3 p,vec3 normal) {
   vec3 weights=abs(normal)+vec3(.25);
   weights/=weights.x+weights.y+weights.z;
-  return paintTile(p.zy*.32,vec2(2.0,1.0))*weights.x
+  vec3 mineral=paintTile(p.zy*.32,vec2(2.0,1.0))*weights.x
     +paintTile(p.xz*.32,vec2(2.0,1.0))*weights.y
     +paintTile(p.xy*.32,vec2(2.0,1.0))*weights.z;
+  // A quiet cool stone body and warm exposed planes support the actual light;
+  // the generated painting supplies broad mineral washes, not extra creases.
+  return mineral*mix(vec3(.94,.97,1.03),vec3(1.04,1.01,.94),
+    smoothstep(-.1,.85,normal.y));
 }
 vec3 sandPaint(vec3 p) {
   vec3 sand=paintTile(p.xz*.19,vec2(1.0,1.0));
@@ -108,8 +112,9 @@ if (vPaintSurface.x > .5) {
     baseColor.rgb=mix(baseColor.rgb,mineral,.64);
     if (vPaintSurface.x > 7.5) {
       float cover=smoothstep(.08,.9,vPaintSurface.y+(mask-.5)*.32);
+      cover*=smoothstep(.38,.72,abs(normalW.y));
       vec3 edgePaint=transitionTile(p.xz*.5,vec2(0.0,0.0));
-      vec3 meadow=mix(vec3(.73,.79,.32),paintTile(p.xz*.21,vec2(0.0,1.0)),.68);
+      vec3 meadow=mix(vec3(.64,.75,.30),paintTile(p.xz*.21,vec2(0.0,1.0)),.68);
       vec3 cap=vPaintSurface.x > 8.5 ? sandPaint(p) : meadow;
       baseColor.rgb=mix(baseColor.rgb,edgePaint,.22*cover*(1.0-cover)*4.0);
       baseColor.rgb=mix(baseColor.rgb,cap,cover);
@@ -119,15 +124,22 @@ if (vPaintSurface.x > .5) {
     baseColor.rgb=mix(baseColor.rgb,baseColor.rgb*vec3(.55,.68,.73),wet);
   } else if (vPaintSurface.x < 2.5) {
     vec3 meadow=paintTile(p.xz*.21,vec2(0.0,1.0));
-    baseColor.rgb=mix(vec3(.73,.79,.32),meadow,.68);
+    baseColor.rgb=mix(vec3(.64,.75,.30),meadow,.68);
     float stone=smoothstep(.08,.8,1.0-vPaintSurface.y*2.0+(mask-.5)*.30);
+    // A cliff is a cut through turf. Do not interpolate green triangles down
+    // its wall just because the upper corners belong to the meadow.
+    stone=max(stone,1.0-smoothstep(.42,.72,abs(normalW.y)));
     baseColor.rgb=mix(baseColor.rgb,stonePaint(p,normalW),stone);
     float sand=smoothstep(.08,.85,vPaintSurface.y*2.0-1.0+(mask-.5)*.25);
     vec3 edgePaint=transitionTile(p.xz*.5,vec2(0.0,1.0));
     baseColor.rgb=mix(baseColor.rgb,edgePaint,sand*(1.0-sand)*.8);
     baseColor.rgb=mix(baseColor.rgb,sandPaint(p),sand);
+    // Broad sand washes should not reveal every diagonal of the terrain
+    // tessellation. Soften only their lighting normal; rock cuts stay faceted.
+    normalW=normalize(mix(normalW,vec3(0.0,1.0,0.0),sand*.58));
   } else if (vPaintSurface.x < 3.5) {
     baseColor.rgb=sandPaint(p);
+    normalW=normalize(mix(normalW,vec3(0.0,1.0,0.0),.58));
   } else if (vPaintSurface.x < 4.5) {
     vec3 foliage=paintTile(paper*.55,vec2(0.0,0.0));
     // Retain the light tips and dark lower tiers of each tree. Broad painted
@@ -151,7 +163,7 @@ if (vPaintSurface.x > .5) {
     float height=smoothstep(.12,1.0,vPaintSurface.y);
     // Use the generated foliage painting directly, not the model's alternating
     // face palette. A gentle root-to-tip tint is independent of ground height.
-    baseColor.rgb=needles*mix(vec3(.83,.85,.81),vec3(1.01,1.04,.97),height);
+    baseColor.rgb=needles*mix(vec3(.94,.98,.89),vec3(1.12,1.16,1.03),height);
   }
 }`,
     };

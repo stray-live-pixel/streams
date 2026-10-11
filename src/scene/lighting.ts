@@ -106,21 +106,23 @@ export function createLighting(scene: Scene, camera: Camera, onLabel: (label: st
       const direction = current.sun.y > -0.04 ? current.sun : current.sun.scale(-1);
       sunlight.direction.copyFrom(direction.scale(-1));
       sunlight.position.copyFrom(new Vector3(6, 0, 6).add(direction.scale(35)));
-      sunlight.intensity = (0.28 + 0.62 * daylight) * (1 - 0.14 * twilight);
+      // Leave headroom for painted highlights instead of clipping the meadow
+      // and sand into one yellow plane. Cool fill keeps shaded facets legible.
+      sunlight.intensity = (0.28 + 0.55 * daylight) * (1 - 0.14 * twilight);
       sunlight.diffuse = Color3.Lerp(
         new Color3(0.5, 0.64, 0.92),
-        Color3.Lerp(new Color3(1, 0.96, 0.8), new Color3(1, 0.62, 0.3), twilight),
+        Color3.Lerp(new Color3(1, 0.95, 0.81), new Color3(1, 0.62, 0.3), twilight),
         daylight,
       );
-      ambient.intensity = 0.5 + 0.2 * daylight;
+      ambient.intensity = 0.5 + 0.15 * daylight;
       ambient.diffuse = Color3.Lerp(
         new Color3(0.42, 0.52, 0.78),
-        new Color3(0.9, 0.95, 1),
+        new Color3(0.85, 0.93, 1),
         daylight,
       );
       ambient.groundColor = Color3.Lerp(
         new Color3(0.24, 0.31, 0.45),
-        new Color3(0.48, 0.54, 0.56),
+        new Color3(0.43, 0.51, 0.64),
         daylight,
       );
       skyMaterial

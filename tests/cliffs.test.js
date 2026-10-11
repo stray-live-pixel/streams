@@ -103,12 +103,12 @@ test('короны основных береговых и нагорных гл�
       assert(rock.top < 0, 'Береговая корона ниже дерна');
       assert(rock.shoulderHeight >= 0.25 && rock.shoulderHeight <= 0.75);
     }
-    for (const rock of uplandCliffs(seed).filter((rock) => !rock.crownSlope)) {
+    for (const rock of uplandCliffs(seed)) {
       const cap = cliffRockGeometry(rock).positions.slice(-7 * 9);
       for (let i = 0; i < cap.length; i += 3)
         assert(
           cap[i + 1] <= terrainHeight(cap[i], cap[i + 2], seed),
-          'Основная корона не выступает над травой на склоне',
+          'Главная и малая глыбы не выступают над травой на склоне',
         );
     }
   }
@@ -167,11 +167,11 @@ test('береговые глыбы имеют четыре неровных я�
       const cap = mesh.positions.slice(-7 * 9);
       const narrowLevel = Math.min(...cap.filter((_, i) => i % 3 === 1)) - 0.04;
       assert(sectionWidth(-0.65) > sectionWidth(narrowLevel), 'К воде глыба становится шире');
-      // Local shape must retain the strong taper even when a low beach bends
+      // Local shape must retain a visible taper even when a low beach bends
       // its crown. Absolute world-height cuts sample different local layers.
       const local = cliffRockGeometry({ ...rock, elevation: undefined }).positions;
       const localCrown = Math.min(...local.slice(-7 * 9).filter((_, i) => i % 3 === 1)) - 0.04;
-      assert(sectionWidth(-0.65, local) > sectionWidth(localCrown, local) * 1.25);
+      assert(sectionWidth(-0.65, local) > sectionWidth(localCrown, local) * 1.12);
       assert(mesh.positions.every(Number.isFinite));
       assert(mesh.normals.every(Number.isFinite));
     }
@@ -186,4 +186,21 @@ test('береговые короны скошены наружу, а не об�
       assert(cap[i + 1] <= coastalElevation(cap[i], cap[i + 2], 123456789));
     assert(Math.max(...heights) - Math.min(...heights) > 0.03);
   }
+});
+
+test('глыба под неровным плато целиком остаётся под поверхностью, без торчащих плеч', () => {
+  const ceiling = (x, z) => -0.18 + (x - spec.x) * 0.22 + (z - spec.z) * 0.9;
+  const mesh = cliffRockGeometry({
+    ...spec,
+    profile: 'layered',
+    crownScale: 0.84,
+    top: 0.5,
+    bottom: -0.5,
+    ceiling,
+  });
+  for (let i = 0; i < mesh.positions.length; i += 3) {
+    const [x, y, z] = mesh.positions.slice(i, i + 3);
+    assert(y <= ceiling(x, z) + 1e-10, 'Боковые плечи также учитывают поверхность плато');
+  }
+  assert(mesh.normals.every(Number.isFinite));
 });
